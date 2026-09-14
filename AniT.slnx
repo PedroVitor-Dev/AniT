@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AniT.App/AniT.App.csproj" />
+    <Project Path="src/AniT.Core/AniT.Core.csproj" />
+    <Project Path="src/AniT.Infrastructure/AniT.Infrastructure.csproj" />
+    <Project Path="src/AniT.Player/AniT.Player.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AniT.Tests/AniT.Tests.csproj" />
+  </Folder>
+</Solution>
