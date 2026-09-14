@@ -33,12 +33,28 @@ public partial class MainWindow : Window
             return;
         }
 
-        App.Database.LibraryRoots.Add(new global::AniT.Core.LibraryRoot
+        var root = new global::AniT.Core.LibraryRoot
         {
             Path = path,
             DisplayName = global::System.IO.Path.GetFileName(path)
-        });
+        };
+        App.Database.LibraryRoots.Add(root);
         await App.Database.SaveChangesAsync();
-        StatusText.Text = "Pasta adicionada. O scanner chegará no próximo marco do MVP.";
+        StatusText.Text = "Lendo seus episódios…";
+
+        try
+        {
+            var scanner = new global::AniT.Infrastructure.LibraryScanner(App.Database);
+            var result = await scanner.ScanAsync(root);
+            StatusText.Text = result.EpisodesAdded > 0
+                ? $"{result.EpisodesAdded} episódio(s) adicionado(s) à sua biblioteca."
+                : result.FilesFound == 0
+                    ? "Nenhum vídeo foi encontrado nessa pasta."
+                    : "Nenhum episódio novo foi identificado.";
+        }
+        catch (Exception exception)
+        {
+            StatusText.Text = $"Não foi possível analisar a pasta: {exception.Message}";
+        }
     }
 }
