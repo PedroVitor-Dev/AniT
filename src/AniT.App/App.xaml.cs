@@ -15,12 +15,15 @@ public partial class App : Application
     private static Guid? activeEpisodeId;
     private static DateTimeOffset lastProgressWrite;
     private static CancellationTokenSource? playbackMonitorCancellation;
+    private static readonly SemaphoreSlim playbackPersistenceLock = new(1, 1);
+    private static string databasePath = string.Empty;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
         var dataDirectory = global::System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AniT", "Data");
-        Database = global::AniT.Infrastructure.AniTDatabase.Create(global::System.IO.Path.Combine(dataDirectory, "anit.db"));
+        databasePath = global::System.IO.Path.Combine(dataDirectory, "anit.db");
+        Database = global::AniT.Infrastructure.AniTDatabase.Create(databasePath);
         var playerPath = ResolveBundledPlayerPath();
         if (global::System.IO.File.Exists(playerPath))
         {
@@ -73,16 +76,29 @@ public partial class App : Application
 
     private static async Task PersistProgressAsync(global::AniT.Core.PlaybackPositionChangedEventArgs progress)
     {
-        if (activeEpisodeId is not { } episodeId || DateTimeOffset.UtcNow - lastProgressWrite < TimeSpan.FromSeconds(15)) return;
-        lastProgressWrite = DateTimeOffset.UtcNow;
-        var episode = await Database.Episodes.Include(item => item.PlaybackProgress).FirstOrDefaultAsync(item => item.Id == episodeId);
-        if (episode is null) return;
-        episode.PlaybackProgress ??= new global::AniT.Core.PlaybackProgress { EpisodeId = episodeId };
-        episode.PlaybackProgress.PositionSeconds = progress.Position.TotalSeconds;
-        episode.PlaybackProgress.DurationSeconds = progress.Duration?.TotalSeconds ?? 0;
-        episode.PlaybackProgress.LastPlayedAt = DateTimeOffset.UtcNow;
-        if (episode.Status == global::AniT.Core.WatchStatus.NotStarted) episode.Status = global::AniT.Core.WatchStatus.Watching;
-        await Database.SaveChangesAsync();
+        await playbackPersistenceLock.WaitAsync();
+        try
+        {
+            if (activeEpisodeId is not { } episodeId || DateTimeOffset.UtcNow - lastProgressWrite < TimeSpan.FromSeconds(5)) return;
+            lastProgressWrite = DateTimeOffset.UtcNow;
+            using var context = global::AniT.Infrastructure.AniTDatabase.Create(databasePath);
+            var episode = await context.Episodes.Include(item => item.PlaybackProgress).FirstOrDefaultAsync(item => item.Id == episodeId);
+            if (episode is null) return;
+            episode.PlaybackProgress ??= new global::AniT.Core.PlaybackProgress { EpisodeId = episodeId };
+            episode.PlaybackProgress.PositionSeconds = progress.Position.TotalSeconds;
+            episode.PlaybackProgress.DurationSeconds = progress.Duration?.TotalSeconds ?? 0;
+            episode.PlaybackProgress.LastPlayedAt = DateTimeOffset.UtcNow;
+            if (episode.Status == global::AniT.Core.WatchStatus.NotStarted) episode.Status = global::AniT.Core.WatchStatus.Watching;
+            await context.SaveChangesAsync();
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Debug.WriteLine($"AniT could not persist playback progress: {exception}");
+        }
+        finally
+        {
+            playbackPersistenceLock.Release();
+        }
     }
 
     private static async Task MonitorPlaybackAsync(CancellationToken cancellationToken)
@@ -91,7 +107,7 @@ public partial class App : Application
         {
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
+                await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
                 var position = await MediaPlayer.GetPositionAsync(cancellationToken);
                 await PersistProgressAsync(new global::AniT.Core.PlaybackPositionChangedEventArgs(position, null));
             }
@@ -109,14 +125,27 @@ public partial class App : Application
 
     private static async Task CompleteActiveEpisodeAsync()
     {
-        if (activeEpisodeId is not { } episodeId) return;
-        var episode = await Database.Episodes.Include(item => item.PlaybackProgress).FirstOrDefaultAsync(item => item.Id == episodeId);
-        if (episode is null) return;
-        episode.Status = global::AniT.Core.WatchStatus.Completed;
-        episode.WatchedAt = DateTimeOffset.UtcNow;
-        if (episode.PlaybackProgress is { DurationSeconds: > 0 } progress) progress.PositionSeconds = progress.DurationSeconds;
-        await Database.SaveChangesAsync();
-        playbackMonitorCancellation?.Cancel();
+        await playbackPersistenceLock.WaitAsync();
+        try
+        {
+            if (activeEpisodeId is not { } episodeId) return;
+            using var context = global::AniT.Infrastructure.AniTDatabase.Create(databasePath);
+            var episode = await context.Episodes.Include(item => item.PlaybackProgress).FirstOrDefaultAsync(item => item.Id == episodeId);
+            if (episode is null) return;
+            episode.Status = global::AniT.Core.WatchStatus.Completed;
+            episode.WatchedAt = DateTimeOffset.UtcNow;
+            if (episode.PlaybackProgress is { DurationSeconds: > 0 } progress) progress.PositionSeconds = progress.DurationSeconds;
+            await context.SaveChangesAsync();
+            playbackMonitorCancellation?.Cancel();
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Debug.WriteLine($"AniT could not complete playback: {exception}");
+        }
+        finally
+        {
+            playbackPersistenceLock.Release();
+        }
     }
 }
 
