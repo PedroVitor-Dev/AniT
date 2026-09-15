@@ -28,6 +28,14 @@ public partial class App : Application
             MediaPlayer.PositionChanged += async (_, progress) => await PersistProgressAsync(progress);
             MediaPlayer.PlaybackEnded += async (_, _) => await CompleteActiveEpisodeAsync();
         }
+
+        var dashboard = new DashboardWindow();
+        MainWindow = dashboard;
+        dashboard.Show();
+        if (!Database.LibraryRoots.Any())
+        {
+            _ = new SetupShelfWindow { Owner = dashboard }.ShowDialog();
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)

@@ -136,7 +136,9 @@ internal sealed class MpcHcBridge : IDisposable
         var structPointer = Marshal.AllocHGlobal(Marshal.SizeOf<CopyDataStruct>());
         try
         {
-            Marshal.StructureToPtr(new CopyDataStruct { Data = new IntPtr(command), DataLength = text.Length * sizeof(char), DataPointer = dataPointer }, structPointer, false);
+            // dwData is an unsigned pointer-sized field. Commands such as CMD_OPENFILE have the high bit set;
+            // zero-extension is required on x64 or MPC-HC will not recognize the command.
+            Marshal.StructureToPtr(new CopyDataStruct { Data = new IntPtr(unchecked((long)(uint)command)), DataLength = text.Length * sizeof(char), DataPointer = dataPointer }, structPointer, false);
             SendMessage(playerWindow, WmCopyData, hostWindow.Handle, structPointer);
         }
         finally
