@@ -55,9 +55,10 @@ public partial class LibraryWindow : Window
         foreach (var item in anime)
         {
             var episodes = item.Seasons.SelectMany(season => season.Episodes).ToList();
-            var watched = episodes.Count(episode => episode.Status == global::AniT.Core.WatchStatus.Completed);
+            var watchSummary = global::AniT.Core.AnimeWatchSummary.Create(episodes);
+            var watched = watchSummary.CompletedEpisodes;
             var current = episodes
-                .Where(episode => episode.Status == global::AniT.Core.WatchStatus.Watching || episode.PlaybackProgress is { PositionSeconds: > 0 })
+                .Where(global::AniT.Core.AnimeWatchSummary.IsInProgress)
                 .OrderByDescending(episode => episode.PlaybackProgress?.LastPlayedAt)
                 .FirstOrDefault();
             var partialPercent = current?.PlaybackProgress is { DurationSeconds: > 0 } progress
@@ -70,7 +71,13 @@ public partial class LibraryWindow : Window
                 item.EnglishTitle,
                 string.IsNullOrWhiteSpace(item.Title) ? "?" : item.Title[..1].ToUpperInvariant(),
                 $"{episodes.Count} episódio(s)",
-                current is not null ? $"Em andamento · Episódio {current.Number:00}" : watched == 0 ? "Ainda não iniciado" : $"{watched} assistido(s)",
+                watchSummary.IsCompleted
+                    ? "Concluído"
+                    : current is not null
+                        ? $"Em andamento · Episódio {current.Number:00}"
+                        : watched == 0
+                            ? "Ainda não iniciado"
+                            : $"{watched} assistido(s)",
                 totalPercent,
                 File.Exists(item.CoverPath) ? item.CoverPath : null);
             Anime.Add(viewItem);

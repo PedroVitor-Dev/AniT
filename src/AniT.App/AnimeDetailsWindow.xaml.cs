@@ -16,6 +16,7 @@ public partial class AnimeDetailsWindow : Window
     public string Summary { get; private set; } = string.Empty;
     public string EpisodeCountLabel { get; private set; } = string.Empty;
     public string PlayNextLabel { get; private set; } = "▶  Assistir próximo episódio";
+    public bool CanPlayNext { get; private set; } = true;
     public string? CoverPath { get; private set; }
     public string Synopsis { get; private set; } = "A sinopse ainda não está disponível.";
     public string CriticScoreLabel { get; private set; } = "—";
@@ -54,15 +55,23 @@ public partial class AnimeDetailsWindow : Window
         ReviewTextBox.Text = anime.ReviewNotes ?? string.Empty;
         ReviewStatusText.Text = string.Empty;
         var allEpisodes = anime.Seasons.SelectMany(season => season.Episodes).OrderBy(episode => episode.Season!.Number).ThenBy(episode => episode.Number).ToList();
-        var watched = allEpisodes.Count(episode => episode.Status == global::AniT.Core.WatchStatus.Completed);
-        var watching = allEpisodes.Count(episode => episode.Status == global::AniT.Core.WatchStatus.Watching || episode.PlaybackProgress is { PositionSeconds: > 0 });
-        Summary = watching > 0
-            ? $"{watching} episódio{(watching == 1 ? string.Empty : "s")} em andamento"
-            : watched == 0 ? "Ainda não iniciado" : $"{watched} de {allEpisodes.Count} episódios assistidos";
+        var watchSummary = global::AniT.Core.AnimeWatchSummary.Create(allEpisodes);
+        var watched = watchSummary.CompletedEpisodes;
+        var watching = watchSummary.InProgressEpisodes;
+        Summary = watchSummary.IsCompleted
+            ? $"Concluído · {watched} de {allEpisodes.Count} episódios assistidos"
+            : watching > 0
+                ? $"{watching} episódio{(watching == 1 ? string.Empty : "s")} em andamento"
+                : watched == 0
+                    ? "Ainda não iniciado"
+                    : $"{watched} de {allEpisodes.Count} episódios assistidos";
         EpisodeCountLabel = $"{allEpisodes.Count} episódios";
-        PlayNextLabel = allEpisodes.Any(episode => episode.Status == global::AniT.Core.WatchStatus.Watching)
-            ? "▶  Continuar assistindo"
-            : "▶  Assistir próximo episódio";
+        CanPlayNext = !watchSummary.IsCompleted;
+        PlayNextLabel = watchSummary.IsCompleted
+            ? "✓  Anime concluído"
+            : watching > 0
+                ? "▶  Continuar assistindo"
+                : "▶  Assistir próximo episódio";
         Episodes.Clear();
         foreach (var episode in allEpisodes)
         {
