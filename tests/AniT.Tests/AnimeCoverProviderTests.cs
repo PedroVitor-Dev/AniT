@@ -87,7 +87,8 @@ public sealed class AnimeCoverProviderTests
             {
                 postCount++;
                 requestBodies.Add(request.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
-                return JsonResponse(postCount == 1
+                if (postCount == 1) return new HttpResponseMessage(HttpStatusCode.NotFound);
+                return JsonResponse(postCount == 2
                     ? """{"data":{"Media":{"title":{"english":"Magilumiere Magical Girls Inc. Season 2"},"coverImage":{"extraLarge":"https://images.example/japanese-search.jpg","large":null}}}}"""
                     : """{"data":{"Media":{"title":{"english":"Magilumiere Magical Girls Inc. Season 2"},"coverImage":{"extraLarge":"https://images.example/english-search.jpg","large":null}}}}""");
             }
@@ -107,15 +108,16 @@ public sealed class AnimeCoverProviderTests
             var provider = new AnimeCoverProvider(directory, httpClient);
             var result = await provider.EnsureMetadataAsync(
                 Guid.NewGuid(),
-                "Kabushiki Gaisha Magi Lumiere 2nd Season",
+                "Kabushikigaisha Magi-Lumière 2nd Season",
                 null,
                 null);
 
             Assert.Equal("Magilumiere Magical Girls Inc. Season 2", result.EnglishTitle);
             Assert.True(File.Exists(result.CoverPath));
-            Assert.Equal(2, postCount);
-            Assert.Contains("Kabushiki Gaisha Magi Lumiere 2nd Season", requestBodies[0]);
-            Assert.Contains("Magilumiere Magical Girls Inc. Season 2", requestBodies[1]);
+            Assert.Equal(3, postCount);
+            Assert.Contains("Kabushikigaisha Magi-Lumi", requestBodies[0]);
+            Assert.Contains("Kabushiki Gaisha Magi Lumiere 2nd Season", requestBodies[1]);
+            Assert.Contains("Magilumiere Magical Girls Inc. Season 2", requestBodies[2]);
         }
         finally
         {

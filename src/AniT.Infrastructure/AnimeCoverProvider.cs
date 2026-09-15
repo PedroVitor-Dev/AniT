@@ -1,5 +1,8 @@
 using System.Collections.Concurrent;
+using System.Globalization;
+using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -124,6 +127,7 @@ public sealed partial class AnimeCoverProvider
             };
 
             using var response = await httpClient.SendAsync(request, cancellationToken);
+            if (response.StatusCode == HttpStatusCode.NotFound) continue;
             if (!response.IsSuccessStatusCode) return null;
 
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
@@ -182,13 +186,37 @@ public sealed partial class AnimeCoverProvider
     private static IEnumerable<string> GetSearchCandidates(string title)
     {
         var cleaned = WhitespaceRegex().Replace(title.Trim(), " ");
-        if (!string.IsNullOrWhiteSpace(cleaned)) yield return cleaned;
+        var candidates = new[] { cleaned, CreateSearchFriendlyTitle(cleaned) }
+            .Where(candidate => !string.IsNullOrWhiteSpace(candidate))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
-        var withoutSeason = SeasonSuffixRegex().Replace(cleaned, string.Empty).Trim(' ', '-', '–', '—');
-        if (!string.IsNullOrWhiteSpace(withoutSeason) && !string.Equals(cleaned, withoutSeason, StringComparison.OrdinalIgnoreCase))
+        foreach (var candidate in candidates) yield return candidate;
+        foreach (var candidate in candidates)
         {
-            yield return withoutSeason;
+            var withoutSeason = SeasonSuffixRegex().Replace(candidate, string.Empty).Trim(' ', '-', '–', '—');
+            if (!string.IsNullOrWhiteSpace(withoutSeason)
+                && !candidates.Contains(withoutSeason, StringComparer.OrdinalIgnoreCase))
+            {
+                yield return withoutSeason;
+            }
         }
+    }
+
+    private static string CreateSearchFriendlyTitle(string title)
+    {
+        var decomposed = title.Normalize(NormalizationForm.FormD);
+        var withoutDiacritics = new StringBuilder(decomposed.Length);
+        foreach (var character in decomposed)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(character) != UnicodeCategory.NonSpacingMark)
+            {
+                withoutDiacritics.Append(character);
+            }
+        }
+
+        var spacedCompanyName = KabushikigaishaRegex().Replace(withoutDiacritics.ToString(), "Kabushiki Gaisha");
+        return WhitespaceRegex().Replace(SearchPunctuationRegex().Replace(spacedCompanyName, " "), " ").Trim();
     }
 
     private static bool TryReadText(JsonElement parent, string propertyName, out string? value)
@@ -223,6 +251,12 @@ public sealed partial class AnimeCoverProvider
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex WhitespaceRegex();
+
+    [GeneratedRegex(@"\bKabushikigaisha\b", RegexOptions.IgnoreCase)]
+    private static partial Regex KabushikigaishaRegex();
+
+    [GeneratedRegex(@"[-–—_:]+")]
+    private static partial Regex SearchPunctuationRegex();
 
     [GeneratedRegex(@"(?:\s*[-–—:]?\s*)(?:\d+(?:st|nd|rd|th)\s+season|season\s*\d+|temporada\s*\d+|\d+[aª]?\s+temporada)\s*$", RegexOptions.IgnoreCase)]
     private static partial Regex SeasonSuffixRegex();
