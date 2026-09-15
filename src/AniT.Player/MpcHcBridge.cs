@@ -175,7 +175,9 @@ internal sealed class MpcHcBridge : IDisposable
 
     private async Task ReapplySeekAsync(IntPtr expectedWindow, TimeSpan position)
     {
-        await Task.Delay(TimeSpan.FromMilliseconds(500));
+        // NOWPLAYING is emitted after the graph is ready. A very short yield lets MPC-HC
+        // complete its own notification work without leaving the opening frame visible.
+        await Task.Delay(TimeSpan.FromMilliseconds(50));
         if (playerWindow != expectedWindow || playerWindow == IntPtr.Zero) return;
         Trace($"Reaplicando seek após inicialização: {position.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture)}s.");
         Seek(position);
