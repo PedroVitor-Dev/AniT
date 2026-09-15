@@ -9,9 +9,13 @@ public enum PlayerState
 
 public interface IMediaPlayer
 {
+    event EventHandler<PlaybackPositionChangedEventArgs>? PositionChanged;
+    event EventHandler? PlaybackEnded;
     Task PlayAsync(MediaFile file, TimeSpan? position, CancellationToken cancellationToken = default);
     Task PauseAsync(CancellationToken cancellationToken = default);
     Task SeekAsync(TimeSpan position, CancellationToken cancellationToken = default);
     Task<TimeSpan> GetPositionAsync(CancellationToken cancellationToken = default);
     Task<PlayerState> GetStateAsync(CancellationToken cancellationToken = default);
 }
+
+public sealed record PlaybackPositionChangedEventArgs(TimeSpan Position, TimeSpan? Duration);

@@ -58,8 +58,28 @@ public partial class AnimeDetailsWindow : Window
         await LoadAsync();
     }
 
-    private void PlayNext_Click(object sender, RoutedEventArgs e) =>
-        MessageBox.Show("A integração com o MPC-HC será o próximo marco. O AniT já está preparado para registrar o progresso.", "MPC-HC integrado", MessageBoxButton.OK, MessageBoxImage.Information);
+    private async void PlayNext_Click(object sender, RoutedEventArgs e)
+    {
+        var nextEpisode = await App.Database.Episodes
+            .Where(episode => episode.Season!.AnimeId == animeId && episode.Status != global::AniT.Core.WatchStatus.Completed)
+            .OrderBy(episode => episode.Season!.Number)
+            .ThenBy(episode => episode.Number)
+            .FirstOrDefaultAsync();
+        if (nextEpisode is null)
+        {
+            MessageBox.Show("Você já concluiu todos os episódios desta biblioteca.", "AniT", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        try
+        {
+            await App.PlayEpisodeAsync(nextEpisode.Id);
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(exception.Message, "Não foi possível iniciar o player", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
 }
 
 public sealed record EpisodeItem(Guid Id, string Number, string Title, global::AniT.Core.WatchStatus Status, double ProgressPercent)
