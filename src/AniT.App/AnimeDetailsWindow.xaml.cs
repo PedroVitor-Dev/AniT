@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -14,6 +15,7 @@ public partial class AnimeDetailsWindow : Window
     public string Summary { get; private set; } = string.Empty;
     public string EpisodeCountLabel { get; private set; } = string.Empty;
     public string PlayNextLabel { get; private set; } = "▶  Assistir próximo episódio";
+    public string? CoverPath { get; private set; }
 
     public AnimeDetailsWindow(Guid animeId)
     {
@@ -38,6 +40,7 @@ public partial class AnimeDetailsWindow : Window
 
         AnimeTitle = anime.Title;
         Initial = anime.Title[..1].ToUpperInvariant();
+        CoverPath = File.Exists(anime.CoverPath) ? anime.CoverPath : null;
         var allEpisodes = anime.Seasons.SelectMany(season => season.Episodes).OrderBy(episode => episode.Season!.Number).ThenBy(episode => episode.Number).ToList();
         var watched = allEpisodes.Count(episode => episode.Status == global::AniT.Core.WatchStatus.Completed);
         var watching = allEpisodes.Count(episode => episode.Status == global::AniT.Core.WatchStatus.Watching || episode.PlaybackProgress is { PositionSeconds: > 0 });
@@ -57,6 +60,13 @@ public partial class AnimeDetailsWindow : Window
         }
         DataContext = null;
         DataContext = this;
+
+        if (CoverPath is null)
+        {
+            CoverPath = await App.EnsureAnimeCoverAsync(anime.Id, anime.Title, anime.CoverPath);
+            DataContext = null;
+            DataContext = this;
+        }
     }
 
     private async void ToggleWatched_Click(object sender, RoutedEventArgs e)

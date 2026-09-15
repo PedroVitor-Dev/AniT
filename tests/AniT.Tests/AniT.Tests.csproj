@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\AniT.Core\AniT.Core.csproj" />
+    <ProjectReference Include="..\..\src\AniT.Infrastructure\AniT.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

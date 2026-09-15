@@ -12,6 +12,7 @@ public partial class App : Application
 {
     public static global::AniT.Infrastructure.AniTDbContext Database { get; private set; } = null!;
     public static global::AniT.Player.MpcHcPlayer? MediaPlayer { get; private set; }
+    private static global::AniT.Infrastructure.AnimeCoverProvider animeCoverProvider = null!;
     private static Guid? activeEpisodeId;
     private static DateTimeOffset lastProgressWrite;
     private static CancellationTokenSource? playbackMonitorCancellation;
@@ -34,6 +35,8 @@ public partial class App : Application
         var dataDirectory = global::System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AniT", "Data");
         databasePath = global::System.IO.Path.Combine(dataDirectory, "anit.db");
         Database = global::AniT.Infrastructure.AniTDatabase.Create(databasePath);
+        var coversDirectory = global::System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AniT", "Covers");
+        animeCoverProvider = new global::AniT.Infrastructure.AnimeCoverProvider(coversDirectory);
         var playerPath = ResolveBundledPlayerPath();
         if (global::System.IO.File.Exists(playerPath))
         {
@@ -88,6 +91,23 @@ public partial class App : Application
         playbackMonitorCancellation = new CancellationTokenSource();
         var session = Interlocked.Increment(ref playbackSession);
         _ = MonitorPlaybackAsync(session, playbackMonitorCancellation.Token);
+    }
+
+    public static async Task<string?> EnsureAnimeCoverAsync(
+        Guid animeId,
+        string title,
+        string? savedCoverPath,
+        CancellationToken cancellationToken = default)
+    {
+        var coverPath = await animeCoverProvider.EnsureCoverAsync(animeId, title, savedCoverPath, cancellationToken);
+        if (coverPath is null || string.Equals(coverPath, savedCoverPath, StringComparison.OrdinalIgnoreCase)) return coverPath;
+
+        await using var context = OpenFreshDatabase();
+        var anime = await context.Anime.FirstOrDefaultAsync(item => item.Id == animeId, cancellationToken);
+        if (anime is null) return coverPath;
+        anime.CoverPath = coverPath;
+        await context.SaveChangesAsync(cancellationToken);
+        return coverPath;
     }
 
     private static string ResolveBundledPlayerPath()
