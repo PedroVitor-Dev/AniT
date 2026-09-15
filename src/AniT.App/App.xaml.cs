@@ -19,6 +19,7 @@ public partial class App : Application
     private static string databasePath = string.Empty;
     private static DateTimeOffset activePlaybackStartedAt;
     private static TimeSpan activePlaybackStartPosition;
+    private static long playbackSession;
 
     /// <summary>
     /// Creates a short-lived database context for values that can be changed while a player is open.
@@ -39,7 +40,11 @@ public partial class App : Application
             MediaPlayer = new global::AniT.Player.MpcHcPlayer(playerPath);
             MediaPlayer.PositionChanged += async (_, progress) => await PersistProgressAsync(progress);
             MediaPlayer.PlaybackEnded += async (_, _) => await CompleteActiveEpisodeAsync();
-            MediaPlayer.PlaybackClosed += async (_, progress) => await PersistProgressAsync(progress, force: true);
+            MediaPlayer.PlaybackClosed += async (_, progress) =>
+            {
+                playbackMonitorCancellation?.Cancel();
+                await PersistProgressAsync(progress, force: true);
+            };
             MediaPlayer.Diagnostic += (_, message) => WritePlaybackLog($"[MPC] {message}");
         }
 
@@ -81,7 +86,8 @@ public partial class App : Application
         await MarkEpisodeAsWatchingAsync(episodeId);
         playbackMonitorCancellation?.Cancel();
         playbackMonitorCancellation = new CancellationTokenSource();
-        _ = MonitorPlaybackAsync(playbackMonitorCancellation.Token);
+        var session = Interlocked.Increment(ref playbackSession);
+        _ = MonitorPlaybackAsync(session, playbackMonitorCancellation.Token);
     }
 
     private static string ResolveBundledPlayerPath()
@@ -135,9 +141,9 @@ public partial class App : Application
         }
     }
 
-    private static async Task MonitorPlaybackAsync(CancellationToken cancellationToken)
+    private static async Task MonitorPlaybackAsync(long session, CancellationToken cancellationToken)
     {
-        while (!cancellationToken.IsCancellationRequested && MediaPlayer is not null)
+        while (!cancellationToken.IsCancellationRequested && session == Volatile.Read(ref playbackSession) && MediaPlayer is not null)
         {
             try
             {

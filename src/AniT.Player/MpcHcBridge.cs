@@ -28,6 +28,8 @@ internal sealed class MpcHcBridge : IDisposable
     private TaskCompletionSource<TimeSpan>? positionRequest;
     private IntPtr playerWindow;
     private TimeSpan? pendingStartPosition;
+    private TimeSpan? resumePosition;
+    private bool resumeSeekReapplied;
     private TimeSpan? duration;
     private TimeSpan? lastPosition;
 
@@ -71,6 +73,8 @@ internal sealed class MpcHcBridge : IDisposable
     public void OpenFile(string path, TimeSpan? startPosition)
     {
         pendingStartPosition = startPosition;
+        resumePosition = startPosition;
+        resumeSeekReapplied = false;
         lastPosition = null;
         duration = null;
         Trace($"Abrindo arquivo: {path}; posição para retomar: {startPosition?.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture) ?? "0"}s.");
@@ -125,7 +129,7 @@ internal sealed class MpcHcBridge : IDisposable
                 var parts = payload.Split('|');
                 if (parts.Length >= 5 && double.TryParse(parts[4], NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds)) duration = TimeSpan.FromSeconds(seconds);
                 Trace($"Arquivo carregado; duração: {duration?.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture) ?? "desconhecida"}s.");
-                ApplyPendingSeek();
+                ScheduleResumeSeekAfterGraphInitialization();
                 NowPlaying?.Invoke(this, payload);
                 break;
             case CmdCurrentPosition:
@@ -156,6 +160,25 @@ internal sealed class MpcHcBridge : IDisposable
         if (pendingStartPosition is not { } position || position <= TimeSpan.Zero) return;
         Seek(position);
         pendingStartPosition = null;
+    }
+
+    private void ScheduleResumeSeekAfterGraphInitialization()
+    {
+        // MPC-HC can report MLS_LOADED a moment before its playback graph has completed
+        // initialization. Reapply the saved position once after NOWPLAYING so the initial
+        // graph startup cannot reset the first seek back to zero.
+        if (resumeSeekReapplied || resumePosition is not { } position || position <= TimeSpan.Zero) return;
+        resumeSeekReapplied = true;
+        var expectedWindow = playerWindow;
+        _ = ReapplySeekAsync(expectedWindow, position);
+    }
+
+    private async Task ReapplySeekAsync(IntPtr expectedWindow, TimeSpan position)
+    {
+        await Task.Delay(TimeSpan.FromMilliseconds(500));
+        if (playerWindow != expectedWindow || playerWindow == IntPtr.Zero) return;
+        Trace($"Reaplicando seek após inicialização: {position.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture)}s.");
+        Seek(position);
     }
 
     private void Trace(string message) => Diagnostic?.Invoke(this, message);
