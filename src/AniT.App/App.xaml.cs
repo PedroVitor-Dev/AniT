@@ -97,7 +97,7 @@ public partial class App : Application
             if (activeEpisodeId is not { } episodeId || (!force && DateTimeOffset.UtcNow - lastProgressWrite < TimeSpan.FromSeconds(5))) return;
             lastProgressWrite = DateTimeOffset.UtcNow;
             await using var context = OpenFreshDatabase();
-            var episode = await context.Episodes.Include(item => item.PlaybackProgress).FirstOrDefaultAsync(item => item.Id == episodeId);
+            var episode = await context.Episodes.FirstOrDefaultAsync(item => item.Id == episodeId);
             if (episode is null) return;
             var position = progress.Position;
             if (position == TimeSpan.Zero && activePlaybackStartedAt != default)
@@ -109,10 +109,15 @@ public partial class App : Application
                 activePlaybackStartPosition = progress.Position;
                 activePlaybackStartedAt = DateTimeOffset.UtcNow;
             }
-            episode.PlaybackProgress ??= new global::AniT.Core.PlaybackProgress { EpisodeId = episodeId };
-            episode.PlaybackProgress.PositionSeconds = position.TotalSeconds;
-            episode.PlaybackProgress.DurationSeconds = progress.Duration?.TotalSeconds ?? 0;
-            episode.PlaybackProgress.LastPlayedAt = DateTimeOffset.UtcNow;
+            var savedProgress = await context.PlaybackProgresses.SingleOrDefaultAsync(item => item.EpisodeId == episodeId);
+            if (savedProgress is null)
+            {
+                savedProgress = new global::AniT.Core.PlaybackProgress { EpisodeId = episodeId };
+                context.PlaybackProgresses.Add(savedProgress);
+            }
+            savedProgress.PositionSeconds = Math.Max(0, position.TotalSeconds);
+            savedProgress.DurationSeconds = progress.Duration?.TotalSeconds ?? savedProgress.DurationSeconds;
+            savedProgress.LastPlayedAt = DateTimeOffset.UtcNow;
             if (episode.Status == global::AniT.Core.WatchStatus.NotStarted) episode.Status = global::AniT.Core.WatchStatus.Watching;
             await context.SaveChangesAsync();
         }
@@ -151,6 +156,9 @@ public partial class App : Application
             catch
             {
                 // The player can close before its disconnect notification reaches the host window.
+                // Persist the elapsed fallback once more instead of silently losing the session.
+                await PersistProgressAsync(new global::AniT.Core.PlaybackPositionChangedEventArgs(
+                    activePlaybackStartPosition + (DateTimeOffset.UtcNow - activePlaybackStartedAt), null), force: true);
                 return;
             }
         }
@@ -162,6 +170,16 @@ public partial class App : Application
         var episode = await context.Episodes.FirstOrDefaultAsync(item => item.Id == episodeId);
         if (episode is null || episode.Status == global::AniT.Core.WatchStatus.Completed) return;
         episode.Status = global::AniT.Core.WatchStatus.Watching;
+        if (!await context.PlaybackProgresses.AnyAsync(item => item.EpisodeId == episodeId))
+        {
+            context.PlaybackProgresses.Add(new global::AniT.Core.PlaybackProgress
+            {
+                EpisodeId = episodeId,
+                PositionSeconds = 0,
+                DurationSeconds = 0,
+                LastPlayedAt = DateTimeOffset.UtcNow
+            });
+        }
         await context.SaveChangesAsync();
     }
 
