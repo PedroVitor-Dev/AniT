@@ -16,6 +16,8 @@
 
   <ItemGroup>
     <Content Include="..\..\Player\MPC-HC\**\*" Link="Player\MPC-HC\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\assets\baki-pi\Logo.png" Link="Assets\Logo.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\assets\baki-pi\Logo-sf.png" Link="Assets\Logo-sf.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

@@ -3,6 +3,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:AniT.App">
     <Application.Resources>
-         
+        <Color x:Key="BrandBlue">#2FA7FF</Color>
+        <Color x:Key="BrandBlueStrong">#1177E8</Color>
+        <SolidColorBrush x:Key="BrandBrush" Color="{StaticResource BrandBlue}"/>
+        <Style x:Key="BrandButton" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource BrandBrush}"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Padding" Value="18,10"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border Background="{TemplateBinding Background}" CornerRadius="10" Padding="{TemplateBinding Padding}"><Border.Effect><DropShadowEffect BlurRadius="16" ShadowDepth="3" Opacity="0.28" Color="#168BFF"/></Border.Effect><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/></Border></ControlTemplate></Setter.Value></Setter>
+            <Style.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#59B9FF"/></Trigger><Trigger Property="IsPressed" Value="True"><Setter Property="Background" Value="#1177E8"/></Trigger></Style.Triggers>
+        </Style>
     </Application.Resources>
 </Application>
