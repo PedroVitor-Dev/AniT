@@ -24,7 +24,7 @@ internal sealed class MpcHcBridge : IDisposable
     private const int CmdGetCurrentPosition = unchecked((int)0xA0003004);
 
     private readonly HwndSource hostWindow;
-    private readonly TaskCompletionSource<IntPtr> connection = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private TaskCompletionSource<IntPtr>? connection;
     private TaskCompletionSource<TimeSpan>? positionRequest;
     private IntPtr playerWindow;
     private TimeSpan? pendingStartPosition;
@@ -51,14 +51,16 @@ internal sealed class MpcHcBridge : IDisposable
     {
         if (!File.Exists(executablePath)) throw new FileNotFoundException("O executável integrado do MPC-HC não foi encontrado.", executablePath);
         if (playerWindow != IntPtr.Zero) return;
+        var pendingConnection = new TaskCompletionSource<IntPtr>(TaskCreationOptions.RunContinuationsAsynchronously);
+        connection = pendingConnection;
 
         var process = Process.Start(new ProcessStartInfo(executablePath, $"/slave {hostWindow.Handle}") { UseShellExecute = false });
         if (process is null) throw new InvalidOperationException("Não foi possível iniciar o MPC-HC.");
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(10));
-        using var registration = timeout.Token.Register(() => connection.TrySetCanceled(timeout.Token));
-        playerWindow = await connection.Task;
+        using var registration = timeout.Token.Register(() => pendingConnection.TrySetCanceled(timeout.Token));
+        playerWindow = await pendingConnection.Task;
     }
 
     public void OpenFile(string path, TimeSpan? startPosition)
@@ -97,7 +99,7 @@ internal sealed class MpcHcBridge : IDisposable
         switch (command)
         {
             case CmdConnect:
-                if (long.TryParse(payload, NumberStyles.Integer, CultureInfo.InvariantCulture, out var handle)) connection.TrySetResult(new IntPtr(handle));
+                if (long.TryParse(payload, NumberStyles.Integer, CultureInfo.InvariantCulture, out var handle)) connection?.TrySetResult(new IntPtr(handle));
                 break;
             case CmdState:
                 if (payload == "2" && pendingStartPosition is { } position) { Seek(position); pendingStartPosition = null; }
@@ -124,6 +126,7 @@ internal sealed class MpcHcBridge : IDisposable
                 break;
             case CmdDisconnect:
                 playerWindow = IntPtr.Zero;
+                connection = null;
                 break;
         }
     }
