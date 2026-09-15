@@ -14,10 +14,10 @@ public partial class DashboardWindow : Window
         continueButton = new System.Windows.Controls.Button
         {
             Content = "▶  Continuar episódio",
-            Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(245, 107, 72)),
-            Foreground = System.Windows.Media.Brushes.White,
-            BorderThickness = new Thickness(0),
-            Padding = new Thickness(16, 8, 16, 8),
+            Style = (Style)Application.Current.FindResource("BrandButton"),
+            MinWidth = 210,
+            Height = 40,
+            Padding = new Thickness(18, 8, 18, 8),
             Margin = new Thickness(0, 15, 0, 0),
             Visibility = Visibility.Collapsed
         };

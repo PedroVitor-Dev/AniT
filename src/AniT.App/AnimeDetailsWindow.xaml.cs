@@ -130,9 +130,9 @@ public sealed record EpisodeItem(Guid Id, string Number, string Title, global::A
 
     public string StatusColor => Status switch
     {
-        global::AniT.Core.WatchStatus.Completed => "#79D89A",
-        global::AniT.Core.WatchStatus.Watching => "#F5B75B",
-        _ => "#9299AA"
+        global::AniT.Core.WatchStatus.Completed => "#6CDEB2",
+        global::AniT.Core.WatchStatus.Watching => "#53B6FF",
+        _ => "#91ABD0"
     };
 
     public string ProgressLabel => Status == global::AniT.Core.WatchStatus.Completed ? "Concluído" : ProgressPercent > 0 ? $"{ProgressPercent:0}% assistido" : "Não iniciado";
