@@ -74,6 +74,10 @@ public partial class LibraryWindow : Window
         {
             // A fresh library load superseded this request.
         }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Debug.WriteLine($"AniT could not load the anime cover: {exception}");
+        }
     }
 
     private void AnimeCard_Click(object sender, RoutedEventArgs e)

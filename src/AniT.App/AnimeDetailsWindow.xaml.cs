@@ -63,9 +63,16 @@ public partial class AnimeDetailsWindow : Window
 
         if (CoverPath is null)
         {
-            CoverPath = await App.EnsureAnimeCoverAsync(anime.Id, anime.Title, anime.CoverPath);
-            DataContext = null;
-            DataContext = this;
+            try
+            {
+                CoverPath = await App.EnsureAnimeCoverAsync(anime.Id, anime.Title, anime.CoverPath);
+                DataContext = null;
+                DataContext = this;
+            }
+            catch (Exception exception)
+            {
+                System.Diagnostics.Debug.WriteLine($"AniT could not load the anime cover: {exception}");
+            }
         }
     }
 
