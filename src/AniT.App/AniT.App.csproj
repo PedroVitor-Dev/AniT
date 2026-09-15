@@ -20,6 +20,11 @@
     <Resource Include="..\..\assets\baki-pi\Logo-sf.png" Link="Assets\Logo-sf.png" />
     <Resource Include="..\..\assets\logo-letter-white.png" Link="Assets\logo-letter-white.png" />
     <Resource Include="..\..\assets\baki-pi\normal-sf.png" Link="Assets\normal-sf.png" />
+    <Resource Include="..\..\assets\baki-pi\angry-sf.png" Link="Assets\angry-sf.png" />
+    <Resource Include="..\..\assets\baki-pi\sad-sf.png" Link="Assets\sad-sf.png" />
+    <Resource Include="..\..\assets\baki-pi\boring-sf.png" Link="Assets\boring-sf.png" />
+    <Resource Include="..\..\assets\baki-pi\happy2-sf.png" Link="Assets\happy2-sf.png" />
+    <Resource Include="..\..\assets\baki-pi\happy-sf.png" Link="Assets\happy-sf.png" />
   </ItemGroup>
 
 </Project>

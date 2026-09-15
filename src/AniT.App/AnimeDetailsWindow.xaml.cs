@@ -9,6 +9,7 @@ namespace AniT.App;
 public partial class AnimeDetailsWindow : Window
 {
     private readonly Guid animeId;
+    private double selectedRating;
     public ObservableCollection<EpisodeItem> Episodes { get; } = [];
     public string AnimeTitle { get; private set; } = string.Empty;
     public string EnglishTitleDisplay { get; private set; } = string.Empty;
@@ -25,7 +26,7 @@ public partial class AnimeDetailsWindow : Window
     {
         this.animeId = animeId;
         InitializeComponent();
-        ResponsiveWindow.FitToWorkArea(this, 1100, 780);
+        ResponsiveWindow.FitToWorkArea(this, 1140, 800);
         DataContext = this;
     }
 
@@ -51,7 +52,7 @@ public partial class AnimeDetailsWindow : Window
             ? "A sinopse ainda não está disponível. Use Atualizar Títulos na Biblioteca para tentar novamente."
             : anime.Synopsis;
         CriticScoreLabel = anime.CriticScore is { } criticScore ? $"{criticScore:0}/100" : "—";
-        UserRatingSlider.Value = anime.Rating ?? 0;
+        ApplyRatingSelection(NormalizeSavedRating(anime.Rating));
         ReviewTextBox.Text = anime.ReviewNotes ?? string.Empty;
         ReviewStatusText.Text = string.Empty;
         var allEpisodes = anime.Seasons.SelectMany(season => season.Episodes).OrderBy(episode => episode.Season!.Number).ThenBy(episode => episode.Number).ToList();
@@ -114,11 +115,38 @@ public partial class AnimeDetailsWindow : Window
 
     private static string FormatEnglishTitle(string? title) => string.IsNullOrWhiteSpace(title) ? string.Empty : $"({title})";
 
-    private void UserRatingSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    private void RatingCard_Checked(object sender, RoutedEventArgs e)
     {
         if (RatingValueText is null || ReviewStatusText is null) return;
-        RatingValueText.Text = e.NewValue <= 0 ? "Sem nota" : $"{e.NewValue:0.0}/10";
+        if (sender is not RadioButton ratingCard
+            || !double.TryParse(ratingCard.Tag?.ToString(), out var rating)) return;
+        selectedRating = rating;
+        RatingValueText.Text = selectedRating.ToString("0");
         ReviewStatusText.Text = string.Empty;
+    }
+
+    private void ClearRating_Click(object sender, RoutedEventArgs e)
+    {
+        ApplyRatingSelection(0);
+        ReviewStatusText.Text = string.Empty;
+    }
+
+    private void ApplyRatingSelection(double rating)
+    {
+        selectedRating = rating;
+        RatingOne.IsChecked = rating == 1;
+        RatingTwo.IsChecked = rating == 2;
+        RatingThree.IsChecked = rating == 3;
+        RatingFour.IsChecked = rating == 4;
+        RatingFive.IsChecked = rating == 5;
+        RatingValueText.Text = rating <= 0 ? "—" : rating.ToString("0");
+    }
+
+    private static double NormalizeSavedRating(double? rating)
+    {
+        if (rating is null or <= 0) return 0;
+        var fivePointRating = rating > 5 ? rating.Value / 2 : rating.Value;
+        return Math.Clamp(Math.Round(fivePointRating, MidpointRounding.AwayFromZero), 1, 5);
     }
 
     private async void SaveReview_Click(object sender, RoutedEventArgs e)
@@ -127,7 +155,7 @@ public partial class AnimeDetailsWindow : Window
         var anime = await context.Anime.FirstOrDefaultAsync(item => item.Id == animeId);
         if (anime is null) return;
 
-        anime.Rating = UserRatingSlider.Value <= 0 ? null : UserRatingSlider.Value;
+        anime.Rating = selectedRating <= 0 ? null : selectedRating;
         anime.ReviewNotes = string.IsNullOrWhiteSpace(ReviewTextBox.Text) ? null : ReviewTextBox.Text.Trim();
         await context.SaveChangesAsync();
         ReviewStatusText.Text = "✓ Avaliação salva localmente";
