@@ -14,6 +14,7 @@ public partial class App : Application
     public static global::AniT.Player.MpcHcPlayer? MediaPlayer { get; private set; }
     private static Guid? activeEpisodeId;
     private static DateTimeOffset lastProgressWrite;
+    private static CancellationTokenSource? playbackMonitorCancellation;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -50,6 +51,9 @@ public partial class App : Application
         activeEpisodeId = episodeId;
         TimeSpan? resumeAt = episode.PlaybackProgress is { PositionSeconds: > 0 } progress ? TimeSpan.FromSeconds(progress.PositionSeconds) : null;
         await MediaPlayer.PlayAsync(episode.MediaFile, resumeAt);
+        playbackMonitorCancellation?.Cancel();
+        playbackMonitorCancellation = new CancellationTokenSource();
+        _ = MonitorPlaybackAsync(playbackMonitorCancellation.Token);
     }
 
     private static string ResolveBundledPlayerPath()
@@ -73,6 +77,28 @@ public partial class App : Application
         await Database.SaveChangesAsync();
     }
 
+    private static async Task MonitorPlaybackAsync(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested && MediaPlayer is not null)
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
+                var position = await MediaPlayer.GetPositionAsync(cancellationToken);
+                await PersistProgressAsync(new global::AniT.Core.PlaybackPositionChangedEventArgs(position, null));
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            catch
+            {
+                // The player can close before its disconnect notification reaches the host window.
+                return;
+            }
+        }
+    }
+
     private static async Task CompleteActiveEpisodeAsync()
     {
         if (activeEpisodeId is not { } episodeId) return;
@@ -82,6 +108,7 @@ public partial class App : Application
         episode.WatchedAt = DateTimeOffset.UtcNow;
         if (episode.PlaybackProgress is { DurationSeconds: > 0 } progress) progress.PositionSeconds = progress.DurationSeconds;
         await Database.SaveChangesAsync();
+        playbackMonitorCancellation?.Cancel();
     }
 }
 
