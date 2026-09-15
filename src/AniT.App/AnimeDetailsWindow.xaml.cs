@@ -22,6 +22,7 @@ public partial class AnimeDetailsWindow : Window
     {
         this.animeId = animeId;
         InitializeComponent();
+        ResponsiveWindow.FitToWorkArea(this, 1050, 760);
         DataContext = this;
     }
 

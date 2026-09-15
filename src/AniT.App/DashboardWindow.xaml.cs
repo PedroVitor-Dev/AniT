@@ -11,6 +11,7 @@ public partial class DashboardWindow : Window
     public DashboardWindow()
     {
         InitializeComponent();
+        ResponsiveWindow.FitToWorkArea(this, 1280, 780);
         continueButton = new System.Windows.Controls.Button
         {
             Content = "▶  Continuar episódio",

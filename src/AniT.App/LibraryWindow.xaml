@@ -4,12 +4,13 @@
         Title="Biblioteca · AniT"
         Width="1180"
         Height="760"
-        MinWidth="900"
-        MinHeight="600"
+        MinWidth="720"
+        MinHeight="520"
         Background="#070B16"
         WindowStartupLocation="CenterOwner"
         Loaded="Window_Loaded"
         Activated="Window_Activated"
+        SizeChanged="Window_SizeChanged"
         Closed="Window_Closed">
     <Window.Resources>
         <Style x:Key="AnimeCard" TargetType="Button">
@@ -95,13 +96,31 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <DockPanel>
-                <StackPanel DockPanel.Dock="Left">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel MinWidth="210">
                     <TextBlock Text="Biblioteca" Foreground="White" FontSize="29" FontWeight="SemiBold"/>
-                    <TextBlock Text="Tudo que você encontrou no seu PC." Foreground="#9DB2D0" FontSize="14" Margin="0,6,0,0"/>
+                    <TextBlock Text="Tudo que você encontrou no seu PC."
+                               Foreground="#9DB2D0"
+                               FontSize="14"
+                               Margin="0,6,18,0"
+                               TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Background="#101A2C" BorderBrush="#29415F" BorderThickness="1" CornerRadius="11" Width="220" Height="40">
+                <StackPanel x:Name="HeaderActionsPanel"
+                            Grid.Column="1"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top">
+                    <Border x:Name="SearchBanner"
+                            Background="#101A2C"
+                            BorderBrush="#29415F"
+                            BorderThickness="1"
+                            CornerRadius="11"
+                            Width="220"
+                            Height="40">
                         <TextBlock Text="⌕  Pesquisar em breve" Foreground="#7694B9" VerticalAlignment="Center" Margin="13,0" FontSize="12"/>
                     </Border>
                     <Button x:Name="RefreshLibraryButton"
@@ -111,13 +130,13 @@
                             Margin="12,0,0,0"
                             Click="RefreshLibrary_Click"/>
                 </StackPanel>
-            </DockPanel>
+            </Grid>
 
             <Grid Grid.Row="1" Margin="0,34,0,0">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <ItemsControl ItemsSource="{Binding Anime}">
                         <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                            <ItemsPanelTemplate><WrapPanel HorizontalAlignment="Left"/></ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>

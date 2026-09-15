@@ -16,6 +16,7 @@ public partial class LibraryWindow : Window
     public LibraryWindow()
     {
         InitializeComponent();
+        ResponsiveWindow.FitToWorkArea(this, 1180, 760);
         DataContext = this;
     }
 
@@ -23,6 +24,11 @@ public partial class LibraryWindow : Window
     private async void Window_Activated(object? sender, EventArgs e)
     {
         if (!isRefreshing) await LoadAsync();
+    }
+
+    private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        SearchBanner.Visibility = ActualWidth < 920 ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private void Window_Closed(object? sender, EventArgs e)

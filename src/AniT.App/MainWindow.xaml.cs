@@ -19,6 +19,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        ResponsiveWindow.FitToWorkArea(this, 1280, 780);
     }
 
     private async void AddLibraryFolder_Click(object sender, RoutedEventArgs e)

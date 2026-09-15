@@ -6,7 +6,11 @@ public partial class SetupShelfWindow : Window
 {
     private string? folderPath;
 
-    public SetupShelfWindow() => InitializeComponent();
+    public SetupShelfWindow()
+    {
+        InitializeComponent();
+        ResponsiveWindow.FitToWorkArea(this, 580, 430);
+    }
 
     private void ChooseFolder_Click(object sender, RoutedEventArgs e)
     {
