@@ -36,6 +36,7 @@ internal sealed class MpcHcBridge : IDisposable
     public event EventHandler<Core.PlayerState>? StateChanged;
     public event EventHandler<string>? NowPlaying;
     public event EventHandler<TimeSpan?>? Disconnected;
+    public event EventHandler<string>? Diagnostic;
 
     public MpcHcBridge()
     {
@@ -58,11 +59,13 @@ internal sealed class MpcHcBridge : IDisposable
 
         var process = Process.Start(new ProcessStartInfo(executablePath, $"/slave {hostWindow.Handle}") { UseShellExecute = false });
         if (process is null) throw new InvalidOperationException("Não foi possível iniciar o MPC-HC.");
+        Trace($"MPC-HC iniciado; aguardando conexão (PID {process.Id}).");
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(10));
         using var registration = timeout.Token.Register(() => pendingConnection.TrySetCanceled(timeout.Token));
         playerWindow = await pendingConnection.Task;
+        Trace($"Conectado ao HWND {playerWindow}.");
     }
 
     public void OpenFile(string path, TimeSpan? startPosition)
@@ -70,16 +73,22 @@ internal sealed class MpcHcBridge : IDisposable
         pendingStartPosition = startPosition;
         lastPosition = null;
         duration = null;
+        Trace($"Abrindo arquivo: {path}; posição para retomar: {startPosition?.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture) ?? "0"}s.");
         Send(CmdOpenFile, path);
     }
 
     public void Pause() => Send(CmdPause);
     public void Play() => Send(CmdPlay);
-    public void Seek(TimeSpan position) => Send(CmdSetPosition, position.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture));
+    public void Seek(TimeSpan position)
+    {
+        Trace($"Enviando seek: {position.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture)}s.");
+        Send(CmdSetPosition, position.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture));
+    }
 
     public async Task<TimeSpan> GetPositionAsync(CancellationToken cancellationToken)
     {
         positionRequest = new TaskCompletionSource<TimeSpan>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Trace("Solicitando posição atual.");
         Send(CmdGetCurrentPosition);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(2));
@@ -106,7 +115,8 @@ internal sealed class MpcHcBridge : IDisposable
                 if (long.TryParse(payload, NumberStyles.Integer, CultureInfo.InvariantCulture, out var handle)) connection?.TrySetResult(new IntPtr(handle));
                 break;
             case CmdState:
-                if (payload == "2" && pendingStartPosition is { } position) { Seek(position); pendingStartPosition = null; }
+                Trace($"Estado de carregamento: {payload}.");
+                if (payload == "2") ApplyPendingSeek();
                 break;
             case CmdPlayMode:
                 StateChanged?.Invoke(this, payload switch { "0" => global::AniT.Core.PlayerState.Playing, "1" => global::AniT.Core.PlayerState.Paused, _ => global::AniT.Core.PlayerState.Stopped });
@@ -114,6 +124,8 @@ internal sealed class MpcHcBridge : IDisposable
             case CmdNowPlaying:
                 var parts = payload.Split('|');
                 if (parts.Length >= 5 && double.TryParse(parts[4], NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds)) duration = TimeSpan.FromSeconds(seconds);
+                Trace($"Arquivo carregado; duração: {duration?.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture) ?? "desconhecida"}s.");
+                ApplyPendingSeek();
                 NowPlaying?.Invoke(this, payload);
                 break;
             case CmdCurrentPosition:
@@ -122,6 +134,7 @@ internal sealed class MpcHcBridge : IDisposable
                 {
                     var value = TimeSpan.FromSeconds(current);
                     lastPosition = value;
+                    Trace($"Posição recebida: {current.ToString("0.###", CultureInfo.InvariantCulture)}s.");
                     positionRequest?.TrySetResult(value);
                     PositionReceived?.Invoke(this, value);
                 }
@@ -130,12 +143,22 @@ internal sealed class MpcHcBridge : IDisposable
                 EndOfStream?.Invoke(this, EventArgs.Empty);
                 break;
             case CmdDisconnect:
+                Trace($"MPC-HC desconectado; última posição: {lastPosition?.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture) ?? "indisponível"}s.");
                 Disconnected?.Invoke(this, lastPosition);
                 playerWindow = IntPtr.Zero;
                 connection = null;
                 break;
         }
     }
+
+    private void ApplyPendingSeek()
+    {
+        if (pendingStartPosition is not { } position || position <= TimeSpan.Zero) return;
+        Seek(position);
+        pendingStartPosition = null;
+    }
+
+    private void Trace(string message) => Diagnostic?.Invoke(this, message);
 
     private void Send(int command, string payload = "")
     {

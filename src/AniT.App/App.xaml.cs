@@ -40,6 +40,7 @@ public partial class App : Application
             MediaPlayer.PositionChanged += async (_, progress) => await PersistProgressAsync(progress);
             MediaPlayer.PlaybackEnded += async (_, _) => await CompleteActiveEpisodeAsync();
             MediaPlayer.PlaybackClosed += async (_, progress) => await PersistProgressAsync(progress, force: true);
+            MediaPlayer.Diagnostic += (_, message) => WritePlaybackLog($"[MPC] {message}");
         }
 
         var dashboard = new DashboardWindow();
@@ -73,6 +74,7 @@ public partial class App : Application
 
         activeEpisodeId = episodeId;
         TimeSpan? resumeAt = episode.PlaybackProgress is { PositionSeconds: > 0 } progress ? TimeSpan.FromSeconds(progress.PositionSeconds) : null;
+        WritePlaybackLog($"[DB] Episódio {episodeId}: retomando de {resumeAt?.TotalSeconds.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? "0"}s.");
         await MediaPlayer.PlayAsync(episode.MediaFile, resumeAt);
         activePlaybackStartPosition = resumeAt ?? TimeSpan.Zero;
         activePlaybackStartedAt = DateTimeOffset.UtcNow;
@@ -120,10 +122,12 @@ public partial class App : Application
             savedProgress.LastPlayedAt = DateTimeOffset.UtcNow;
             if (episode.Status == global::AniT.Core.WatchStatus.NotStarted) episode.Status = global::AniT.Core.WatchStatus.Watching;
             await context.SaveChangesAsync();
+            WritePlaybackLog($"[DB] Episódio {episodeId}: salvo em {savedProgress.PositionSeconds.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)}s.");
         }
         catch (Exception exception)
         {
             System.Diagnostics.Debug.WriteLine($"AniT could not persist playback progress: {exception}");
+            WritePlaybackLog($"[ERRO] Falha ao salvar o progresso: {exception.Message}");
         }
         finally
         {
@@ -137,7 +141,7 @@ public partial class App : Application
         {
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+                await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
                 TimeSpan position;
                 try
                 {
@@ -181,6 +185,20 @@ public partial class App : Application
             });
         }
         await context.SaveChangesAsync();
+        WritePlaybackLog($"[DB] Episódio {episodeId}: checkpoint criado em 0s.");
+    }
+
+    private static void WritePlaybackLog(string message)
+    {
+        try
+        {
+            var path = global::System.IO.Path.Combine(global::System.IO.Path.GetDirectoryName(databasePath)!, "player.log");
+            global::System.IO.File.AppendAllText(path, $"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss.fff} {message}{Environment.NewLine}");
+        }
+        catch
+        {
+            // Diagnostics must never disrupt playback.
+        }
     }
 
     private static async Task CompleteActiveEpisodeAsync()

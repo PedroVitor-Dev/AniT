@@ -13,6 +13,7 @@ public sealed class MpcHcPlayer : IMediaPlayer, IDisposable
     public event EventHandler<PlaybackPositionChangedEventArgs>? PositionChanged;
     public event EventHandler? PlaybackEnded;
     public event EventHandler<PlaybackPositionChangedEventArgs>? PlaybackClosed;
+    public event EventHandler<string>? Diagnostic;
 
     public MpcHcPlayer(string executablePath)
     {
@@ -21,6 +22,7 @@ public sealed class MpcHcPlayer : IMediaPlayer, IDisposable
         bridge.EndOfStream += (_, _) => PlaybackEnded?.Invoke(this, EventArgs.Empty);
         bridge.Disconnected += (_, position) => PlaybackClosed?.Invoke(this, new PlaybackPositionChangedEventArgs(position ?? TimeSpan.Zero, bridge.Duration));
         bridge.StateChanged += (_, newState) => state = newState;
+        bridge.Diagnostic += (_, message) => Diagnostic?.Invoke(this, message);
     }
 
     public async Task PlayAsync(MediaFile file, TimeSpan? position, CancellationToken cancellationToken = default)
