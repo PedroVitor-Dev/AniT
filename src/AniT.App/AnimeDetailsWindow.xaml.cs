@@ -40,7 +40,10 @@ public partial class AnimeDetailsWindow : Window
         Initial = anime.Title[..1].ToUpperInvariant();
         var allEpisodes = anime.Seasons.SelectMany(season => season.Episodes).OrderBy(episode => episode.Season!.Number).ThenBy(episode => episode.Number).ToList();
         var watched = allEpisodes.Count(episode => episode.Status == global::AniT.Core.WatchStatus.Completed);
-        Summary = watched == 0 ? "Ainda não iniciado" : $"{watched} de {allEpisodes.Count} episódios assistidos";
+        var watching = allEpisodes.Count(episode => episode.Status == global::AniT.Core.WatchStatus.Watching || episode.PlaybackProgress is { PositionSeconds: > 0 });
+        Summary = watching > 0
+            ? $"{watching} episódio{(watching == 1 ? string.Empty : "s")} em andamento"
+            : watched == 0 ? "Ainda não iniciado" : $"{watched} de {allEpisodes.Count} episódios assistidos";
         EpisodeCountLabel = $"{allEpisodes.Count} episódios";
         PlayNextLabel = allEpisodes.Any(episode => episode.Status == global::AniT.Core.WatchStatus.Watching)
             ? "▶  Continuar assistindo"
