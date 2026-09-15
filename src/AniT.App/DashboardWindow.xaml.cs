@@ -195,6 +195,45 @@ public partial class DashboardWindow : Window
     {
         if (SearchHint is not null) SearchHint.Visibility = string.IsNullOrEmpty(SearchBox.Text) ? Visibility.Visible : Visibility.Collapsed;
     }
+
+    private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (SidebarColumn is null || CalendarColumn is null || SessionCardColumn is null) return;
+
+        if (e.NewSize.Width < 1160)
+        {
+            SidebarColumn.Width = new GridLength(178);
+            CalendarColumn.Width = new GridLength(270);
+            SessionCardColumn.Width = new GridLength(215);
+            SearchContainer.MaxWidth = 330;
+            CollectionsTopButton.Visibility = Visibility.Collapsed;
+            MyListTopButton.Visibility = Visibility.Collapsed;
+            HeroQuote.Visibility = Visibility.Collapsed;
+            HeroTitleText.FontSize = 29;
+        }
+        else if (e.NewSize.Width < 1450)
+        {
+            SidebarColumn.Width = new GridLength(220);
+            CalendarColumn.Width = new GridLength(350);
+            SessionCardColumn.Width = new GridLength(235);
+            SearchContainer.MaxWidth = 430;
+            CollectionsTopButton.Visibility = Visibility.Collapsed;
+            MyListTopButton.Visibility = Visibility.Visible;
+            HeroQuote.Visibility = Visibility.Visible;
+            HeroTitleText.FontSize = 34;
+        }
+        else
+        {
+            SidebarColumn.Width = new GridLength(240);
+            CalendarColumn.Width = new GridLength(420);
+            SessionCardColumn.Width = new GridLength(260);
+            SearchContainer.MaxWidth = 520;
+            CollectionsTopButton.Visibility = Visibility.Visible;
+            MyListTopButton.Visibility = Visibility.Visible;
+            HeroQuote.Visibility = Visibility.Visible;
+            HeroTitleText.FontSize = 38;
+        }
+    }
 }
 
 public sealed record DashboardCard(
