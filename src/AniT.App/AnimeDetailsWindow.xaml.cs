@@ -1,0 +1,83 @@
+using Microsoft.EntityFrameworkCore;
+using System.Collections.ObjectModel;
+using System.Windows;
+using System.Windows.Controls;
+
+namespace AniT.App;
+
+public partial class AnimeDetailsWindow : Window
+{
+    private readonly Guid animeId;
+    public ObservableCollection<EpisodeItem> Episodes { get; } = [];
+    public string AnimeTitle { get; private set; } = string.Empty;
+    public string Initial { get; private set; } = "?";
+    public string Summary { get; private set; } = string.Empty;
+    public string EpisodeCountLabel { get; private set; } = string.Empty;
+
+    public AnimeDetailsWindow(Guid animeId)
+    {
+        this.animeId = animeId;
+        InitializeComponent();
+        DataContext = this;
+    }
+
+    private async void Window_Loaded(object sender, RoutedEventArgs e) => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var anime = await App.Database.Anime
+            .Include(item => item.Seasons)
+            .ThenInclude(season => season.Episodes)
+            .ThenInclude(episode => episode.PlaybackProgress)
+            .FirstOrDefaultAsync(item => item.Id == animeId);
+        if (anime is null) return;
+
+        AnimeTitle = anime.Title;
+        Initial = anime.Title[..1].ToUpperInvariant();
+        var allEpisodes = anime.Seasons.SelectMany(season => season.Episodes).OrderBy(episode => episode.Season!.Number).ThenBy(episode => episode.Number).ToList();
+        var watched = allEpisodes.Count(episode => episode.Status == global::AniT.Core.WatchStatus.Completed);
+        Summary = watched == 0 ? "Ainda não iniciado" : $"{watched} de {allEpisodes.Count} episódios assistidos";
+        EpisodeCountLabel = $"{allEpisodes.Count} episódios";
+        Episodes.Clear();
+        foreach (var episode in allEpisodes)
+        {
+            var progress = episode.PlaybackProgress;
+            var percent = progress is { DurationSeconds: > 0 } ? progress.PositionSeconds / progress.DurationSeconds * 100 : 0;
+            Episodes.Add(new EpisodeItem(episode.Id, episode.Number.ToString("00"), episode.Title ?? $"Episódio {episode.Number}", episode.Status, percent));
+        }
+    }
+
+    private async void MarkWatched_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: Guid episodeId }) return;
+        var episode = await App.Database.Episodes.FindAsync(episodeId);
+        if (episode is null) return;
+        episode.Status = global::AniT.Core.WatchStatus.Completed;
+        episode.WatchedAt = DateTimeOffset.UtcNow;
+        await App.Database.SaveChangesAsync();
+        await LoadAsync();
+    }
+
+    private void PlayNext_Click(object sender, RoutedEventArgs e) =>
+        MessageBox.Show("A integração com o MPC-HC será o próximo marco. O AniT já está preparado para registrar o progresso.", "MPC-HC integrado", MessageBoxButton.OK, MessageBoxImage.Information);
+}
+
+public sealed record EpisodeItem(Guid Id, string Number, string Title, global::AniT.Core.WatchStatus Status, double ProgressPercent)
+{
+    public string StatusLabel => Status switch
+    {
+        global::AniT.Core.WatchStatus.Completed => "✓ Assistido",
+        global::AniT.Core.WatchStatus.Watching => "▶ Assistindo",
+        _ => "○ Não assistido"
+    };
+
+    public string StatusColor => Status switch
+    {
+        global::AniT.Core.WatchStatus.Completed => "#79D89A",
+        global::AniT.Core.WatchStatus.Watching => "#F5B75B",
+        _ => "#9299AA"
+    };
+
+    public string ProgressLabel => Status == global::AniT.Core.WatchStatus.Completed ? "Concluído" : ProgressPercent > 0 ? $"{ProgressPercent:0}% assistido" : "Não iniciado";
+    public Visibility MarkWatchedVisibility => Status == global::AniT.Core.WatchStatus.Completed ? Visibility.Collapsed : Visibility.Visible;
+}

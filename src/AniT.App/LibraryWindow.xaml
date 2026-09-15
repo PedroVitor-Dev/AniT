@@ -22,7 +22,7 @@
                     <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Button Style="{StaticResource AnimeCard}" Width="210" Height="292" Margin="0,0,19,20">
+                            <Button Style="{StaticResource AnimeCard}" Width="210" Height="292" Margin="0,0,19,20" Click="AnimeCard_Click">
                                 <Grid>
                                     <Grid.RowDefinitions><RowDefinition Height="178"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                                     <Border Background="#292D39" CornerRadius="11,11,0,0">

@@ -28,6 +28,7 @@ public partial class LibraryWindow : Window
             var episodes = item.Seasons.SelectMany(season => season.Episodes).ToList();
             var watched = episodes.Count(episode => episode.Status == global::AniT.Core.WatchStatus.Completed);
             Anime.Add(new AnimeLibraryItem(
+                item.Id,
                 item.Title,
                 string.IsNullOrWhiteSpace(item.Title) ? "?" : item.Title[..1].ToUpperInvariant(),
                 $"{episodes.Count} episódio(s)",
@@ -37,6 +38,13 @@ public partial class LibraryWindow : Window
 
         EmptyState.Visibility = Anime.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
+
+    private void AnimeCard_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.Button { DataContext: AnimeLibraryItem anime }) return;
+        var details = new AnimeDetailsWindow(anime.Id) { Owner = this };
+        details.ShowDialog();
+    }
 }
 
-public sealed record AnimeLibraryItem(string Title, string Initial, string EpisodeSummary, string Status, double ProgressPercent);
+public sealed record AnimeLibraryItem(Guid Id, string Title, string Initial, string EpisodeSummary, string Status, double ProgressPercent);
