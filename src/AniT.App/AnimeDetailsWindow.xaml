@@ -4,7 +4,7 @@
         Title="Anime · AniT" Width="1050" Height="760" MinWidth="850" MinHeight="600"
         Background="#101114" WindowStartupLocation="CenterOwner" Loaded="Window_Loaded">
     <Window.Resources>
-        <Style x:Key="EpisodeRow" TargetType="Border"><Setter Property="Background" Value="#1A1D24"/><Setter Property="BorderBrush" Value="#2B2F39"/><Setter Property="BorderThickness" Value="0,0,0,1"/><Setter Property="Padding" Value="18,15"/></Style>
+        <Style x:Key="EpisodeRow" TargetType="Border"><Setter Property="Background" Value="#1A1D24"/><Setter Property="BorderBrush" Value="#2B2F39"/><Setter Property="BorderThickness" Value="0,0,0,1"/><Setter Property="Padding" Value="18,15"/><Setter Property="Cursor" Value="Hand"/><EventSetter Event="MouseLeftButtonUp" Handler="EpisodeRow_Click"/></Style>
         <Style x:Key="ActionButton" TargetType="Button"><Setter Property="Background" Value="#F56B48"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Padding" Value="16,8"/><Setter Property="Cursor" Value="Hand"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border Background="{TemplateBinding Background}" CornerRadius="7" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/></Border></ControlTemplate></Setter.Value></Setter></Style>
     </Window.Resources>
     <Grid>

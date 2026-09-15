@@ -45,6 +45,8 @@ public partial class AnimeDetailsWindow : Window
             var percent = progress is { DurationSeconds: > 0 } ? progress.PositionSeconds / progress.DurationSeconds * 100 : 0;
             Episodes.Add(new EpisodeItem(episode.Id, episode.Number.ToString("00"), episode.Title ?? $"Episódio {episode.Number}", episode.Status, percent));
         }
+        DataContext = null;
+        DataContext = this;
     }
 
     private async void MarkWatched_Click(object sender, RoutedEventArgs e)
@@ -56,6 +58,20 @@ public partial class AnimeDetailsWindow : Window
         episode.WatchedAt = DateTimeOffset.UtcNow;
         await App.Database.SaveChangesAsync();
         await LoadAsync();
+    }
+
+    private async void EpisodeRow_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (e.OriginalSource is Button) return;
+        if (sender is not FrameworkElement { DataContext: EpisodeItem episode }) return;
+        try
+        {
+            await App.PlayEpisodeAsync(episode.Id);
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(exception.Message, "Não foi possível iniciar o player", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private async void PlayNext_Click(object sender, RoutedEventArgs e)
@@ -87,8 +103,8 @@ public sealed record EpisodeItem(Guid Id, string Number, string Title, global::A
     public string StatusLabel => Status switch
     {
         global::AniT.Core.WatchStatus.Completed => "✓ Assistido",
-        global::AniT.Core.WatchStatus.Watching => "▶ Assistindo",
-        _ => "○ Não assistido"
+        global::AniT.Core.WatchStatus.Watching => "▶ Continuar",
+        _ => "▶ Assistir"
     };
 
     public string StatusColor => Status switch
