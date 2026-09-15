@@ -17,6 +17,8 @@ public partial class App : Application
     private static CancellationTokenSource? playbackMonitorCancellation;
     private static readonly SemaphoreSlim playbackPersistenceLock = new(1, 1);
     private static string databasePath = string.Empty;
+    private static DateTimeOffset activePlaybackStartedAt;
+    private static TimeSpan activePlaybackStartPosition;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -63,6 +65,9 @@ public partial class App : Application
         activeEpisodeId = episodeId;
         TimeSpan? resumeAt = episode.PlaybackProgress is { PositionSeconds: > 0 } progress ? TimeSpan.FromSeconds(progress.PositionSeconds) : null;
         await MediaPlayer.PlayAsync(episode.MediaFile, resumeAt);
+        activePlaybackStartPosition = resumeAt ?? TimeSpan.Zero;
+        activePlaybackStartedAt = DateTimeOffset.UtcNow;
+        await MarkEpisodeAsWatchingAsync(episodeId);
         playbackMonitorCancellation?.Cancel();
         playbackMonitorCancellation = new CancellationTokenSource();
         _ = MonitorPlaybackAsync(playbackMonitorCancellation.Token);
@@ -85,8 +90,18 @@ public partial class App : Application
             using var context = global::AniT.Infrastructure.AniTDatabase.Create(databasePath);
             var episode = await context.Episodes.Include(item => item.PlaybackProgress).FirstOrDefaultAsync(item => item.Id == episodeId);
             if (episode is null) return;
+            var position = progress.Position;
+            if (position == TimeSpan.Zero && activePlaybackStartedAt != default)
+            {
+                position = activePlaybackStartPosition + (DateTimeOffset.UtcNow - activePlaybackStartedAt);
+            }
+            else if (progress.Position > TimeSpan.Zero)
+            {
+                activePlaybackStartPosition = progress.Position;
+                activePlaybackStartedAt = DateTimeOffset.UtcNow;
+            }
             episode.PlaybackProgress ??= new global::AniT.Core.PlaybackProgress { EpisodeId = episodeId };
-            episode.PlaybackProgress.PositionSeconds = progress.Position.TotalSeconds;
+            episode.PlaybackProgress.PositionSeconds = position.TotalSeconds;
             episode.PlaybackProgress.DurationSeconds = progress.Duration?.TotalSeconds ?? 0;
             episode.PlaybackProgress.LastPlayedAt = DateTimeOffset.UtcNow;
             if (episode.Status == global::AniT.Core.WatchStatus.NotStarted) episode.Status = global::AniT.Core.WatchStatus.Watching;
@@ -109,7 +124,15 @@ public partial class App : Application
             try
             {
                 await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
-                var position = await MediaPlayer.GetPositionAsync(cancellationToken);
+                TimeSpan position;
+                try
+                {
+                    position = await MediaPlayer.GetPositionAsync(cancellationToken);
+                }
+                catch
+                {
+                    position = activePlaybackStartPosition + (DateTimeOffset.UtcNow - activePlaybackStartedAt);
+                }
                 await PersistProgressAsync(new global::AniT.Core.PlaybackPositionChangedEventArgs(position, null));
             }
             catch (OperationCanceledException)
@@ -122,6 +145,15 @@ public partial class App : Application
                 return;
             }
         }
+    }
+
+    private static async Task MarkEpisodeAsWatchingAsync(Guid episodeId)
+    {
+        using var context = global::AniT.Infrastructure.AniTDatabase.Create(databasePath);
+        var episode = await context.Episodes.FirstOrDefaultAsync(item => item.Id == episodeId);
+        if (episode is null || episode.Status == global::AniT.Core.WatchStatus.Completed) return;
+        episode.Status = global::AniT.Core.WatchStatus.Watching;
+        await context.SaveChangesAsync();
     }
 
     private static async Task CompleteActiveEpisodeAsync()
