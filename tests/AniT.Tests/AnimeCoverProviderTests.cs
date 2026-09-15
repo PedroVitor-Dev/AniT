@@ -162,9 +162,11 @@ public sealed class AnimeCoverProviderTests
                 forceRefresh: true);
 
             Assert.Equal("Anime AzurLane: Slow Ahead! Season 2", result.EnglishTitle);
-            Assert.Equal(staleCover, result.CoverPath);
+            Assert.NotEqual(staleCover, result.CoverPath);
+            Assert.StartsWith(Path.Combine(directory, $"{animeId:N}-"), result.CoverPath);
             Assert.True(requestedCover);
-            Assert.Equal(0x02, (await File.ReadAllBytesAsync(staleCover))[2]);
+            Assert.Equal(0x01, (await File.ReadAllBytesAsync(staleCover))[2]);
+            Assert.Equal(0x02, (await File.ReadAllBytesAsync(result.CoverPath!))[2]);
         }
         finally
         {

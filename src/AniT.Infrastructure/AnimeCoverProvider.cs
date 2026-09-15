@@ -95,7 +95,12 @@ public sealed partial class AnimeCoverProvider
             var resolvedCoverPath = existingCoverPath;
             if (resolvedCoverUrl is not null && (forceRefresh || resolvedCoverPath is null))
             {
-                resolvedCoverPath = await DownloadCoverAsync(resolvedCoverUrl, cachedPath, cancellationToken) ?? existingCoverPath;
+                // WPF keeps image files open while they are visible. A forced refresh must not
+                // overwrite that locked file; download a new version and switch the DB reference.
+                var downloadPath = forceRefresh
+                    ? Path.Combine(coversDirectory, $"{animeId:N}-{DateTimeOffset.UtcNow:yyyyMMddHHmmssfff}.jpg")
+                    : cachedPath;
+                resolvedCoverPath = await DownloadCoverAsync(resolvedCoverUrl, downloadPath, cancellationToken) ?? existingCoverPath;
             }
 
             return new AnimeMetadataResult(resolvedEnglishTitle, resolvedCoverPath, resolvedSynopsis, resolvedCriticScore);
