@@ -30,7 +30,11 @@ public partial class DashboardWindow : Window
         DataContext = this;
     }
 
-    private async void Window_Loaded(object sender, RoutedEventArgs e) => await RefreshAsync();
+    private async void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        UpdateResponsiveLayout(ActualWidth, ActualHeight);
+        await RefreshAsync();
+    }
     private async void Window_Activated(object? sender, EventArgs e) => await RefreshAsync();
 
     public async Task RefreshAsync()
@@ -198,9 +202,26 @@ public partial class DashboardWindow : Window
 
     private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        if (SidebarColumn is null || CalendarColumn is null || SessionCardColumn is null) return;
+        UpdateResponsiveLayout(e.NewSize.Width, e.NewSize.Height);
+    }
 
-        if (e.NewSize.Width < 1160)
+    private void UpdateResponsiveLayout(double width, double height)
+    {
+        if (SidebarColumn is null || CalendarColumn is null || SessionCardColumn is null || InterfaceScale is null) return;
+
+        // WPF works in device-independent pixels. On ultrawide/high-resolution displays,
+        // fluid columns alone only stretch the empty space while text and cards stay tiny.
+        // Scale the complete visual system using both axes, then make breakpoint decisions
+        // with the logical width that remains available after that scale.
+        var widthScale = width / 1380d;
+        var heightScale = height / 860d;
+        var scale = Math.Clamp(Math.Min(widthScale, heightScale), 0.82d, 1.45d);
+        InterfaceScale.ScaleX = scale;
+        InterfaceScale.ScaleY = scale;
+
+        var logicalWidth = width / scale;
+
+        if (logicalWidth < 1160)
         {
             SidebarColumn.Width = new GridLength(178);
             CalendarColumn.Width = new GridLength(235);
@@ -211,7 +232,7 @@ public partial class DashboardWindow : Window
             HeroQuote.Visibility = Visibility.Collapsed;
             HeroTitleText.FontSize = 29;
         }
-        else if (e.NewSize.Width < 1450)
+        else if (logicalWidth < 1450)
         {
             SidebarColumn.Width = new GridLength(220);
             CalendarColumn.Width = new GridLength(300);
