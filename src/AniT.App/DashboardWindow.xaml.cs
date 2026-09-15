@@ -26,13 +26,15 @@ public partial class DashboardWindow : Window
     }
 
     private async void Window_Loaded(object sender, RoutedEventArgs e) => await RefreshAsync();
+    private async void Window_Activated(object? sender, EventArgs e) => await RefreshAsync();
 
     public async Task RefreshAsync()
     {
-        var animeCount = await App.Database.Anime.CountAsync();
-        var episodeCount = await App.Database.Episodes.CountAsync();
-        var completedCount = await App.Database.Episodes.CountAsync(episode => episode.Status == global::AniT.Core.WatchStatus.Completed);
-        var recent = (await App.Database.Anime
+        await using var context = App.OpenFreshDatabase();
+        var animeCount = await context.Anime.CountAsync();
+        var episodeCount = await context.Episodes.CountAsync();
+        var completedCount = await context.Episodes.CountAsync(episode => episode.Status == global::AniT.Core.WatchStatus.Completed);
+        var recent = (await context.Anime
                 .Select(anime => new { anime.Title, anime.CreatedAt })
                 .ToListAsync())
             .OrderByDescending(anime => anime.CreatedAt)
@@ -44,9 +46,10 @@ public partial class DashboardWindow : Window
         CompletedCountText.Text = completedCount.ToString();
         WelcomeText.Text = animeCount == 0 ? "Sua estante está pronta para começar." : "Sua estante está atualizada.";
         RecentText.Text = recent.Count == 0 ? "Nenhum anime reconhecido ainda. Você pode adicionar outra pasta em Configurar estante." : string.Join("  ·  ", recent);
-        var watchingEpisodes = await App.Database.Episodes
+        var watchingEpisodes = await context.Episodes
             .Where(episode => episode.Status == global::AniT.Core.WatchStatus.Watching)
             .Include(episode => episode.PlaybackProgress)
+            .AsNoTracking()
             .ToListAsync();
         var currentEpisode = watchingEpisodes.OrderByDescending(episode => episode.PlaybackProgress?.LastPlayedAt).FirstOrDefault();
         continueEpisodeId = currentEpisode?.Id;

@@ -20,6 +20,13 @@ public partial class App : Application
     private static DateTimeOffset activePlaybackStartedAt;
     private static TimeSpan activePlaybackStartPosition;
 
+    /// <summary>
+    /// Creates a short-lived database context for values that can be changed while a player is open.
+    /// The application-level context is useful for normal screens, but it must not be used to read
+    /// playback progress after the player has written it from its background callback.
+    /// </summary>
+    public static global::AniT.Infrastructure.AniTDbContext OpenFreshDatabase() => global::AniT.Infrastructure.AniTDatabase.Create(databasePath);
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -54,10 +61,12 @@ public partial class App : Application
     public static async Task PlayEpisodeAsync(Guid episodeId)
     {
         if (MediaPlayer is null) throw new InvalidOperationException("O MPC-HC integrado não foi encontrado. Reinstale o AniT ou escolha outro player nas configurações.");
-        var episode = await Database.Episodes
+        await using var context = OpenFreshDatabase();
+        var episode = await context.Episodes
             .Include(item => item.MediaFile)
             .ThenInclude(file => file!.LibraryRoot)
             .Include(item => item.PlaybackProgress)
+            .AsNoTracking()
             .FirstOrDefaultAsync(item => item.Id == episodeId)
             ?? throw new InvalidOperationException("O episódio não existe mais na biblioteca.");
         if (episode.MediaFile is null) throw new InvalidOperationException("Este episódio ainda não possui um arquivo de mídia associado.");
@@ -87,7 +96,7 @@ public partial class App : Application
         {
             if (activeEpisodeId is not { } episodeId || (!force && DateTimeOffset.UtcNow - lastProgressWrite < TimeSpan.FromSeconds(5))) return;
             lastProgressWrite = DateTimeOffset.UtcNow;
-            using var context = global::AniT.Infrastructure.AniTDatabase.Create(databasePath);
+            await using var context = OpenFreshDatabase();
             var episode = await context.Episodes.Include(item => item.PlaybackProgress).FirstOrDefaultAsync(item => item.Id == episodeId);
             if (episode is null) return;
             var position = progress.Position;
@@ -149,7 +158,7 @@ public partial class App : Application
 
     private static async Task MarkEpisodeAsWatchingAsync(Guid episodeId)
     {
-        using var context = global::AniT.Infrastructure.AniTDatabase.Create(databasePath);
+        await using var context = OpenFreshDatabase();
         var episode = await context.Episodes.FirstOrDefaultAsync(item => item.Id == episodeId);
         if (episode is null || episode.Status == global::AniT.Core.WatchStatus.Completed) return;
         episode.Status = global::AniT.Core.WatchStatus.Watching;
@@ -162,7 +171,7 @@ public partial class App : Application
         try
         {
             if (activeEpisodeId is not { } episodeId) return;
-            using var context = global::AniT.Infrastructure.AniTDatabase.Create(databasePath);
+            await using var context = OpenFreshDatabase();
             var episode = await context.Episodes.Include(item => item.PlaybackProgress).FirstOrDefaultAsync(item => item.Id == episodeId);
             if (episode is null) return;
             episode.Status = global::AniT.Core.WatchStatus.Completed;

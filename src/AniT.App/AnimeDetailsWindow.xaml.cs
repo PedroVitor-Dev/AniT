@@ -13,6 +13,7 @@ public partial class AnimeDetailsWindow : Window
     public string Initial { get; private set; } = "?";
     public string Summary { get; private set; } = string.Empty;
     public string EpisodeCountLabel { get; private set; } = string.Empty;
+    public string PlayNextLabel { get; private set; } = "▶  Assistir próximo episódio";
 
     public AnimeDetailsWindow(Guid animeId)
     {
@@ -22,13 +23,16 @@ public partial class AnimeDetailsWindow : Window
     }
 
     private async void Window_Loaded(object sender, RoutedEventArgs e) => await LoadAsync();
+    private async void Window_Activated(object? sender, EventArgs e) => await LoadAsync();
 
     private async Task LoadAsync()
     {
-        var anime = await App.Database.Anime
+        await using var context = App.OpenFreshDatabase();
+        var anime = await context.Anime
             .Include(item => item.Seasons)
             .ThenInclude(season => season.Episodes)
             .ThenInclude(episode => episode.PlaybackProgress)
+            .AsNoTracking()
             .FirstOrDefaultAsync(item => item.Id == animeId);
         if (anime is null) return;
 
@@ -38,6 +42,9 @@ public partial class AnimeDetailsWindow : Window
         var watched = allEpisodes.Count(episode => episode.Status == global::AniT.Core.WatchStatus.Completed);
         Summary = watched == 0 ? "Ainda não iniciado" : $"{watched} de {allEpisodes.Count} episódios assistidos";
         EpisodeCountLabel = $"{allEpisodes.Count} episódios";
+        PlayNextLabel = allEpisodes.Any(episode => episode.Status == global::AniT.Core.WatchStatus.Watching)
+            ? "▶  Continuar assistindo"
+            : "▶  Assistir próximo episódio";
         Episodes.Clear();
         foreach (var episode in allEpisodes)
         {
@@ -52,7 +59,8 @@ public partial class AnimeDetailsWindow : Window
     private async void ToggleWatched_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button { Tag: Guid episodeId }) return;
-        var episode = await App.Database.Episodes.FindAsync(episodeId);
+        await using var context = App.OpenFreshDatabase();
+        var episode = await context.Episodes.FindAsync(episodeId);
         if (episode is null) return;
         if (episode.Status == global::AniT.Core.WatchStatus.Completed)
         {
@@ -64,7 +72,7 @@ public partial class AnimeDetailsWindow : Window
             episode.Status = global::AniT.Core.WatchStatus.Completed;
             episode.WatchedAt = DateTimeOffset.UtcNow;
         }
-        await App.Database.SaveChangesAsync();
+        await context.SaveChangesAsync();
         await LoadAsync();
     }
 
@@ -84,10 +92,12 @@ public partial class AnimeDetailsWindow : Window
 
     private async void PlayNext_Click(object sender, RoutedEventArgs e)
     {
-        var nextEpisode = await App.Database.Episodes
+        await using var context = App.OpenFreshDatabase();
+        var nextEpisode = await context.Episodes
             .Where(episode => episode.Season!.AnimeId == animeId && episode.Status != global::AniT.Core.WatchStatus.Completed)
             .OrderBy(episode => episode.Season!.Number)
             .ThenBy(episode => episode.Number)
+            .AsNoTracking()
             .FirstOrDefaultAsync();
         if (nextEpisode is null)
         {
