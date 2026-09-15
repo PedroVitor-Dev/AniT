@@ -57,4 +57,10 @@ public partial class MainWindow : Window
             StatusText.Text = $"Não foi possível analisar a pasta: {exception.Message}";
         }
     }
+
+    private void OpenLibrary_Click(object sender, RoutedEventArgs e)
+    {
+        var library = new LibraryWindow { Owner = this };
+        library.ShowDialog();
+    }
 }
