@@ -19,6 +19,9 @@
     <Resource Include="..\..\assets\baki-pi\Logo.png" Link="Assets\Logo.png" />
     <Resource Include="..\..\assets\baki-pi\Logo-sf.png" Link="Assets\Logo-sf.png" />
     <Resource Include="..\..\assets\logo-letter-white.png" Link="Assets\logo-letter-white.png" />
+    <Resource Include="..\..\assets\ghost_menu.png" Link="Assets\ghost_menu.png" />
+    <Resource Include="..\..\assets\ghost_popcorn.png" Link="Assets\ghost_popcorn.png" />
+    <Resource Include="..\..\assets\fire.png" Link="Assets\fire.png" />
     <Resource Include="..\..\assets\baki-pi\normal-sf.png" Link="Assets\normal-sf.png" />
     <Resource Include="..\..\assets\baki-pi\angry-sf.png" Link="Assets\angry-sf.png" />
     <Resource Include="..\..\assets\baki-pi\sad-sf.png" Link="Assets\sad-sf.png" />
