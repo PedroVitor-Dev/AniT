@@ -214,7 +214,10 @@ public partial class DashboardWindow : Window
         // Scale the complete visual system using both axes, then make breakpoint decisions
         // with the logical width that remains available after that scale.
         var widthScale = width / 1380d;
-        var heightScale = height / 860d;
+        // The dashboard contains four stacked content bands. Use their complete
+        // visual height as the vertical baseline so ultrawide windows show the
+        // final band instead of enlarging the upper bands beyond the viewport.
+        var heightScale = height / 1040d;
         var scale = Math.Clamp(Math.Min(widthScale, heightScale), 0.82d, 1.45d);
         InterfaceScale.ScaleX = scale;
         InterfaceScale.ScaleY = scale;
