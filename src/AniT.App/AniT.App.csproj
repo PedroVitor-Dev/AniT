@@ -18,6 +18,8 @@
     <Content Include="..\..\Player\MPC-HC\**\*" Link="Player\MPC-HC\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Resource Include="..\..\assets\baki-pi\Logo.png" Link="Assets\Logo.png" />
     <Resource Include="..\..\assets\baki-pi\Logo-sf.png" Link="Assets\Logo-sf.png" />
+    <Resource Include="..\..\assets\logo-letter-white.png" Link="Assets\logo-letter-white.png" />
+    <Resource Include="..\..\assets\baki-pi\normal-sf.png" Link="Assets\normal-sf.png" />
   </ItemGroup>
 
 </Project>
