@@ -203,7 +203,7 @@ public partial class DashboardWindow : Window
         if (e.NewSize.Width < 1160)
         {
             SidebarColumn.Width = new GridLength(178);
-            CalendarColumn.Width = new GridLength(270);
+            CalendarColumn.Width = new GridLength(235);
             SessionCardColumn.Width = new GridLength(215);
             SearchContainer.MaxWidth = 330;
             CollectionsTopButton.Visibility = Visibility.Collapsed;
@@ -214,7 +214,7 @@ public partial class DashboardWindow : Window
         else if (e.NewSize.Width < 1450)
         {
             SidebarColumn.Width = new GridLength(220);
-            CalendarColumn.Width = new GridLength(350);
+            CalendarColumn.Width = new GridLength(300);
             SessionCardColumn.Width = new GridLength(235);
             SearchContainer.MaxWidth = 430;
             CollectionsTopButton.Visibility = Visibility.Collapsed;
@@ -225,7 +225,7 @@ public partial class DashboardWindow : Window
         else
         {
             SidebarColumn.Width = new GridLength(240);
-            CalendarColumn.Width = new GridLength(420);
+            CalendarColumn.Width = new GridLength(340);
             SessionCardColumn.Width = new GridLength(260);
             SearchContainer.MaxWidth = 520;
             CollectionsTopButton.Visibility = Visibility.Visible;
