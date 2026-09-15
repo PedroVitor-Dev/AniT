@@ -9,7 +9,7 @@
         <Grid.ColumnDefinitions><ColumnDefinition Width="246"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
         <Border Background="#0A1020" BorderBrush="#253550" BorderThickness="0,0,1,0"><DockPanel Margin="14,18">
             <StackPanel DockPanel.Dock="Top">
-                <Image Source="Assets/logo-letter-white.png" Width="170" Height="58" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,7,0,39"/>
+                <Border Width="205" Height="72" HorizontalAlignment="Center" Margin="0,2,0,30"><Border.Background><ImageBrush ImageSource="Assets/logo-letter-white.png" Viewbox="0.04,0.20,0.92,0.45" ViewboxUnits="RelativeToBoundingBox" Stretch="Uniform"/></Border.Background></Border>
                 <TextBlock Text="NAVEGAÇÃO" Foreground="#607A9F" FontWeight="SemiBold" FontSize="10" Margin="13,0,0,8"/>
                 <Button Style="{StaticResource Nav}" Content="⌂   Visão geral" Foreground="White" Background="#1C365A"/>
                 <Button Style="{StaticResource Nav}" Content="▦   Biblioteca" Click="Library_Click"/>
