@@ -29,11 +29,13 @@ internal sealed class MpcHcBridge : IDisposable
     private IntPtr playerWindow;
     private TimeSpan? pendingStartPosition;
     private TimeSpan? duration;
+    private TimeSpan? lastPosition;
 
     public event EventHandler<TimeSpan>? PositionReceived;
     public event EventHandler? EndOfStream;
     public event EventHandler<Core.PlayerState>? StateChanged;
     public event EventHandler<string>? NowPlaying;
+    public event EventHandler<TimeSpan?>? Disconnected;
 
     public MpcHcBridge()
     {
@@ -66,6 +68,8 @@ internal sealed class MpcHcBridge : IDisposable
     public void OpenFile(string path, TimeSpan? startPosition)
     {
         pendingStartPosition = startPosition;
+        lastPosition = null;
+        duration = null;
         Send(CmdOpenFile, path);
     }
 
@@ -117,6 +121,7 @@ internal sealed class MpcHcBridge : IDisposable
                 if (double.TryParse(payload, NumberStyles.Float, CultureInfo.InvariantCulture, out var current))
                 {
                     var value = TimeSpan.FromSeconds(current);
+                    lastPosition = value;
                     positionRequest?.TrySetResult(value);
                     PositionReceived?.Invoke(this, value);
                 }
@@ -125,6 +130,7 @@ internal sealed class MpcHcBridge : IDisposable
                 EndOfStream?.Invoke(this, EventArgs.Empty);
                 break;
             case CmdDisconnect:
+                Disconnected?.Invoke(this, lastPosition);
                 playerWindow = IntPtr.Zero;
                 connection = null;
                 break;

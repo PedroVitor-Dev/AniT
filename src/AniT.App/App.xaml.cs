@@ -30,6 +30,7 @@ public partial class App : Application
             MediaPlayer = new global::AniT.Player.MpcHcPlayer(playerPath);
             MediaPlayer.PositionChanged += async (_, progress) => await PersistProgressAsync(progress);
             MediaPlayer.PlaybackEnded += async (_, _) => await CompleteActiveEpisodeAsync();
+            MediaPlayer.PlaybackClosed += async (_, progress) => await PersistProgressAsync(progress, force: true);
         }
 
         var dashboard = new DashboardWindow();
@@ -74,12 +75,12 @@ public partial class App : Application
         return global::System.IO.Path.GetFullPath(global::System.IO.Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Player", "MPC-HC", "mpc-hc64.exe"));
     }
 
-    private static async Task PersistProgressAsync(global::AniT.Core.PlaybackPositionChangedEventArgs progress)
+    private static async Task PersistProgressAsync(global::AniT.Core.PlaybackPositionChangedEventArgs progress, bool force = false)
     {
         await playbackPersistenceLock.WaitAsync();
         try
         {
-            if (activeEpisodeId is not { } episodeId || DateTimeOffset.UtcNow - lastProgressWrite < TimeSpan.FromSeconds(5)) return;
+            if (activeEpisodeId is not { } episodeId || (!force && DateTimeOffset.UtcNow - lastProgressWrite < TimeSpan.FromSeconds(5))) return;
             lastProgressWrite = DateTimeOffset.UtcNow;
             using var context = global::AniT.Infrastructure.AniTDatabase.Create(databasePath);
             var episode = await context.Episodes.Include(item => item.PlaybackProgress).FirstOrDefaultAsync(item => item.Id == episodeId);
@@ -107,7 +108,7 @@ public partial class App : Application
         {
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
                 var position = await MediaPlayer.GetPositionAsync(cancellationToken);
                 await PersistProgressAsync(new global::AniT.Core.PlaybackPositionChangedEventArgs(position, null));
             }

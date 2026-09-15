@@ -49,13 +49,21 @@ public partial class AnimeDetailsWindow : Window
         DataContext = this;
     }
 
-    private async void MarkWatched_Click(object sender, RoutedEventArgs e)
+    private async void ToggleWatched_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button { Tag: Guid episodeId }) return;
         var episode = await App.Database.Episodes.FindAsync(episodeId);
         if (episode is null) return;
-        episode.Status = global::AniT.Core.WatchStatus.Completed;
-        episode.WatchedAt = DateTimeOffset.UtcNow;
+        if (episode.Status == global::AniT.Core.WatchStatus.Completed)
+        {
+            episode.Status = global::AniT.Core.WatchStatus.NotStarted;
+            episode.WatchedAt = null;
+        }
+        else
+        {
+            episode.Status = global::AniT.Core.WatchStatus.Completed;
+            episode.WatchedAt = DateTimeOffset.UtcNow;
+        }
         await App.Database.SaveChangesAsync();
         await LoadAsync();
     }
@@ -115,5 +123,5 @@ public sealed record EpisodeItem(Guid Id, string Number, string Title, global::A
     };
 
     public string ProgressLabel => Status == global::AniT.Core.WatchStatus.Completed ? "Concluído" : ProgressPercent > 0 ? $"{ProgressPercent:0}% assistido" : "Não iniciado";
-    public Visibility MarkWatchedVisibility => Status == global::AniT.Core.WatchStatus.Completed ? Visibility.Collapsed : Visibility.Visible;
+    public string WatchedActionLabel => Status == global::AniT.Core.WatchStatus.Completed ? "Remover assistido" : "Marcar visto";
 }

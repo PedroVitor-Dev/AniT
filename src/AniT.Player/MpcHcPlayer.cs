@@ -12,12 +12,14 @@ public sealed class MpcHcPlayer : IMediaPlayer, IDisposable
 
     public event EventHandler<PlaybackPositionChangedEventArgs>? PositionChanged;
     public event EventHandler? PlaybackEnded;
+    public event EventHandler<PlaybackPositionChangedEventArgs>? PlaybackClosed;
 
     public MpcHcPlayer(string executablePath)
     {
         this.executablePath = executablePath;
         bridge.PositionReceived += (_, position) => PositionChanged?.Invoke(this, new PlaybackPositionChangedEventArgs(position, bridge.Duration));
         bridge.EndOfStream += (_, _) => PlaybackEnded?.Invoke(this, EventArgs.Empty);
+        bridge.Disconnected += (_, position) => PlaybackClosed?.Invoke(this, new PlaybackPositionChangedEventArgs(position ?? TimeSpan.Zero, bridge.Duration));
         bridge.StateChanged += (_, newState) => state = newState;
     }
 
