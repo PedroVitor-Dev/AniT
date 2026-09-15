@@ -49,26 +49,34 @@ public partial class LibraryWindow : Window
             var viewItem = new AnimeLibraryItem(
                 item.Id,
                 item.Title,
+                item.EnglishTitle,
                 string.IsNullOrWhiteSpace(item.Title) ? "?" : item.Title[..1].ToUpperInvariant(),
                 $"{episodes.Count} episódio(s)",
                 current is not null ? $"Em andamento · Episódio {current.Number:00}" : watched == 0 ? "Ainda não iniciado" : $"{watched} assistido(s)",
                 totalPercent,
                 File.Exists(item.CoverPath) ? item.CoverPath : null);
             Anime.Add(viewItem);
-            if (viewItem.CoverPath is null)
+            if (viewItem.CoverPath is null || string.IsNullOrWhiteSpace(viewItem.EnglishTitle))
             {
-                _ = LoadCoverAsync(viewItem, item.CoverPath, coverLoadingCancellation.Token);
+                _ = LoadMetadataAsync(viewItem, item.CoverPath, coverLoadingCancellation.Token);
             }
         }
 
         EmptyState.Visibility = Anime.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private static async Task LoadCoverAsync(AnimeLibraryItem item, string? savedCoverPath, CancellationToken cancellationToken)
+    private static async Task LoadMetadataAsync(AnimeLibraryItem item, string? savedCoverPath, CancellationToken cancellationToken)
     {
         try
         {
-            item.CoverPath = await App.EnsureAnimeCoverAsync(item.Id, item.Title, savedCoverPath, cancellationToken);
+            var metadata = await App.EnsureAnimeMetadataAsync(
+                item.Id,
+                item.Title,
+                item.EnglishTitle,
+                savedCoverPath,
+                cancellationToken);
+            item.EnglishTitle = metadata.EnglishTitle;
+            item.CoverPath = metadata.CoverPath;
         }
         catch (OperationCanceledException)
         {
@@ -91,6 +99,7 @@ public partial class LibraryWindow : Window
 public sealed class AnimeLibraryItem(
     Guid id,
     string title,
+    string? englishTitle,
     string initial,
     string episodeSummary,
     string status,
@@ -98,9 +107,23 @@ public sealed class AnimeLibraryItem(
     string? coverPath) : INotifyPropertyChanged
 {
     private string? coverPath = coverPath;
+    private string? englishTitle = englishTitle;
 
     public Guid Id { get; } = id;
     public string Title { get; } = title;
+    public string? EnglishTitle
+    {
+        get => englishTitle;
+        set
+        {
+            if (string.Equals(englishTitle, value, StringComparison.Ordinal)) return;
+            englishTitle = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(EnglishTitle)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(EnglishTitleDisplay)));
+        }
+    }
+
+    public string EnglishTitleDisplay => string.IsNullOrWhiteSpace(EnglishTitle) ? string.Empty : $"({EnglishTitle})";
     public string Initial { get; } = initial;
     public string EpisodeSummary { get; } = episodeSummary;
     public string Status { get; } = status;

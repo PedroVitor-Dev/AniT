@@ -93,21 +93,32 @@ public partial class App : Application
         _ = MonitorPlaybackAsync(session, playbackMonitorCancellation.Token);
     }
 
-    public static async Task<string?> EnsureAnimeCoverAsync(
+    public static async Task<global::AniT.Infrastructure.AnimeMetadataResult> EnsureAnimeMetadataAsync(
         Guid animeId,
-        string title,
+        string japaneseTitle,
+        string? englishTitle,
         string? savedCoverPath,
         CancellationToken cancellationToken = default)
     {
-        var coverPath = await animeCoverProvider.EnsureCoverAsync(animeId, title, savedCoverPath, cancellationToken);
-        if (coverPath is null || string.Equals(coverPath, savedCoverPath, StringComparison.OrdinalIgnoreCase)) return coverPath;
+        var metadata = await animeCoverProvider.EnsureMetadataAsync(
+            animeId,
+            japaneseTitle,
+            englishTitle,
+            savedCoverPath,
+            cancellationToken);
+        var englishChanged = !string.IsNullOrWhiteSpace(metadata.EnglishTitle)
+            && !string.Equals(metadata.EnglishTitle, englishTitle, StringComparison.Ordinal);
+        var coverChanged = metadata.CoverPath is not null
+            && !string.Equals(metadata.CoverPath, savedCoverPath, StringComparison.OrdinalIgnoreCase);
+        if (!englishChanged && !coverChanged) return metadata;
 
         await using var context = OpenFreshDatabase();
         var anime = await context.Anime.FirstOrDefaultAsync(item => item.Id == animeId, cancellationToken);
-        if (anime is null) return coverPath;
-        anime.CoverPath = coverPath;
+        if (anime is null) return metadata;
+        if (englishChanged) anime.EnglishTitle = metadata.EnglishTitle;
+        if (coverChanged) anime.CoverPath = metadata.CoverPath;
         await context.SaveChangesAsync(cancellationToken);
-        return coverPath;
+        return metadata;
     }
 
     private static string ResolveBundledPlayerPath()

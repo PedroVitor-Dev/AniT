@@ -5,12 +5,19 @@ using System.Text.RegularExpressions;
 
 namespace AniT.Infrastructure;
 
+public sealed record AnimeMetadataResult(string? EnglishTitle, string? CoverPath);
+
 public sealed partial class AnimeCoverProvider
 {
     private const string AniListEndpoint = "https://graphql.anilist.co";
-    private const string CoverQuery = """
+    private const string MetadataQuery = """
         query ($search: String) {
           Media(search: $search, type: ANIME) {
+            title {
+              romaji
+              english
+              native
+            }
             coverImage {
               extraLarge
               large
@@ -30,65 +37,60 @@ public sealed partial class AnimeCoverProvider
         this.httpClient = httpClient ?? SharedClient;
     }
 
-    public async Task<string?> EnsureCoverAsync(
+    public async Task<AnimeMetadataResult> EnsureMetadataAsync(
         Guid animeId,
-        string title,
+        string japaneseTitle,
+        string? englishTitle,
         string? savedCoverPath,
         CancellationToken cancellationToken = default)
     {
-        if (IsUsableCover(savedCoverPath)) return savedCoverPath;
-
+        var existingCoverPath = IsUsableCover(savedCoverPath) ? savedCoverPath : null;
         Directory.CreateDirectory(coversDirectory);
         var cachedPath = Path.Combine(coversDirectory, $"{animeId:N}.jpg");
-        if (IsUsableCover(cachedPath)) return cachedPath;
+        existingCoverPath ??= IsUsableCover(cachedPath) ? cachedPath : null;
+        if (!string.IsNullOrWhiteSpace(englishTitle) && existingCoverPath is not null)
+        {
+            return new AnimeMetadataResult(englishTitle, existingCoverPath);
+        }
 
         var animeLock = animeLocks.GetOrAdd(animeId, _ => new SemaphoreSlim(1, 1));
         await animeLock.WaitAsync(cancellationToken);
         try
         {
-            if (IsUsableCover(cachedPath)) return cachedPath;
-
-            var coverUrl = await FindCoverUrlAsync(title, cancellationToken);
-            if (coverUrl is null) return null;
-
-            using var response = await httpClient.GetAsync(coverUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            if (!response.IsSuccessStatusCode || response.Content.Headers.ContentType?.MediaType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) != true)
+            existingCoverPath = IsUsableCover(savedCoverPath) ? savedCoverPath : IsUsableCover(cachedPath) ? cachedPath : null;
+            if (!string.IsNullOrWhiteSpace(englishTitle) && existingCoverPath is not null)
             {
-                return null;
+                return new AnimeMetadataResult(englishTitle, existingCoverPath);
             }
 
-            var temporaryPath = cachedPath + ".download";
-            try
-            {
-                await using (var destination = new FileStream(temporaryPath, FileMode.Create, FileAccess.Write, FileShare.None))
-                {
-                    await response.Content.CopyToAsync(destination, cancellationToken);
-                }
+            var initialSearchTitle = string.IsNullOrWhiteSpace(englishTitle) ? japaneseTitle : englishTitle;
+            var metadata = await FindMetadataAsync(initialSearchTitle, cancellationToken);
+            var resolvedEnglishTitle = string.IsNullOrWhiteSpace(englishTitle) ? metadata?.EnglishTitle : englishTitle;
+            var resolvedCoverUrl = metadata?.CoverUrl;
 
-                if (new FileInfo(temporaryPath).Length == 0) return null;
-                File.Move(temporaryPath, cachedPath, true);
-                return cachedPath;
-            }
-            finally
+            var resolvedEnglishNow = string.IsNullOrWhiteSpace(englishTitle) && !string.IsNullOrWhiteSpace(resolvedEnglishTitle);
+            if (resolvedEnglishNow && !string.Equals(initialSearchTitle, resolvedEnglishTitle, StringComparison.OrdinalIgnoreCase))
             {
-                if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
+                var englishMetadata = await FindMetadataAsync(resolvedEnglishTitle!, cancellationToken);
+                resolvedCoverUrl = englishMetadata?.CoverUrl ?? resolvedCoverUrl;
+                resolvedEnglishTitle = englishMetadata?.EnglishTitle ?? resolvedEnglishTitle;
             }
+
+            if (resolvedCoverUrl is null || (existingCoverPath is not null && !resolvedEnglishNow))
+            {
+                return new AnimeMetadataResult(resolvedEnglishTitle, existingCoverPath);
+            }
+
+            var downloadedCover = await DownloadCoverAsync(resolvedCoverUrl, cachedPath, cancellationToken);
+            return new AnimeMetadataResult(resolvedEnglishTitle, downloadedCover ?? existingCoverPath);
         }
         catch (OperationCanceledException)
         {
             throw;
         }
-        catch (HttpRequestException)
+        catch (Exception exception) when (exception is HttpRequestException or IOException or JsonException)
         {
-            return null;
-        }
-        catch (IOException)
-        {
-            return null;
-        }
-        catch (JsonException)
-        {
-            return null;
+            return new AnimeMetadataResult(englishTitle, existingCoverPath);
         }
         finally
         {
@@ -96,7 +98,19 @@ public sealed partial class AnimeCoverProvider
         }
     }
 
-    private async Task<string?> FindCoverUrlAsync(string title, CancellationToken cancellationToken)
+    public async Task<string?> EnsureCoverAsync(
+        Guid animeId,
+        string title,
+        string? savedCoverPath,
+        CancellationToken cancellationToken = default)
+    {
+        if (IsUsableCover(savedCoverPath)) return savedCoverPath;
+        var cachedPath = Path.Combine(coversDirectory, $"{animeId:N}.jpg");
+        if (IsUsableCover(cachedPath)) return cachedPath;
+        return (await EnsureMetadataAsync(animeId, title, null, savedCoverPath, cancellationToken)).CoverPath;
+    }
+
+    private async Task<AniListMetadata?> FindMetadataAsync(string title, CancellationToken cancellationToken)
     {
         foreach (var candidate in GetSearchCandidates(title))
         {
@@ -104,7 +118,7 @@ public sealed partial class AnimeCoverProvider
             {
                 Content = JsonContent.Create(new
                 {
-                    query = CoverQuery,
+                    query = MetadataQuery,
                     variables = new { search = candidate }
                 })
             };
@@ -116,17 +130,53 @@ public sealed partial class AnimeCoverProvider
             using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
             if (!document.RootElement.TryGetProperty("data", out var data)
                 || !data.TryGetProperty("Media", out var media)
-                || media.ValueKind == JsonValueKind.Null
-                || !media.TryGetProperty("coverImage", out var cover))
+                || media.ValueKind == JsonValueKind.Null)
             {
                 continue;
             }
 
-            if (TryReadUrl(cover, "extraLarge", out var extraLarge)) return extraLarge;
-            if (TryReadUrl(cover, "large", out var large)) return large;
+            string? english = null;
+            if (media.TryGetProperty("title", out var titles)) TryReadText(titles, "english", out english);
+
+            string? coverUrl = null;
+            if (media.TryGetProperty("coverImage", out var cover))
+            {
+                if (!TryReadText(cover, "extraLarge", out coverUrl)) TryReadText(cover, "large", out coverUrl);
+            }
+
+            if (!string.IsNullOrWhiteSpace(english) || Uri.TryCreate(coverUrl, UriKind.Absolute, out _))
+            {
+                return new AniListMetadata(english, coverUrl);
+            }
         }
 
         return null;
+    }
+
+    private async Task<string?> DownloadCoverAsync(string coverUrl, string cachedPath, CancellationToken cancellationToken)
+    {
+        using var response = await httpClient.GetAsync(coverUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        if (!response.IsSuccessStatusCode || response.Content.Headers.ContentType?.MediaType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) != true)
+        {
+            return null;
+        }
+
+        var temporaryPath = cachedPath + ".download";
+        try
+        {
+            await using (var destination = new FileStream(temporaryPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                await response.Content.CopyToAsync(destination, cancellationToken);
+            }
+
+            if (new FileInfo(temporaryPath).Length == 0) return null;
+            File.Move(temporaryPath, cachedPath, true);
+            return cachedPath;
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
+        }
     }
 
     private static IEnumerable<string> GetSearchCandidates(string title)
@@ -141,12 +191,12 @@ public sealed partial class AnimeCoverProvider
         }
     }
 
-    private static bool TryReadUrl(JsonElement cover, string propertyName, out string? url)
+    private static bool TryReadText(JsonElement parent, string propertyName, out string? value)
     {
-        url = null;
-        if (!cover.TryGetProperty(propertyName, out var property) || property.ValueKind != JsonValueKind.String) return false;
-        url = property.GetString();
-        return Uri.TryCreate(url, UriKind.Absolute, out _);
+        value = null;
+        if (!parent.TryGetProperty(propertyName, out var property) || property.ValueKind != JsonValueKind.String) return false;
+        value = property.GetString();
+        return !string.IsNullOrWhiteSpace(value);
     }
 
     private static bool IsUsableCover(string? path)
@@ -168,6 +218,8 @@ public sealed partial class AnimeCoverProvider
         client.DefaultRequestHeaders.UserAgent.ParseAdd("AniT/0.1");
         return client;
     }
+
+    private sealed record AniListMetadata(string? EnglishTitle, string? CoverUrl);
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex WhitespaceRegex();

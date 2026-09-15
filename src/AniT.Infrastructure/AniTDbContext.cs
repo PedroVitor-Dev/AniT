@@ -17,6 +17,7 @@ public sealed class AniTDbContext(DbContextOptions<AniTDbContext> options) : DbC
         modelBuilder.Entity<Anime>(entity =>
         {
             entity.Property(item => item.Title).HasMaxLength(300).IsRequired();
+            entity.Property(item => item.EnglishTitle).HasMaxLength(300);
             entity.HasIndex(item => item.Title);
         });
 

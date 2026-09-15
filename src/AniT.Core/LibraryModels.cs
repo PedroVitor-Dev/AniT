@@ -11,6 +11,7 @@ public sealed class Anime
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public required string Title { get; set; }
+    public string? EnglishTitle { get; set; }
     public string? OriginalTitle { get; set; }
     public string? Synopsis { get; set; }
     public string? CoverPath { get; set; }

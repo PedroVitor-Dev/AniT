@@ -11,6 +11,7 @@ public partial class AnimeDetailsWindow : Window
     private readonly Guid animeId;
     public ObservableCollection<EpisodeItem> Episodes { get; } = [];
     public string AnimeTitle { get; private set; } = string.Empty;
+    public string EnglishTitleDisplay { get; private set; } = string.Empty;
     public string Initial { get; private set; } = "?";
     public string Summary { get; private set; } = string.Empty;
     public string EpisodeCountLabel { get; private set; } = string.Empty;
@@ -39,6 +40,7 @@ public partial class AnimeDetailsWindow : Window
         if (anime is null) return;
 
         AnimeTitle = anime.Title;
+        EnglishTitleDisplay = FormatEnglishTitle(anime.EnglishTitle);
         Initial = anime.Title[..1].ToUpperInvariant();
         CoverPath = File.Exists(anime.CoverPath) ? anime.CoverPath : null;
         var allEpisodes = anime.Seasons.SelectMany(season => season.Episodes).OrderBy(episode => episode.Season!.Number).ThenBy(episode => episode.Number).ToList();
@@ -61,11 +63,13 @@ public partial class AnimeDetailsWindow : Window
         DataContext = null;
         DataContext = this;
 
-        if (CoverPath is null)
+        if (CoverPath is null || string.IsNullOrWhiteSpace(anime.EnglishTitle))
         {
             try
             {
-                CoverPath = await App.EnsureAnimeCoverAsync(anime.Id, anime.Title, anime.CoverPath);
+                var metadata = await App.EnsureAnimeMetadataAsync(anime.Id, anime.Title, anime.EnglishTitle, anime.CoverPath);
+                CoverPath = metadata.CoverPath;
+                EnglishTitleDisplay = FormatEnglishTitle(metadata.EnglishTitle);
                 DataContext = null;
                 DataContext = this;
             }
@@ -75,6 +79,8 @@ public partial class AnimeDetailsWindow : Window
             }
         }
     }
+
+    private static string FormatEnglishTitle(string? title) => string.IsNullOrWhiteSpace(title) ? string.Empty : $"({title})";
 
     private async void ToggleWatched_Click(object sender, RoutedEventArgs e)
     {

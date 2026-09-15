@@ -35,11 +35,11 @@ public partial class DashboardWindow : Window
         var episodeCount = await context.Episodes.CountAsync();
         var completedCount = await context.Episodes.CountAsync(episode => episode.Status == global::AniT.Core.WatchStatus.Completed);
         var recent = (await context.Anime
-                .Select(anime => new { anime.Title, anime.CreatedAt })
+                .Select(anime => new { anime.Title, anime.EnglishTitle, anime.CreatedAt })
                 .ToListAsync())
             .OrderByDescending(anime => anime.CreatedAt)
             .Take(4)
-            .Select(anime => anime.Title)
+            .Select(anime => string.IsNullOrWhiteSpace(anime.EnglishTitle) ? anime.Title : $"{anime.Title} ({anime.EnglishTitle})")
             .ToList();
         AnimeCountText.Text = animeCount.ToString();
         EpisodeCountText.Text = episodeCount.ToString();
