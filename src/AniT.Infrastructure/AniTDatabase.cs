@@ -13,21 +13,30 @@ public static class AniTDatabase
             .Options;
         var context = new AniTDbContext(options);
         context.Database.EnsureCreated();
-        EnsureAnimeColumn(context, "EnglishTitle", "TEXT NULL");
-        EnsureAnimeColumn(context, "CriticScore", "REAL NULL");
-        EnsureAnimeColumn(context, "ReviewNotes", "TEXT NULL");
+        EnsureColumn(context, "Anime", "EnglishTitle", "TEXT NULL");
+        EnsureColumn(context, "Anime", "CriticScore", "REAL NULL");
+        EnsureColumn(context, "Anime", "ReviewNotes", "TEXT NULL");
+        EnsureColumn(context, "Episodes", "ReviewNotes", "TEXT NULL");
         return context;
     }
 
-    private static void EnsureAnimeColumn(AniTDbContext context, string columnName, string definition)
+    private static void EnsureColumn(AniTDbContext context, string tableName, string columnName, string definition)
     {
         var connection = context.Database.GetDbConnection();
         var shouldClose = connection.State != ConnectionState.Open;
         if (shouldClose) connection.Open();
         try
         {
+            using var tableCommand = connection.CreateCommand();
+            tableCommand.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = $tableName;";
+            var tableParameter = tableCommand.CreateParameter();
+            tableParameter.ParameterName = "$tableName";
+            tableParameter.Value = tableName;
+            tableCommand.Parameters.Add(tableParameter);
+            if (Convert.ToInt32(tableCommand.ExecuteScalar()) == 0) return;
+
             using var checkCommand = connection.CreateCommand();
-            checkCommand.CommandText = "SELECT COUNT(*) FROM pragma_table_info('Anime') WHERE name = $columnName;";
+            checkCommand.CommandText = $"SELECT COUNT(*) FROM pragma_table_info('{tableName}') WHERE name = $columnName;";
             var parameter = checkCommand.CreateParameter();
             parameter.ParameterName = "$columnName";
             parameter.Value = columnName;
@@ -36,7 +45,7 @@ public static class AniTDatabase
             if (columnExists) return;
 
             using var migrationCommand = connection.CreateCommand();
-            migrationCommand.CommandText = $"ALTER TABLE Anime ADD COLUMN {columnName} {definition};";
+            migrationCommand.CommandText = $"ALTER TABLE {tableName} ADD COLUMN {columnName} {definition};";
             migrationCommand.ExecuteNonQuery();
         }
         finally

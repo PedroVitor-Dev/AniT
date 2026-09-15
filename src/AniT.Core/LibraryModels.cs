@@ -42,6 +42,7 @@ public sealed class Episode
     public WatchStatus Status { get; set; } = WatchStatus.NotStarted;
     public DateTimeOffset? WatchedAt { get; set; }
     public double? Rating { get; set; }
+    public string? ReviewNotes { get; set; }
     public Season? Season { get; set; }
     public MediaFile? MediaFile { get; set; }
     public PlaybackProgress? PlaybackProgress { get; set; }

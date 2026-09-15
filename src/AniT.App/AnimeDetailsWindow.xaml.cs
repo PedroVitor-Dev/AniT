@@ -9,6 +9,8 @@ namespace AniT.App;
 public partial class AnimeDetailsWindow : Window
 {
     private readonly Guid animeId;
+    private Guid? selectedReviewEpisodeId;
+    private bool isLoadingReview;
     private double selectedRating;
     public ObservableCollection<EpisodeItem> Episodes { get; } = [];
     public string AnimeTitle { get; private set; } = string.Empty;
@@ -35,6 +37,7 @@ public partial class AnimeDetailsWindow : Window
 
     private async Task LoadAsync()
     {
+        var preferredReviewEpisodeId = selectedReviewEpisodeId;
         await using var context = App.OpenFreshDatabase();
         var anime = await context.Anime
             .Include(item => item.Seasons)
@@ -52,9 +55,6 @@ public partial class AnimeDetailsWindow : Window
             ? "A sinopse ainda não está disponível. Use Atualizar Títulos na Biblioteca para tentar novamente."
             : anime.Synopsis;
         CriticScoreLabel = anime.CriticScore is { } criticScore ? $"{criticScore:0}/100" : "—";
-        ApplyRatingSelection(NormalizeSavedRating(anime.Rating));
-        ReviewTextBox.Text = anime.ReviewNotes ?? string.Empty;
-        ReviewStatusText.Text = string.Empty;
         var allEpisodes = anime.Seasons.SelectMany(season => season.Episodes).OrderBy(episode => episode.Season!.Number).ThenBy(episode => episode.Number).ToList();
         var watchSummary = global::AniT.Core.AnimeWatchSummary.Create(allEpisodes);
         var watched = watchSummary.CompletedEpisodes;
@@ -78,10 +78,26 @@ public partial class AnimeDetailsWindow : Window
         {
             var progress = episode.PlaybackProgress;
             var percent = progress is { DurationSeconds: > 0 } ? progress.PositionSeconds / progress.DurationSeconds * 100 : 0;
-            Episodes.Add(new EpisodeItem(episode.Id, episode.Number.ToString("00"), episode.Title ?? $"Episódio {episode.Number}", episode.Status, percent));
+            Episodes.Add(new EpisodeItem(
+                episode.Id,
+                episode.Number.ToString("00"),
+                episode.Title ?? $"Episódio {episode.Number}",
+                episode.Status,
+                percent,
+                episode.Rating,
+                episode.ReviewNotes));
         }
         DataContext = null;
         DataContext = this;
+
+        var reviewEpisode = Episodes.FirstOrDefault(item => item.Id == preferredReviewEpisodeId)
+            ?? Episodes.LastOrDefault(item => item.Status is global::AniT.Core.WatchStatus.Watching or global::AniT.Core.WatchStatus.Completed)
+            ?? Episodes.FirstOrDefault();
+        if (reviewEpisode is not null)
+        {
+            EpisodeReviewSelector.SelectedItem = reviewEpisode;
+            LoadEpisodeReview(reviewEpisode);
+        }
 
         if (CoverPath is null
             || string.IsNullOrWhiteSpace(anime.EnglishTitle)
@@ -115,20 +131,60 @@ public partial class AnimeDetailsWindow : Window
 
     private static string FormatEnglishTitle(string? title) => string.IsNullOrWhiteSpace(title) ? string.Empty : $"({title})";
 
-    private void RatingCard_Checked(object sender, RoutedEventArgs e)
+    private async void RatingCard_Checked(object sender, RoutedEventArgs e)
     {
         if (RatingValueText is null || ReviewStatusText is null) return;
         if (sender is not RadioButton ratingCard
             || !double.TryParse(ratingCard.Tag?.ToString(), out var rating)) return;
         selectedRating = rating;
         RatingValueText.Text = selectedRating.ToString("0");
-        ReviewStatusText.Text = string.Empty;
+        if (!isLoadingReview) await SaveSelectedRatingAsync();
     }
 
-    private void ClearRating_Click(object sender, RoutedEventArgs e)
+    private async void ClearRating_Click(object sender, RoutedEventArgs e)
     {
         ApplyRatingSelection(0);
-        ReviewStatusText.Text = string.Empty;
+        if (!isLoadingReview) await SaveSelectedRatingAsync();
+    }
+
+    private void EpisodeReviewSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (EpisodeReviewSelector.SelectedItem is EpisodeItem episode) LoadEpisodeReview(episode);
+    }
+
+    private void ReviewEpisode_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: Guid episodeId }) return;
+        var episode = Episodes.FirstOrDefault(item => item.Id == episodeId);
+        if (episode is null) return;
+
+        EpisodeReviewSelector.SelectedItem = episode;
+        LoadEpisodeReview(episode);
+        AnimeTabControl.SelectedItem = ReviewTab;
+    }
+
+    private void LoadEpisodeReview(EpisodeItem episode)
+    {
+        isLoadingReview = true;
+        try
+        {
+            selectedReviewEpisodeId = episode.Id;
+            ApplyRatingSelection(NormalizeSavedRating(episode.Rating));
+            ReviewTextBox.Text = episode.ReviewNotes ?? string.Empty;
+            ReviewEpisodeTitleText.Text = $"Episódio {episode.Number} · {episode.Title}";
+            ReviewEpisodeNumberText.Text = $"Episódio {episode.Number}";
+            ReviewEpisodeProgress.Value = Math.Clamp(episode.ProgressPercent, 0, 100);
+            ReviewEpisodeProgressText.Text = episode.Status == global::AniT.Core.WatchStatus.Completed
+                ? "Concluído"
+                : episode.ProgressPercent > 0
+                    ? $"{episode.ProgressPercent:0}% assistido"
+                    : "Não iniciado";
+            ReviewStatusText.Text = string.Empty;
+        }
+        finally
+        {
+            isLoadingReview = false;
+        }
     }
 
     private void ApplyRatingSelection(double rating)
@@ -149,16 +205,44 @@ public partial class AnimeDetailsWindow : Window
         return Math.Clamp(Math.Round(fivePointRating, MidpointRounding.AwayFromZero), 1, 5);
     }
 
-    private async void SaveReview_Click(object sender, RoutedEventArgs e)
+    private async Task SaveSelectedRatingAsync()
     {
-        await using var context = App.OpenFreshDatabase();
-        var anime = await context.Anime.FirstOrDefaultAsync(item => item.Id == animeId);
-        if (anime is null) return;
+        if (selectedReviewEpisodeId is not Guid episodeId)
+        {
+            ReviewStatusText.Text = "Escolha um episódio para avaliar.";
+            return;
+        }
 
-        anime.Rating = selectedRating <= 0 ? null : selectedRating;
-        anime.ReviewNotes = string.IsNullOrWhiteSpace(ReviewTextBox.Text) ? null : ReviewTextBox.Text.Trim();
+        await using var context = App.OpenFreshDatabase();
+        var episode = await context.Episodes.FirstOrDefaultAsync(item => item.Id == episodeId);
+        if (episode is null) return;
+
+        episode.Rating = selectedRating <= 0 ? null : selectedRating;
         await context.SaveChangesAsync();
-        ReviewStatusText.Text = "✓ Avaliação salva localmente";
+
+        var item = Episodes.FirstOrDefault(candidate => candidate.Id == episodeId);
+        if (item is not null) item.Rating = episode.Rating;
+        ReviewStatusText.Text = episode.Rating is null ? "Nota removida" : "✓ Nota salva automaticamente";
+    }
+
+    private async void SaveComment_Click(object sender, RoutedEventArgs e)
+    {
+        if (selectedReviewEpisodeId is not Guid episodeId)
+        {
+            ReviewStatusText.Text = "Escolha um episódio para comentar.";
+            return;
+        }
+
+        await using var context = App.OpenFreshDatabase();
+        var episode = await context.Episodes.FirstOrDefaultAsync(item => item.Id == episodeId);
+        if (episode is null) return;
+
+        episode.ReviewNotes = string.IsNullOrWhiteSpace(ReviewTextBox.Text) ? null : ReviewTextBox.Text.Trim();
+        await context.SaveChangesAsync();
+
+        var item = Episodes.FirstOrDefault(candidate => candidate.Id == episodeId);
+        if (item is not null) item.ReviewNotes = episode.ReviewNotes;
+        ReviewStatusText.Text = episode.ReviewNotes is null ? "Comentário removido" : "✓ Comentário salvo localmente";
     }
 
     private async void ToggleWatched_Click(object sender, RoutedEventArgs e)
@@ -221,8 +305,24 @@ public partial class AnimeDetailsWindow : Window
     }
 }
 
-public sealed record EpisodeItem(Guid Id, string Number, string Title, global::AniT.Core.WatchStatus Status, double ProgressPercent)
+public sealed class EpisodeItem(
+    Guid id,
+    string number,
+    string title,
+    global::AniT.Core.WatchStatus status,
+    double progressPercent,
+    double? rating,
+    string? reviewNotes)
 {
+    public Guid Id { get; } = id;
+    public string Number { get; } = number;
+    public string Title { get; } = title;
+    public global::AniT.Core.WatchStatus Status { get; } = status;
+    public double ProgressPercent { get; } = progressPercent;
+    public double? Rating { get; set; } = rating;
+    public string? ReviewNotes { get; set; } = reviewNotes;
+    public string ReviewDisplay => $"Episódio {Number} · {Title}";
+
     public string StatusLabel => Status switch
     {
         global::AniT.Core.WatchStatus.Completed => "✓ Assistido",

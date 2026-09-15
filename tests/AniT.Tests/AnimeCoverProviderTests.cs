@@ -77,7 +77,7 @@ public sealed class AnimeCoverProviderTests
     }
 
     [Fact]
-    public async Task EnsureMetadataAsync_ResolvesEnglishTitleBeforeChoosingCover()
+    public async Task EnsureMetadataAsync_UsesFolderTitleToChooseTheRightSeason()
     {
         var postCount = 0;
         var requestBodies = new List<string>();
@@ -88,12 +88,10 @@ public sealed class AnimeCoverProviderTests
                 postCount++;
                 requestBodies.Add(request.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
                 if (postCount == 1) return new HttpResponseMessage(HttpStatusCode.NotFound);
-                return JsonResponse(postCount == 2
-                    ? """{"data":{"Media":{"title":{"english":"Magilumiere Magical Girls Inc. Season 2"},"coverImage":{"extraLarge":"https://images.example/japanese-search.jpg","large":null},"description":"A magical company &amp; its heroines.","averageScore":82}}}"""
-                    : """{"data":{"Media":{"title":{"english":"Magilumiere Magical Girls Inc. Season 2"},"coverImage":{"extraLarge":"https://images.example/english-search.jpg","large":null},"description":"A magical company &amp; its heroines.","averageScore":82}}}""");
+                return JsonResponse("""{"data":{"Media":{"title":{"english":"Magilumiere Magical Girls Inc. Season 2"},"coverImage":{"extraLarge":"https://images.example/japanese-search.jpg","large":null},"description":"A magical company &amp; its heroines.","averageScore":82}}}""");
             }
 
-            Assert.Equal("https://images.example/english-search.jpg", request.RequestUri!.AbsoluteUri);
+            Assert.Equal("https://images.example/japanese-search.jpg", request.RequestUri!.AbsoluteUri);
             var imageResponse = new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new ByteArrayContent([0xFF, 0xD8, 0xFF, 0xD9])
@@ -116,14 +114,61 @@ public sealed class AnimeCoverProviderTests
             Assert.True(File.Exists(result.CoverPath));
             Assert.Equal("A magical company & its heroines.", result.Synopsis);
             Assert.Equal(82, result.CriticScore);
-            Assert.Equal(3, postCount);
+            Assert.Equal(2, postCount);
             Assert.Contains("Kabushikigaisha Magi-Lumi", requestBodies[0]);
             Assert.Contains("Kabushiki Gaisha Magi Lumiere 2nd Season", requestBodies[1]);
-            Assert.Contains("Magilumiere Magical Girls Inc. Season 2", requestBodies[2]);
         }
         finally
         {
             if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public async Task EnsureMetadataAsync_ForceRefreshCorrectsAStaleSeasonMatch()
+    {
+        var requestedCover = false;
+        using var httpClient = new HttpClient(new StubHandler(request =>
+        {
+            if (request.Method == HttpMethod.Post)
+            {
+                return JsonResponse("""{"data":{"Media":{"title":{"english":"Anime AzurLane: Slow Ahead! Season 2"},"coverImage":{"extraLarge":"https://images.example/season-2.jpg","large":null},"description":"The second season.","averageScore":67}}}""");
+            }
+
+            requestedCover = true;
+            var imageResponse = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent([0xFF, 0xD8, 0x02, 0xFF, 0xD9])
+            };
+            imageResponse.Content.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+            return imageResponse;
+        }));
+        var directory = Path.Combine(Path.GetTempPath(), "AniT.Tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var animeId = Guid.NewGuid();
+        var staleCover = Path.Combine(directory, $"{animeId:N}.jpg");
+        await File.WriteAllBytesAsync(staleCover, [0xFF, 0xD8, 0x01, 0xFF, 0xD9]);
+
+        try
+        {
+            var provider = new AnimeCoverProvider(directory, httpClient);
+            var result = await provider.EnsureMetadataAsync(
+                animeId,
+                "Azur Lane Bisoku Zenshin! Ni!!",
+                "Anime AzurLane: Slow Ahead!",
+                staleCover,
+                savedSynopsis: "Old synopsis",
+                savedCriticScore: 60,
+                forceRefresh: true);
+
+            Assert.Equal("Anime AzurLane: Slow Ahead! Season 2", result.EnglishTitle);
+            Assert.Equal(staleCover, result.CoverPath);
+            Assert.True(requestedCover);
+            Assert.Equal(0x02, (await File.ReadAllBytesAsync(staleCover))[2]);
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
         }
     }
 

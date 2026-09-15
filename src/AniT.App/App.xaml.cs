@@ -100,7 +100,8 @@ public partial class App : Application
         string? savedCoverPath,
         CancellationToken cancellationToken = default,
         string? savedSynopsis = null,
-        double? savedCriticScore = null)
+        double? savedCriticScore = null,
+        bool forceRefresh = false)
     {
         var metadata = await animeCoverProvider.EnsureMetadataAsync(
             animeId,
@@ -109,7 +110,8 @@ public partial class App : Application
             savedCoverPath,
             cancellationToken,
             savedSynopsis,
-            savedCriticScore);
+            savedCriticScore,
+            forceRefresh);
         var englishChanged = !string.IsNullOrWhiteSpace(metadata.EnglishTitle)
             && !string.Equals(metadata.EnglishTitle, englishTitle, StringComparison.Ordinal);
         var coverChanged = metadata.CoverPath is not null

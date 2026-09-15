@@ -17,6 +17,10 @@
         <Style x:Key="ActionButton" TargetType="Button" BasedOn="{StaticResource BrandButton}">
             <Setter Property="Padding" Value="16,8"/>
         </Style>
+        <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource ActionButton}">
+            <Setter Property="Background" Value="#173556"/>
+            <Setter Property="Foreground" Value="#9FD8FF"/>
+        </Style>
         <Style x:Key="AnimeTabItem" TargetType="TabItem">
             <Setter Property="Foreground" Value="#85A2C8"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -126,40 +130,57 @@
             </Grid>
         </Border>
 
-        <TabControl Grid.Row="1" Style="{StaticResource AnimeTabs}" Margin="38,22,38,30">
+        <TabControl x:Name="AnimeTabControl" Grid.Row="1" Style="{StaticResource AnimeTabs}" Margin="38,22,38,30">
             <TabItem Header="Episódios">
                 <Grid>
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                     <DockPanel><TextBlock Text="Sua lista local" Foreground="White" FontSize="20" FontWeight="SemiBold" DockPanel.Dock="Left"/><TextBlock Text="{Binding EpisodeCountLabel}" Foreground="#8FA9CD" FontSize="13" VerticalAlignment="Bottom" DockPanel.Dock="Right"/></DockPanel>
                     <Border Grid.Row="1" Background="#10192A" BorderBrush="#2A405E" BorderThickness="1" CornerRadius="14" Margin="0,15,0,0">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><ItemsControl ItemsSource="{Binding Episodes}"><ItemsControl.ItemTemplate><DataTemplate><Border Style="{StaticResource EpisodeRow}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="58"/><ColumnDefinition Width="*"/><ColumnDefinition Width="120"/><ColumnDefinition Width="138"/></Grid.ColumnDefinitions><Border Width="35" Height="35" CornerRadius="18" Background="#1B3355" VerticalAlignment="Center"><TextBlock Text="{Binding Number}" Foreground="#D9E9FF" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="{Binding Title}" Foreground="White" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding ProgressLabel}" Foreground="#91ABD0" FontSize="12" Margin="0,3,0,0"/></StackPanel><TextBlock Grid.Column="2" Text="{Binding StatusLabel}" Foreground="{Binding StatusColor}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Center"/><Button Grid.Column="3" Style="{StaticResource ActionButton}" Content="{Binding WatchedActionLabel}" Tag="{Binding Id}" Click="ToggleWatched_Click" VerticalAlignment="Center"/></Grid></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><ItemsControl ItemsSource="{Binding Episodes}"><ItemsControl.ItemTemplate><DataTemplate><Border Style="{StaticResource EpisodeRow}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="58"/><ColumnDefinition Width="*"/><ColumnDefinition Width="112"/><ColumnDefinition Width="94"/><ColumnDefinition Width="138"/></Grid.ColumnDefinitions><Border Width="35" Height="35" CornerRadius="18" Background="#1B3355" VerticalAlignment="Center"><TextBlock Text="{Binding Number}" Foreground="#D9E9FF" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="{Binding Title}" Foreground="White" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding ProgressLabel}" Foreground="#91ABD0" FontSize="12" Margin="0,3,0,0"/></StackPanel><TextBlock Grid.Column="2" Text="{Binding StatusLabel}" Foreground="{Binding StatusColor}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Center"/><Button Grid.Column="3" Style="{StaticResource SecondaryButton}" Content="Avaliar" Tag="{Binding Id}" Click="ReviewEpisode_Click" Margin="5,0" VerticalAlignment="Center"/><Button Grid.Column="4" Style="{StaticResource ActionButton}" Content="{Binding WatchedActionLabel}" Tag="{Binding Id}" Click="ToggleWatched_Click" VerticalAlignment="Center"/></Grid></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer>
                     </Border>
                 </Grid>
             </TabItem>
             <TabItem Header="Sinopse">
                 <Border Background="#10192A" BorderBrush="#2A405E" BorderThickness="1" CornerRadius="16" Padding="28"><ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel><TextBlock Text="Sobre a obra" Foreground="White" FontSize="21" FontWeight="SemiBold"/><TextBlock Text="{Binding Synopsis}" Foreground="#B5C9E4" FontSize="14" TextWrapping="Wrap" LineHeight="23" Margin="0,16,0,0"/><Border Background="#0B1527" BorderBrush="#243D5D" BorderThickness="1" CornerRadius="11" Padding="14" Margin="0,24,0,0" HorizontalAlignment="Left"><TextBlock Text="Sinopse e nota pública fornecidas pela AniList e mantidas no seu computador." Foreground="#718DB1" FontSize="11"/></Border></StackPanel></ScrollViewer></Border>
             </TabItem>
-            <TabItem Header="Minha avaliação">
+            <TabItem x:Name="ReviewTab" Header="Avaliar episódio">
                 <Border Background="#B90A1528" BorderBrush="#315983" BorderThickness="1" CornerRadius="18" Padding="26">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel>
-                            <TextBlock Text="✦  O que você achou desta obra?" Foreground="White" FontSize="23" FontWeight="SemiBold"/>
-                            <TextBlock Text="Escolha a reação do Baki-Pi que melhor representa sua experiência." Foreground="#91AED2" FontSize="13" Margin="0,7,0,0"/>
-                            <DockPanel Margin="0,24,0,0" LastChildFill="True">
-                                <Border DockPanel.Dock="Right" Width="160" Height="166" Margin="18,0,0,0" Background="#D20A1830" BorderBrush="#3479AD" BorderThickness="1" CornerRadius="16">
-                                    <Grid ClipToBounds="True"><Image Source="Assets/normal-sf.png" Width="125" Opacity="0.09" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-20,-28"/><StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"><TextBlock Text="★  SUA NOTA" Foreground="#80A8D2" FontSize="10" FontWeight="Bold"/><StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0"><TextBlock x:Name="RatingValueText" Text="—" Foreground="#76D4FF" FontSize="38" FontWeight="Bold"/><TextBlock Text="/5" Foreground="#8FA9CD" FontSize="18" VerticalAlignment="Bottom" Margin="4,0,0,7"/></StackPanel><Button Style="{StaticResource GhostButton}" Content="Limpar nota" Click="ClearRating_Click" Margin="0,5,0,0"/></StackPanel></Grid>
-                                </Border>
-                                <WrapPanel>
+                            <DockPanel LastChildFill="True">
+                                <ComboBox x:Name="EpisodeReviewSelector" DockPanel.Dock="Right" Width="270" Height="38" Margin="18,0,0,0" ItemsSource="{Binding Episodes}" DisplayMemberPath="ReviewDisplay" SelectionChanged="EpisodeReviewSelector_SelectionChanged" Background="#112542" Foreground="White" BorderBrush="#3474A8" Padding="10,6"/>
+                                <StackPanel>
+                                    <TextBlock Text="✦  Avaliar episódio" Foreground="White" FontSize="23" FontWeight="SemiBold"/>
+                                    <TextBlock x:Name="ReviewEpisodeTitleText" Text="Escolha um episódio" Foreground="#9FC0E5" FontSize="14" Margin="0,7,0,0" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </DockPanel>
+                            <Grid Margin="0,24,0,0">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="178"/></Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="O que você achou deste episódio?" Foreground="White" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                                    <WrapPanel>
                                     <RadioButton x:Name="RatingOne" GroupName="AnimeRating" Tag="1" Style="{StaticResource ReactionCard}" Checked="RatingCard_Checked"><StackPanel><Image Source="Assets/angry-sf.png" Width="95" Height="105" Stretch="Uniform"/><TextBlock Text="Não curti" Foreground="White" FontWeight="SemiBold" TextAlignment="Center" Margin="0,5,0,0"/></StackPanel></RadioButton>
                                     <RadioButton x:Name="RatingTwo" GroupName="AnimeRating" Tag="2" Style="{StaticResource ReactionCard}" Checked="RatingCard_Checked"><StackPanel><Image Source="Assets/sad-sf.png" Width="95" Height="105" Stretch="Uniform"/><TextBlock Text="Fraquinho" Foreground="White" FontWeight="SemiBold" TextAlignment="Center" Margin="0,5,0,0"/></StackPanel></RadioButton>
                                     <RadioButton x:Name="RatingThree" GroupName="AnimeRating" Tag="3" Style="{StaticResource ReactionCard}" Checked="RatingCard_Checked"><StackPanel><Image Source="Assets/boring-sf.png" Width="95" Height="105" Stretch="Uniform"/><TextBlock Text="Legalzinho" Foreground="White" FontWeight="SemiBold" TextAlignment="Center" Margin="0,5,0,0"/></StackPanel></RadioButton>
                                     <RadioButton x:Name="RatingFour" GroupName="AnimeRating" Tag="4" Style="{StaticResource ReactionCard}" Checked="RatingCard_Checked"><StackPanel><Image Source="Assets/happy2-sf.png" Width="95" Height="105" Stretch="Uniform"/><TextBlock Text="Muito bom!" Foreground="White" FontWeight="SemiBold" TextAlignment="Center" Margin="0,5,0,0"/></StackPanel></RadioButton>
                                     <RadioButton x:Name="RatingFive" GroupName="AnimeRating" Tag="5" Style="{StaticResource ReactionCard}" Checked="RatingCard_Checked"><StackPanel><Image Source="Assets/happy-sf.png" Width="95" Height="105" Stretch="Uniform"/><TextBlock Text="Obra-prima!" Foreground="White" FontWeight="SemiBold" TextAlignment="Center" Margin="0,5,0,0"/></StackPanel></RadioButton>
-                                </WrapPanel>
-                            </DockPanel>
-                            <TextBlock Text="●  COMENTÁRIO (OPCIONAL)" Foreground="#9CC6EC" FontSize="11" FontWeight="Bold" Margin="0,18,0,9"/>
-                            <TextBox x:Name="ReviewTextBox" Style="{StaticResource ReviewTextBox}" Height="105" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" MaxLength="4000" ToolTip="Conte o que achou desta obra"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,17,0,0"><Button Style="{StaticResource ActionButton}" Content="▣  Salvar avaliação  →" Click="SaveReview_Click" MinWidth="210"/><TextBlock x:Name="ReviewStatusText" Foreground="#6CDEB2" FontSize="12" VerticalAlignment="Center" Margin="16,0,0,0"/></StackPanel>
+                                    </WrapPanel>
+                                    <TextBlock Text="●  COMENTÁRIO (OPCIONAL)" Foreground="#9CC6EC" FontSize="11" FontWeight="Bold" Margin="0,12,0,9"/>
+                                    <TextBox x:Name="ReviewTextBox" Style="{StaticResource ReviewTextBox}" Height="105" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" MaxLength="4000" ToolTip="Conte o que achou deste episódio"/>
+                                    <DockPanel Margin="0,11,0,0">
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Content="Salvar comentário" Click="SaveComment_Click" Padding="14,7"/>
+                                        <TextBlock x:Name="ReviewStatusText" Foreground="#6CDEB2" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                    </DockPanel>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="18,0,0,0">
+                                    <Border Height="226" Background="#D20A1830" BorderBrush="#3479AD" BorderThickness="1" CornerRadius="16">
+                                        <Grid ClipToBounds="True"><Image Source="{Binding CoverPath}" Stretch="UniformToFill"/><Rectangle VerticalAlignment="Bottom" Height="76"><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#00102033" Offset="0"/><GradientStop Color="#F2071224" Offset="1"/></LinearGradientBrush></Rectangle.Fill></Rectangle><StackPanel VerticalAlignment="Bottom" Margin="12"><TextBlock x:Name="ReviewEpisodeNumberText" Foreground="White" FontWeight="SemiBold"/><ProgressBar x:Name="ReviewEpisodeProgress" Minimum="0" Maximum="100" Height="5" Margin="0,7,0,0" Background="#31455F" Foreground="#66CCFF" BorderThickness="0"/><TextBlock x:Name="ReviewEpisodeProgressText" Foreground="#C5D9F0" FontSize="10" HorizontalAlignment="Right" Margin="0,4,0,0"/></StackPanel></Grid>
+                                    </Border>
+                                    <Border Height="118" Margin="0,12,0,0" Background="#D20A1830" BorderBrush="#3479AD" BorderThickness="1" CornerRadius="16">
+                                        <Grid ClipToBounds="True"><Image Source="Assets/normal-sf.png" Width="105" Opacity="0.08" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-20,-28"/><StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"><TextBlock Text="★  SUA NOTA" Foreground="#80A8D2" FontSize="10" FontWeight="Bold"/><StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,5,0,0"><TextBlock x:Name="RatingValueText" Text="—" Foreground="#76D4FF" FontSize="34" FontWeight="Bold"/><TextBlock Text="/5" Foreground="#8FA9CD" FontSize="17" VerticalAlignment="Bottom" Margin="4,0,0,6"/></StackPanel><Button Style="{StaticResource GhostButton}" Content="Limpar" Click="ClearRating_Click" Margin="0,1,0,0"/></StackPanel></Grid>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
                         </StackPanel>
                     </ScrollViewer>
                 </Border>

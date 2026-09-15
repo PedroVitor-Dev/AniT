@@ -49,13 +49,15 @@ public sealed partial class AnimeCoverProvider
         string? savedCoverPath,
         CancellationToken cancellationToken = default,
         string? savedSynopsis = null,
-        double? savedCriticScore = null)
+        double? savedCriticScore = null,
+        bool forceRefresh = false)
     {
         var existingCoverPath = IsUsableCover(savedCoverPath) ? savedCoverPath : null;
         Directory.CreateDirectory(coversDirectory);
         var cachedPath = Path.Combine(coversDirectory, $"{animeId:N}.jpg");
         existingCoverPath ??= IsUsableCover(cachedPath) ? cachedPath : null;
-        if (!string.IsNullOrWhiteSpace(englishTitle)
+        if (!forceRefresh
+            && !string.IsNullOrWhiteSpace(englishTitle)
             && existingCoverPath is not null
             && !string.IsNullOrWhiteSpace(savedSynopsis)
             && savedCriticScore is not null)
@@ -68,7 +70,8 @@ public sealed partial class AnimeCoverProvider
         try
         {
             existingCoverPath = IsUsableCover(savedCoverPath) ? savedCoverPath : IsUsableCover(cachedPath) ? cachedPath : null;
-            if (!string.IsNullOrWhiteSpace(englishTitle)
+            if (!forceRefresh
+                && !string.IsNullOrWhiteSpace(englishTitle)
                 && existingCoverPath is not null
                 && !string.IsNullOrWhiteSpace(savedSynopsis)
                 && savedCriticScore is not null)
@@ -76,27 +79,23 @@ public sealed partial class AnimeCoverProvider
                 return new AnimeMetadataResult(englishTitle, existingCoverPath, savedSynopsis, savedCriticScore);
             }
 
-            var initialSearchTitle = string.IsNullOrWhiteSpace(englishTitle) ? japaneseTitle : englishTitle;
-            var metadata = await FindMetadataAsync(initialSearchTitle, cancellationToken);
-            var resolvedEnglishTitle = string.IsNullOrWhiteSpace(englishTitle) ? metadata?.EnglishTitle : englishTitle;
+            // The folder title is the most precise identity we have. In particular, a stale
+            // English title without "Season 2" can otherwise make AniList return season one.
+            var metadata = await FindMetadataAsync(japaneseTitle, cancellationToken);
+            if (metadata is null && !string.IsNullOrWhiteSpace(englishTitle))
+            {
+                metadata = await FindMetadataAsync(englishTitle, cancellationToken);
+            }
+
+            var resolvedEnglishTitle = metadata?.EnglishTitle ?? englishTitle;
             var resolvedCoverUrl = metadata?.CoverUrl;
             var resolvedSynopsis = string.IsNullOrWhiteSpace(savedSynopsis) ? metadata?.Synopsis : savedSynopsis;
             var resolvedCriticScore = savedCriticScore ?? metadata?.CriticScore;
 
-            var resolvedEnglishNow = string.IsNullOrWhiteSpace(englishTitle) && !string.IsNullOrWhiteSpace(resolvedEnglishTitle);
-            if (resolvedEnglishNow && !string.Equals(initialSearchTitle, resolvedEnglishTitle, StringComparison.OrdinalIgnoreCase))
-            {
-                var englishMetadata = await FindMetadataAsync(resolvedEnglishTitle!, cancellationToken);
-                resolvedCoverUrl = englishMetadata?.CoverUrl ?? resolvedCoverUrl;
-                resolvedEnglishTitle = englishMetadata?.EnglishTitle ?? resolvedEnglishTitle;
-                resolvedSynopsis ??= englishMetadata?.Synopsis;
-                resolvedCriticScore ??= englishMetadata?.CriticScore;
-            }
-
             var resolvedCoverPath = existingCoverPath;
-            if (resolvedCoverPath is null && resolvedCoverUrl is not null)
+            if (resolvedCoverUrl is not null && (forceRefresh || resolvedCoverPath is null))
             {
-                resolvedCoverPath = await DownloadCoverAsync(resolvedCoverUrl, cachedPath, cancellationToken);
+                resolvedCoverPath = await DownloadCoverAsync(resolvedCoverUrl, cachedPath, cancellationToken) ?? existingCoverPath;
             }
 
             return new AnimeMetadataResult(resolvedEnglishTitle, resolvedCoverPath, resolvedSynopsis, resolvedCriticScore);

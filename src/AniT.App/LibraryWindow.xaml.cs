@@ -233,7 +233,8 @@ public partial class LibraryWindow : Window
                 item.CoverPath,
                 cancellationToken,
                 item.Synopsis,
-                item.CriticScore);
+                item.CriticScore,
+                forceRefresh: true);
         }
 
         return anime.Count;
