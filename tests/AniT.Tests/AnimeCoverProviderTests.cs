@@ -89,8 +89,8 @@ public sealed class AnimeCoverProviderTests
                 requestBodies.Add(request.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
                 if (postCount == 1) return new HttpResponseMessage(HttpStatusCode.NotFound);
                 return JsonResponse(postCount == 2
-                    ? """{"data":{"Media":{"title":{"english":"Magilumiere Magical Girls Inc. Season 2"},"coverImage":{"extraLarge":"https://images.example/japanese-search.jpg","large":null}}}}"""
-                    : """{"data":{"Media":{"title":{"english":"Magilumiere Magical Girls Inc. Season 2"},"coverImage":{"extraLarge":"https://images.example/english-search.jpg","large":null}}}}""");
+                    ? """{"data":{"Media":{"title":{"english":"Magilumiere Magical Girls Inc. Season 2"},"coverImage":{"extraLarge":"https://images.example/japanese-search.jpg","large":null},"description":"A magical company &amp; its heroines.","averageScore":82}}}"""
+                    : """{"data":{"Media":{"title":{"english":"Magilumiere Magical Girls Inc. Season 2"},"coverImage":{"extraLarge":"https://images.example/english-search.jpg","large":null},"description":"A magical company &amp; its heroines.","averageScore":82}}}""");
             }
 
             Assert.Equal("https://images.example/english-search.jpg", request.RequestUri!.AbsoluteUri);
@@ -114,6 +114,8 @@ public sealed class AnimeCoverProviderTests
 
             Assert.Equal("Magilumiere Magical Girls Inc. Season 2", result.EnglishTitle);
             Assert.True(File.Exists(result.CoverPath));
+            Assert.Equal("A magical company & its heroines.", result.Synopsis);
+            Assert.Equal(82, result.CriticScore);
             Assert.Equal(3, postCount);
             Assert.Contains("Kabushikigaisha Magi-Lumi", requestBodies[0]);
             Assert.Contains("Kabushiki Gaisha Magi Lumiere 2nd Season", requestBodies[1]);

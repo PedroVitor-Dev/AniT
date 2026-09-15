@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace AniT.Infrastructure;
 
-public sealed record AnimeMetadataResult(string? EnglishTitle, string? CoverPath);
+public sealed record AnimeMetadataResult(string? EnglishTitle, string? CoverPath, string? Synopsis, double? CriticScore);
 
 public sealed partial class AnimeCoverProvider
 {
@@ -25,6 +25,8 @@ public sealed partial class AnimeCoverProvider
               extraLarge
               large
             }
+            description(asHtml: false)
+            averageScore
           }
         }
         """;
@@ -45,15 +47,20 @@ public sealed partial class AnimeCoverProvider
         string japaneseTitle,
         string? englishTitle,
         string? savedCoverPath,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? savedSynopsis = null,
+        double? savedCriticScore = null)
     {
         var existingCoverPath = IsUsableCover(savedCoverPath) ? savedCoverPath : null;
         Directory.CreateDirectory(coversDirectory);
         var cachedPath = Path.Combine(coversDirectory, $"{animeId:N}.jpg");
         existingCoverPath ??= IsUsableCover(cachedPath) ? cachedPath : null;
-        if (!string.IsNullOrWhiteSpace(englishTitle) && existingCoverPath is not null)
+        if (!string.IsNullOrWhiteSpace(englishTitle)
+            && existingCoverPath is not null
+            && !string.IsNullOrWhiteSpace(savedSynopsis)
+            && savedCriticScore is not null)
         {
-            return new AnimeMetadataResult(englishTitle, existingCoverPath);
+            return new AnimeMetadataResult(englishTitle, existingCoverPath, savedSynopsis, savedCriticScore);
         }
 
         var animeLock = animeLocks.GetOrAdd(animeId, _ => new SemaphoreSlim(1, 1));
@@ -61,15 +68,20 @@ public sealed partial class AnimeCoverProvider
         try
         {
             existingCoverPath = IsUsableCover(savedCoverPath) ? savedCoverPath : IsUsableCover(cachedPath) ? cachedPath : null;
-            if (!string.IsNullOrWhiteSpace(englishTitle) && existingCoverPath is not null)
+            if (!string.IsNullOrWhiteSpace(englishTitle)
+                && existingCoverPath is not null
+                && !string.IsNullOrWhiteSpace(savedSynopsis)
+                && savedCriticScore is not null)
             {
-                return new AnimeMetadataResult(englishTitle, existingCoverPath);
+                return new AnimeMetadataResult(englishTitle, existingCoverPath, savedSynopsis, savedCriticScore);
             }
 
             var initialSearchTitle = string.IsNullOrWhiteSpace(englishTitle) ? japaneseTitle : englishTitle;
             var metadata = await FindMetadataAsync(initialSearchTitle, cancellationToken);
             var resolvedEnglishTitle = string.IsNullOrWhiteSpace(englishTitle) ? metadata?.EnglishTitle : englishTitle;
             var resolvedCoverUrl = metadata?.CoverUrl;
+            var resolvedSynopsis = string.IsNullOrWhiteSpace(savedSynopsis) ? metadata?.Synopsis : savedSynopsis;
+            var resolvedCriticScore = savedCriticScore ?? metadata?.CriticScore;
 
             var resolvedEnglishNow = string.IsNullOrWhiteSpace(englishTitle) && !string.IsNullOrWhiteSpace(resolvedEnglishTitle);
             if (resolvedEnglishNow && !string.Equals(initialSearchTitle, resolvedEnglishTitle, StringComparison.OrdinalIgnoreCase))
@@ -77,15 +89,17 @@ public sealed partial class AnimeCoverProvider
                 var englishMetadata = await FindMetadataAsync(resolvedEnglishTitle!, cancellationToken);
                 resolvedCoverUrl = englishMetadata?.CoverUrl ?? resolvedCoverUrl;
                 resolvedEnglishTitle = englishMetadata?.EnglishTitle ?? resolvedEnglishTitle;
+                resolvedSynopsis ??= englishMetadata?.Synopsis;
+                resolvedCriticScore ??= englishMetadata?.CriticScore;
             }
 
-            if (resolvedCoverUrl is null || (existingCoverPath is not null && !resolvedEnglishNow))
+            var resolvedCoverPath = existingCoverPath;
+            if (resolvedCoverPath is null && resolvedCoverUrl is not null)
             {
-                return new AnimeMetadataResult(resolvedEnglishTitle, existingCoverPath);
+                resolvedCoverPath = await DownloadCoverAsync(resolvedCoverUrl, cachedPath, cancellationToken);
             }
 
-            var downloadedCover = await DownloadCoverAsync(resolvedCoverUrl, cachedPath, cancellationToken);
-            return new AnimeMetadataResult(resolvedEnglishTitle, downloadedCover ?? existingCoverPath);
+            return new AnimeMetadataResult(resolvedEnglishTitle, resolvedCoverPath, resolvedSynopsis, resolvedCriticScore);
         }
         catch (OperationCanceledException)
         {
@@ -93,7 +107,7 @@ public sealed partial class AnimeCoverProvider
         }
         catch (Exception exception) when (exception is HttpRequestException or IOException or JsonException)
         {
-            return new AnimeMetadataResult(englishTitle, existingCoverPath);
+            return new AnimeMetadataResult(englishTitle, existingCoverPath, savedSynopsis, savedCriticScore);
         }
         finally
         {
@@ -148,9 +162,21 @@ public sealed partial class AnimeCoverProvider
                 if (!TryReadText(cover, "extraLarge", out coverUrl)) TryReadText(cover, "large", out coverUrl);
             }
 
-            if (!string.IsNullOrWhiteSpace(english) || Uri.TryCreate(coverUrl, UriKind.Absolute, out _))
+            string? synopsis = null;
+            if (TryReadText(media, "description", out var description)) synopsis = NormalizeSynopsis(description!);
+
+            double? criticScore = null;
+            if (media.TryGetProperty("averageScore", out var score) && score.ValueKind == JsonValueKind.Number)
             {
-                return new AniListMetadata(english, coverUrl);
+                criticScore = score.GetDouble();
+            }
+
+            if (!string.IsNullOrWhiteSpace(english)
+                || Uri.TryCreate(coverUrl, UriKind.Absolute, out _)
+                || !string.IsNullOrWhiteSpace(synopsis)
+                || criticScore is not null)
+            {
+                return new AniListMetadata(english, coverUrl, synopsis, criticScore);
             }
         }
 
@@ -227,6 +253,12 @@ public sealed partial class AnimeCoverProvider
         return !string.IsNullOrWhiteSpace(value);
     }
 
+    private static string NormalizeSynopsis(string value)
+    {
+        var withoutTags = HtmlTagRegex().Replace(value, " ");
+        return WhitespaceRegex().Replace(WebUtility.HtmlDecode(withoutTags), " ").Trim();
+    }
+
     private static bool IsUsableCover(string? path)
     {
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return false;
@@ -247,10 +279,13 @@ public sealed partial class AnimeCoverProvider
         return client;
     }
 
-    private sealed record AniListMetadata(string? EnglishTitle, string? CoverUrl);
+    private sealed record AniListMetadata(string? EnglishTitle, string? CoverUrl, string? Synopsis, double? CriticScore);
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex WhitespaceRegex();
+
+    [GeneratedRegex("<[^>]+>")]
+    private static partial Regex HtmlTagRegex();
 
     [GeneratedRegex(@"\bKabushikigaisha\b", RegexOptions.IgnoreCase)]
     private static partial Regex KabushikigaishaRegex();

@@ -15,8 +15,10 @@ public sealed class Anime
     public string? OriginalTitle { get; set; }
     public string? Synopsis { get; set; }
     public string? CoverPath { get; set; }
+    public double? CriticScore { get; set; }
     public bool IsFavorite { get; set; }
     public double? Rating { get; set; }
+    public string? ReviewNotes { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public ICollection<Season> Seasons { get; set; } = new List<Season>();
 }

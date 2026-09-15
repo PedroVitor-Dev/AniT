@@ -1,4 +1,89 @@
-<Window x:Class="AniT.App.AnimeDetailsWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Anime · AniT" Width="1050" Height="760" MinWidth="850" MinHeight="600" Background="#070B16" WindowStartupLocation="CenterOwner" Loaded="Window_Loaded" Activated="Window_Activated">
-    <Window.Resources><Style x:Key="EpisodeRow" TargetType="Border"><Setter Property="Background" Value="#10192A"/><Setter Property="BorderBrush" Value="#2A3C59"/><Setter Property="BorderThickness" Value="0,0,0,1"/><Setter Property="Padding" Value="18,15"/><Setter Property="Cursor" Value="Hand"/><EventSetter Event="MouseLeftButtonUp" Handler="EpisodeRow_Click"/></Style><Style x:Key="ActionButton" TargetType="Button"><Setter Property="Background" Value="#2FA7FF"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Padding" Value="16,8"/><Setter Property="Cursor" Value="Hand"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border Background="{TemplateBinding Background}" CornerRadius="9" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/></Border></ControlTemplate></Setter.Value></Setter><Style.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#59B9FF"/></Trigger></Style.Triggers></Style></Window.Resources>
-    <Grid><Grid.RowDefinitions><RowDefinition Height="260"/><RowDefinition Height="*"/></Grid.RowDefinitions><Border Background="#101B30" BorderBrush="#294361" BorderThickness="0,0,0,1"><Grid Margin="42,34"><Grid.ColumnDefinitions><ColumnDefinition Width="145"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Width="145" Height="190" CornerRadius="16" Background="#142A48" BorderBrush="#2D527A" BorderThickness="1" VerticalAlignment="Center"><Grid ClipToBounds="True"><Border><Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#173C65" Offset="0"/><GradientStop Color="#0D1A31" Offset="0.65"/><GradientStop Color="#102B4D" Offset="1"/></LinearGradientBrush></Border.Background></Border><Image Source="Assets/normal-sf.png" Width="105" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-15,-18" Opacity="0.2"/><TextBlock Text="{Binding Initial}" Foreground="#53B6FF" FontSize="70" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/><Rectangle RadiusX="16" RadiusY="16"><Rectangle.Fill><ImageBrush ImageSource="{Binding CoverPath}" Stretch="UniformToFill"/></Rectangle.Fill></Rectangle></Grid></Border><StackPanel Grid.Column="1" Margin="28,12,0,0"><TextBlock Text="{Binding AnimeTitle}" Foreground="White" FontSize="30" FontWeight="SemiBold" TextWrapping="Wrap"/><TextBlock Text="{Binding EnglishTitleDisplay}" Foreground="#7896BA" FontSize="14" FontStyle="Italic" Margin="0,5,0,0" TextWrapping="Wrap"/><TextBlock Text="{Binding Summary}" Foreground="#A6BDDB" FontSize="14" Margin="0,10,0,0"/><StackPanel Orientation="Horizontal" Margin="0,22,0,0"><Button Style="{StaticResource ActionButton}" Content="{Binding PlayNextLabel}" Click="PlayNext_Click"/><TextBlock Text="Progresso salvo localmente" Foreground="#7F9EC4" FontSize="12" VerticalAlignment="Center" Margin="16,0,0,0"/></StackPanel></StackPanel></Grid></Border><Grid Grid.Row="1" Margin="42,31"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions><DockPanel><TextBlock Text="Episódios" Foreground="White" FontSize="21" FontWeight="SemiBold" DockPanel.Dock="Left"/><TextBlock Text="{Binding EpisodeCountLabel}" Foreground="#8FA9CD" FontSize="13" VerticalAlignment="Bottom" DockPanel.Dock="Right"/></DockPanel><Border Grid.Row="1" Background="#10192A" BorderBrush="#2A405E" BorderThickness="1" CornerRadius="14" Margin="0,18,0,0"><ScrollViewer VerticalScrollBarVisibility="Auto"><ItemsControl ItemsSource="{Binding Episodes}"><ItemsControl.ItemTemplate><DataTemplate><Border Style="{StaticResource EpisodeRow}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="58"/><ColumnDefinition Width="*"/><ColumnDefinition Width="120"/><ColumnDefinition Width="138"/></Grid.ColumnDefinitions><Border Width="35" Height="35" CornerRadius="18" Background="#1B3355" VerticalAlignment="Center"><TextBlock Text="{Binding Number}" Foreground="#D9E9FF" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="{Binding Title}" Foreground="White" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding ProgressLabel}" Foreground="#91ABD0" FontSize="12" Margin="0,3,0,0"/></StackPanel><TextBlock Grid.Column="2" Text="{Binding StatusLabel}" Foreground="{Binding StatusColor}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Center"/><Button Grid.Column="3" Style="{StaticResource ActionButton}" Content="{Binding WatchedActionLabel}" Tag="{Binding Id}" Click="ToggleWatched_Click" VerticalAlignment="Center"/></Grid></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer></Border></Grid></Grid>
+<Window x:Class="AniT.App.AnimeDetailsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Página do Anime · AniT"
+        Width="1100" Height="780" MinWidth="720" MinHeight="560"
+        Background="#070B16" WindowStartupLocation="CenterOwner"
+        Loaded="Window_Loaded" Activated="Window_Activated">
+    <Window.Resources>
+        <Style x:Key="EpisodeRow" TargetType="Border">
+            <Setter Property="Background" Value="#10192A"/><Setter Property="BorderBrush" Value="#2A3C59"/><Setter Property="BorderThickness" Value="0,0,0,1"/><Setter Property="Padding" Value="18,15"/><Setter Property="Cursor" Value="Hand"/>
+            <EventSetter Event="MouseLeftButtonUp" Handler="EpisodeRow_Click"/>
+        </Style>
+        <Style x:Key="ActionButton" TargetType="Button" BasedOn="{StaticResource BrandButton}"><Setter Property="Padding" Value="16,8"/></Style>
+        <Style x:Key="AnimeTabItem" TargetType="TabItem">
+            <Setter Property="Foreground" Value="#85A2C8"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Padding" Value="18,10"/><Setter Property="Margin" Value="0,0,8,0"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TabItem"><Border x:Name="TabBorder" Background="{TemplateBinding Background}" CornerRadius="10" Padding="{TemplateBinding Padding}"><ContentPresenter ContentSource="Header" HorizontalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsSelected" Value="True"><Setter TargetName="TabBorder" Property="Background" Value="#183A61"/><Setter Property="Foreground" Value="#63C5FF"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="TabBorder" Property="Background" Value="#142640"/><Setter Property="Foreground" Value="White"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+        </Style>
+        <Style x:Key="AnimeTabs" TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="ItemContainerStyle" Value="{StaticResource AnimeTabItem}"/>
+            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TabControl"><Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions><TabPanel IsItemsHost="True" Background="Transparent"/><ContentPresenter Grid.Row="1" ContentSource="SelectedContent" Margin="0,16,0,0"/></Grid></ControlTemplate></Setter.Value></Setter>
+        </Style>
+        <Style x:Key="ReviewTextBox" TargetType="TextBox">
+            <Setter Property="Background" Value="#0B1424"/><Setter Property="Foreground" Value="#EAF4FF"/><Setter Property="BorderBrush" Value="#2A4567"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Padding" Value="14"/><Setter Property="CaretBrush" Value="#58BFFF"/><Setter Property="FontSize" Value="14"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="250"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+        <Border Background="#101B30" BorderBrush="#294361" BorderThickness="0,0,0,1">
+            <Grid Margin="38,28">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="145"/><ColumnDefinition Width="*"/><ColumnDefinition Width="138"/></Grid.ColumnDefinitions>
+                <Border Width="145" Height="194" CornerRadius="16" Background="#142A48" BorderBrush="#2D527A" BorderThickness="1">
+                    <Grid ClipToBounds="True">
+                        <Border><Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#173C65" Offset="0"/><GradientStop Color="#0D1A31" Offset="0.65"/><GradientStop Color="#102B4D" Offset="1"/></LinearGradientBrush></Border.Background></Border>
+                        <Image Source="Assets/normal-sf.png" Width="105" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-15,-18" Opacity="0.2"/>
+                        <TextBlock Text="{Binding Initial}" Foreground="#53B6FF" FontSize="70" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Rectangle RadiusX="16" RadiusY="16"><Rectangle.Fill><ImageBrush ImageSource="{Binding CoverPath}" Stretch="UniformToFill"/></Rectangle.Fill></Rectangle>
+                    </Grid>
+                </Border>
+                <StackPanel Grid.Column="1" Margin="28,8,26,0">
+                    <TextBlock Text="{Binding AnimeTitle}" Foreground="White" FontSize="29" FontWeight="SemiBold" TextWrapping="Wrap" MaxHeight="76"/>
+                    <TextBlock Text="{Binding EnglishTitleDisplay}" Foreground="#7896BA" FontSize="14" FontStyle="Italic" Margin="0,5,0,0" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding Summary}" Foreground="#A6BDDB" FontSize="14" Margin="0,10,0,0"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,20,0,0"><Button Style="{StaticResource ActionButton}" Content="{Binding PlayNextLabel}" Click="PlayNext_Click"/><TextBlock Text="Progresso salvo localmente" Foreground="#7F9EC4" FontSize="12" VerticalAlignment="Center" Margin="16,0,0,0"/></StackPanel>
+                </StackPanel>
+                <Border Grid.Column="2" Background="#0B1527" BorderBrush="#2D527A" BorderThickness="1" CornerRadius="16" Padding="14" VerticalAlignment="Top">
+                    <StackPanel TextBlock.TextAlignment="Center"><TextBlock Text="NOTA DA CRÍTICA" Foreground="#7195C0" FontSize="9" FontWeight="Bold"/><TextBlock Text="{Binding CriticScoreLabel}" Foreground="#63C5FF" FontSize="28" FontWeight="SemiBold" Margin="0,8,0,0"/><TextBlock Text="via AniList" Foreground="#5E789B" FontSize="10" Margin="0,3,0,0"/></StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <TabControl Grid.Row="1" Style="{StaticResource AnimeTabs}" Margin="38,22,38,30">
+            <TabItem Header="Episódios">
+                <Grid>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                    <DockPanel><TextBlock Text="Sua lista local" Foreground="White" FontSize="20" FontWeight="SemiBold" DockPanel.Dock="Left"/><TextBlock Text="{Binding EpisodeCountLabel}" Foreground="#8FA9CD" FontSize="13" VerticalAlignment="Bottom" DockPanel.Dock="Right"/></DockPanel>
+                    <Border Grid.Row="1" Background="#10192A" BorderBrush="#2A405E" BorderThickness="1" CornerRadius="14" Margin="0,15,0,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl ItemsSource="{Binding Episodes}"><ItemsControl.ItemTemplate><DataTemplate><Border Style="{StaticResource EpisodeRow}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="58"/><ColumnDefinition Width="*"/><ColumnDefinition Width="120"/><ColumnDefinition Width="138"/></Grid.ColumnDefinitions><Border Width="35" Height="35" CornerRadius="18" Background="#1B3355" VerticalAlignment="Center"><TextBlock Text="{Binding Number}" Foreground="#D9E9FF" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="{Binding Title}" Foreground="White" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding ProgressLabel}" Foreground="#91ABD0" FontSize="12" Margin="0,3,0,0"/></StackPanel><TextBlock Grid.Column="2" Text="{Binding StatusLabel}" Foreground="{Binding StatusColor}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Center"/><Button Grid.Column="3" Style="{StaticResource ActionButton}" Content="{Binding WatchedActionLabel}" Tag="{Binding Id}" Click="ToggleWatched_Click" VerticalAlignment="Center"/></Grid></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Sinopse">
+                <Border Background="#10192A" BorderBrush="#2A405E" BorderThickness="1" CornerRadius="16" Padding="28">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel><TextBlock Text="Sobre a obra" Foreground="White" FontSize="21" FontWeight="SemiBold"/><TextBlock Text="{Binding Synopsis}" Foreground="#B5C9E4" FontSize="14" TextWrapping="Wrap" LineHeight="23" Margin="0,16,0,0"/><Border Background="#0B1527" BorderBrush="#243D5D" BorderThickness="1" CornerRadius="11" Padding="14" Margin="0,24,0,0" HorizontalAlignment="Left"><TextBlock Text="Sinopse e nota pública fornecidas pela AniList e mantidas no seu computador." Foreground="#718DB1" FontSize="11"/></Border></StackPanel></ScrollViewer>
+                </Border>
+            </TabItem>
+
+            <TabItem Header="Minha avaliação">
+                <Border Background="#10192A" BorderBrush="#2A405E" BorderThickness="1" CornerRadius="16" Padding="28">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel MaxWidth="720" HorizontalAlignment="Left">
+                            <TextBlock Text="O que você achou?" Foreground="White" FontSize="21" FontWeight="SemiBold"/>
+                            <TextBlock Text="Sua nota e seus comentários ficam somente neste computador." Foreground="#8FA9CD" FontSize="13" Margin="0,7,0,0"/>
+                            <DockPanel Margin="0,25,0,0"><TextBlock Text="SUA NOTA" Foreground="#7195C0" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/><TextBlock x:Name="RatingValueText" Text="Sem nota" Foreground="#63C5FF" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Right"/></DockPanel>
+                            <Slider x:Name="UserRatingSlider" Minimum="0" Maximum="10" TickFrequency="0.5" IsSnapToTickEnabled="True" ValueChanged="UserRatingSlider_ValueChanged" Margin="0,10,0,0"/>
+                            <TextBlock Text="0 remove a nota · 10 é obra-prima" Foreground="#5F789A" FontSize="10" Margin="0,5,0,0"/>
+                            <TextBlock Text="SEU COMENTÁRIO" Foreground="#7195C0" FontSize="10" FontWeight="Bold" Margin="0,23,0,9"/>
+                            <TextBox x:Name="ReviewTextBox" Style="{StaticResource ReviewTextBox}" Height="135" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" MaxLength="4000"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,18,0,0"><Button Style="{StaticResource ActionButton}" Content="Salvar avaliação" Click="SaveReview_Click"/><TextBlock x:Name="ReviewStatusText" Foreground="#6CDEB2" FontSize="12" VerticalAlignment="Center" Margin="16,0,0,0"/></StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Border>
+            </TabItem>
+        </TabControl>
+    </Grid>
 </Window>

@@ -17,12 +17,14 @@ public partial class AnimeDetailsWindow : Window
     public string EpisodeCountLabel { get; private set; } = string.Empty;
     public string PlayNextLabel { get; private set; } = "▶  Assistir próximo episódio";
     public string? CoverPath { get; private set; }
+    public string Synopsis { get; private set; } = "A sinopse ainda não está disponível.";
+    public string CriticScoreLabel { get; private set; } = "—";
 
     public AnimeDetailsWindow(Guid animeId)
     {
         this.animeId = animeId;
         InitializeComponent();
-        ResponsiveWindow.FitToWorkArea(this, 1050, 760);
+        ResponsiveWindow.FitToWorkArea(this, 1100, 780);
         DataContext = this;
     }
 
@@ -44,6 +46,13 @@ public partial class AnimeDetailsWindow : Window
         EnglishTitleDisplay = FormatEnglishTitle(anime.EnglishTitle);
         Initial = anime.Title[..1].ToUpperInvariant();
         CoverPath = File.Exists(anime.CoverPath) ? anime.CoverPath : null;
+        Synopsis = string.IsNullOrWhiteSpace(anime.Synopsis)
+            ? "A sinopse ainda não está disponível. Use Atualizar Títulos na Biblioteca para tentar novamente."
+            : anime.Synopsis;
+        CriticScoreLabel = anime.CriticScore is { } criticScore ? $"{criticScore:0}/100" : "—";
+        UserRatingSlider.Value = anime.Rating ?? 0;
+        ReviewTextBox.Text = anime.ReviewNotes ?? string.Empty;
+        ReviewStatusText.Text = string.Empty;
         var allEpisodes = anime.Seasons.SelectMany(season => season.Episodes).OrderBy(episode => episode.Season!.Number).ThenBy(episode => episode.Number).ToList();
         var watched = allEpisodes.Count(episode => episode.Status == global::AniT.Core.WatchStatus.Completed);
         var watching = allEpisodes.Count(episode => episode.Status == global::AniT.Core.WatchStatus.Watching || episode.PlaybackProgress is { PositionSeconds: > 0 });
@@ -64,13 +73,26 @@ public partial class AnimeDetailsWindow : Window
         DataContext = null;
         DataContext = this;
 
-        if (CoverPath is null || string.IsNullOrWhiteSpace(anime.EnglishTitle))
+        if (CoverPath is null
+            || string.IsNullOrWhiteSpace(anime.EnglishTitle)
+            || string.IsNullOrWhiteSpace(anime.Synopsis)
+            || anime.CriticScore is null)
         {
             try
             {
-                var metadata = await App.EnsureAnimeMetadataAsync(anime.Id, anime.Title, anime.EnglishTitle, anime.CoverPath);
+                var metadata = await App.EnsureAnimeMetadataAsync(
+                    anime.Id,
+                    anime.Title,
+                    anime.EnglishTitle,
+                    anime.CoverPath,
+                    savedSynopsis: anime.Synopsis,
+                    savedCriticScore: anime.CriticScore);
                 CoverPath = metadata.CoverPath;
                 EnglishTitleDisplay = FormatEnglishTitle(metadata.EnglishTitle);
+                Synopsis = string.IsNullOrWhiteSpace(metadata.Synopsis)
+                    ? Synopsis
+                    : metadata.Synopsis;
+                CriticScoreLabel = metadata.CriticScore is { } score ? $"{score:0}/100" : "—";
                 DataContext = null;
                 DataContext = this;
             }
@@ -82,6 +104,25 @@ public partial class AnimeDetailsWindow : Window
     }
 
     private static string FormatEnglishTitle(string? title) => string.IsNullOrWhiteSpace(title) ? string.Empty : $"({title})";
+
+    private void UserRatingSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (RatingValueText is null || ReviewStatusText is null) return;
+        RatingValueText.Text = e.NewValue <= 0 ? "Sem nota" : $"{e.NewValue:0.0}/10";
+        ReviewStatusText.Text = string.Empty;
+    }
+
+    private async void SaveReview_Click(object sender, RoutedEventArgs e)
+    {
+        await using var context = App.OpenFreshDatabase();
+        var anime = await context.Anime.FirstOrDefaultAsync(item => item.Id == animeId);
+        if (anime is null) return;
+
+        anime.Rating = UserRatingSlider.Value <= 0 ? null : UserRatingSlider.Value;
+        anime.ReviewNotes = string.IsNullOrWhiteSpace(ReviewTextBox.Text) ? null : ReviewTextBox.Text.Trim();
+        await context.SaveChangesAsync();
+        ReviewStatusText.Text = "✓ Avaliação salva localmente";
+    }
 
     private async void ToggleWatched_Click(object sender, RoutedEventArgs e)
     {

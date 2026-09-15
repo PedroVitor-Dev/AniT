@@ -13,11 +13,13 @@ public static class AniTDatabase
             .Options;
         var context = new AniTDbContext(options);
         context.Database.EnsureCreated();
-        EnsureEnglishTitleColumn(context);
+        EnsureAnimeColumn(context, "EnglishTitle", "TEXT NULL");
+        EnsureAnimeColumn(context, "CriticScore", "REAL NULL");
+        EnsureAnimeColumn(context, "ReviewNotes", "TEXT NULL");
         return context;
     }
 
-    private static void EnsureEnglishTitleColumn(AniTDbContext context)
+    private static void EnsureAnimeColumn(AniTDbContext context, string columnName, string definition)
     {
         var connection = context.Database.GetDbConnection();
         var shouldClose = connection.State != ConnectionState.Open;
@@ -25,12 +27,16 @@ public static class AniTDatabase
         try
         {
             using var checkCommand = connection.CreateCommand();
-            checkCommand.CommandText = "SELECT COUNT(*) FROM pragma_table_info('Anime') WHERE name = 'EnglishTitle';";
+            checkCommand.CommandText = "SELECT COUNT(*) FROM pragma_table_info('Anime') WHERE name = $columnName;";
+            var parameter = checkCommand.CreateParameter();
+            parameter.ParameterName = "$columnName";
+            parameter.Value = columnName;
+            checkCommand.Parameters.Add(parameter);
             var columnExists = Convert.ToInt32(checkCommand.ExecuteScalar()) > 0;
             if (columnExists) return;
 
             using var migrationCommand = connection.CreateCommand();
-            migrationCommand.CommandText = "ALTER TABLE Anime ADD COLUMN EnglishTitle TEXT NULL;";
+            migrationCommand.CommandText = $"ALTER TABLE Anime ADD COLUMN {columnName} {definition};";
             migrationCommand.ExecuteNonQuery();
         }
         finally

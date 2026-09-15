@@ -194,7 +194,13 @@ public partial class LibraryWindow : Window
             anime = await context.Anime
                 .AsNoTracking()
                 .OrderBy(item => item.Title)
-                .Select(item => new AnimeMetadataItem(item.Id, item.Title, item.EnglishTitle, item.CoverPath))
+                .Select(item => new AnimeMetadataItem(
+                    item.Id,
+                    item.Title,
+                    item.EnglishTitle,
+                    item.CoverPath,
+                    item.Synopsis,
+                    item.CriticScore))
                 .ToListAsync(cancellationToken);
         }
 
@@ -218,7 +224,9 @@ public partial class LibraryWindow : Window
                 item.JapaneseTitle,
                 item.EnglishTitle,
                 item.CoverPath,
-                cancellationToken);
+                cancellationToken,
+                item.Synopsis,
+                item.CriticScore);
         }
 
         return anime.Count;
@@ -249,7 +257,13 @@ public partial class LibraryWindow : Window
     }
 }
 
-internal sealed record AnimeMetadataItem(Guid Id, string JapaneseTitle, string? EnglishTitle, string? CoverPath);
+internal sealed record AnimeMetadataItem(
+    Guid Id,
+    string JapaneseTitle,
+    string? EnglishTitle,
+    string? CoverPath,
+    string? Synopsis,
+    double? CriticScore);
 
 public sealed class AnimeLibraryItem(
     Guid id,

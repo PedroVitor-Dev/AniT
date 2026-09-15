@@ -98,25 +98,35 @@ public partial class App : Application
         string japaneseTitle,
         string? englishTitle,
         string? savedCoverPath,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? savedSynopsis = null,
+        double? savedCriticScore = null)
     {
         var metadata = await animeCoverProvider.EnsureMetadataAsync(
             animeId,
             japaneseTitle,
             englishTitle,
             savedCoverPath,
-            cancellationToken);
+            cancellationToken,
+            savedSynopsis,
+            savedCriticScore);
         var englishChanged = !string.IsNullOrWhiteSpace(metadata.EnglishTitle)
             && !string.Equals(metadata.EnglishTitle, englishTitle, StringComparison.Ordinal);
         var coverChanged = metadata.CoverPath is not null
             && !string.Equals(metadata.CoverPath, savedCoverPath, StringComparison.OrdinalIgnoreCase);
-        if (!englishChanged && !coverChanged) return metadata;
+        var synopsisChanged = !string.IsNullOrWhiteSpace(metadata.Synopsis)
+            && !string.Equals(metadata.Synopsis, savedSynopsis, StringComparison.Ordinal);
+        var criticScoreChanged = metadata.CriticScore is not null
+            && metadata.CriticScore != savedCriticScore;
+        if (!englishChanged && !coverChanged && !synopsisChanged && !criticScoreChanged) return metadata;
 
         await using var context = OpenFreshDatabase();
         var anime = await context.Anime.FirstOrDefaultAsync(item => item.Id == animeId, cancellationToken);
         if (anime is null) return metadata;
         if (englishChanged) anime.EnglishTitle = metadata.EnglishTitle;
         if (coverChanged) anime.CoverPath = metadata.CoverPath;
+        if (synopsisChanged) anime.Synopsis = metadata.Synopsis;
+        if (criticScoreChanged) anime.CriticScore = metadata.CriticScore;
         await context.SaveChangesAsync(cancellationToken);
         return metadata;
     }

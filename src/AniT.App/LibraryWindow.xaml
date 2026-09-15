@@ -13,30 +13,17 @@
         SizeChanged="Window_SizeChanged"
         Closed="Window_Closed">
     <Window.Resources>
-        <Style x:Key="AnimeCard" TargetType="Button">
+        <Style x:Key="AnimeCard" TargetType="Border">
             <Setter Property="Background" Value="#10192A"/>
             <Setter Property="BorderBrush" Value="#2B405F"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="16">
-                            <ContentPresenter/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#15233B"/>
-                    <Setter Property="BorderBrush" Value="#2FA7FF"/>
-                </Trigger>
-            </Style.Triggers>
+            <Setter Property="CornerRadius" Value="16"/>
+        </Style>
+        <Style x:Key="AnimePageButton" TargetType="Button" BasedOn="{StaticResource BrandButton}">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Margin" Value="14,0,14,14"/>
+            <Setter Property="Padding" Value="13,7"/>
+            <Setter Property="FontSize" Value="12"/>
         </Style>
         <Style x:Key="RefreshProgressStyle" TargetType="ProgressBar">
             <Setter Property="Height" Value="12"/>
@@ -140,9 +127,13 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Button Style="{StaticResource AnimeCard}" Width="220" Height="300" Margin="0,0,19,20" Click="AnimeCard_Click">
+                                <Border Style="{StaticResource AnimeCard}" Width="220" Height="348" Margin="0,0,19,20">
                                     <Grid>
-                                        <Grid.RowDefinitions><RowDefinition Height="180"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="180"/>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
                                         <Border CornerRadius="15,15,0,0">
                                             <Grid ClipToBounds="True">
                                                 <Border>
@@ -170,8 +161,12 @@
                                             <TextBlock Text="{Binding Status}" Foreground="#A5BDDC" FontSize="12" Margin="0,5,0,0"/>
                                             <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}" Maximum="100" Height="4" Margin="0,10,0,0" Background="#2A3B57" Foreground="#2FA7FF" BorderThickness="0"/>
                                         </StackPanel>
+                                        <Button Grid.Row="2"
+                                                Style="{StaticResource AnimePageButton}"
+                                                Content="Página do Anime  →"
+                                                Click="AnimeCard_Click"/>
                                     </Grid>
-                                </Button>
+                                </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
