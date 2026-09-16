@@ -15,9 +15,21 @@
     <Window.Resources>
         <Style x:Key="AnimeCard" TargetType="Border">
             <Setter Property="Background" Value="#10192A"/>
-            <Setter Property="BorderBrush" Value="#2B405F"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="BorderBrush" Value="#365A80"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
+            <Setter Property="CornerRadius" Value="18"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="#020711" BlurRadius="18" ShadowDepth="5" Opacity="0.4"/>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderBrush" Value="#49BEFF"/>
+                    <Setter Property="Background" Value="#13223A"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
         <Style x:Key="AnimePageButton" TargetType="Button" BasedOn="{StaticResource BrandButton}">
             <Setter Property="Height" Value="36"/>
@@ -80,10 +92,12 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Padding" Value="16,10"/>
             <Setter Property="Margin" Value="0,0,7,0"/>
+            <Setter Property="MinHeight" Value="40"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabItem">
-                        <Border x:Name="TabSurface" Background="#0C1525" BorderBrush="#253A57" BorderThickness="1" CornerRadius="10" Padding="{TemplateBinding Padding}">
+                        <Border x:Name="TabSurface" Background="#0C1525" BorderBrush="#315172" BorderThickness="1.5" CornerRadius="11" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
                             <ContentPresenter ContentSource="Header" HorizontalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -94,6 +108,31 @@
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="TabSurface" Property="BorderBrush" Value="#3982B8"/><Setter Property="Foreground" Value="#E8F6FF"/></Trigger>
                         </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="LibraryTabControl" TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid KeyboardNavigation.TabNavigation="Local" SnapsToDevicePixels="True">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TabPanel x:Name="HeaderPanel"
+                                      Grid.Row="0"
+                                      IsItemsHost="True"
+                                      Panel.ZIndex="2"
+                                      KeyboardNavigation.TabIndex="1"/>
+                            <ContentPresenter x:Name="PART_SelectedContentHost"
+                                              Grid.Row="1"
+                                              ContentSource="SelectedContent"
+                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                        </Grid>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -161,7 +200,7 @@
                 </StackPanel>
             </Grid>
 
-            <TabControl Grid.Row="1" Margin="0,25,0,0" Background="Transparent" BorderThickness="0" ItemContainerStyle="{StaticResource LibraryTab}">
+            <TabControl Grid.Row="1" Margin="0,25,0,0" Style="{StaticResource LibraryTabControl}" ItemContainerStyle="{StaticResource LibraryTab}">
                 <TabItem Header="Títulos">
                     <Grid Margin="0,20,0,0">
                         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -169,15 +208,15 @@
                                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel HorizontalAlignment="Left"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Style="{StaticResource AnimeCard}" Width="220" Height="348" Margin="0,0,19,20">
+                                        <Border Style="{StaticResource AnimeCard}" Width="220" Height="348" Margin="0,0,19,20" Padding="1.5">
                                             <Grid>
                                                 <Grid.RowDefinitions><RowDefinition Height="180"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                                                <Border CornerRadius="15,15,0,0">
-                                                    <Grid ClipToBounds="True">
-                                                        <Border><Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#173C65" Offset="0"/><GradientStop Color="#0D1A31" Offset="0.62"/><GradientStop Color="#102B4D" Offset="1"/></LinearGradientBrush></Border.Background></Border>
-                                                        <Image Source="Assets/normal-sf.png" Width="125" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-18,-20" Opacity="0.18"/>
+                                                <Border CornerRadius="16,16,0,0" Background="#0D1A31">
+                                                    <Grid>
+                                                        <Rectangle RadiusX="16" RadiusY="16"><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#173C65" Offset="0"/><GradientStop Color="#0D1A31" Offset="0.62"/><GradientStop Color="#102B4D" Offset="1"/></LinearGradientBrush></Rectangle.Fill></Rectangle>
+                                                        <Rectangle Width="125" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-18,-20" Opacity="0.18" RadiusX="16" RadiusY="16"><Rectangle.Fill><ImageBrush ImageSource="Assets/normal-sf.png" Stretch="Uniform"/></Rectangle.Fill></Rectangle>
                                                         <TextBlock Text="{Binding Initial}" Foreground="#53B6FF" FontSize="64" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.9"/>
-                                                        <Rectangle RadiusX="15" RadiusY="15"><Rectangle.Fill><ImageBrush ImageSource="{Binding CoverPath}" Stretch="UniformToFill"/></Rectangle.Fill></Rectangle>
+                                                        <Rectangle RadiusX="16" RadiusY="16"><Rectangle.Fill><ImageBrush ImageSource="{Binding CoverPath}" Stretch="UniformToFill"/></Rectangle.Fill></Rectangle>
                                                         <Border VerticalAlignment="Bottom" Height="48" Background="#B5081122"><TextBlock Text="{Binding EpisodeSummary}" Foreground="White" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="14,0"/></Border>
                                                     </Grid>
                                                 </Border>
@@ -185,7 +224,7 @@
                                                     <TextBlock Text="{Binding Title}" Foreground="White" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                                                     <TextBlock Text="{Binding EnglishTitleDisplay}" Foreground="#7896BA" FontSize="11" FontStyle="Italic" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
                                                     <TextBlock Text="{Binding Status}" Foreground="#A5BDDC" FontSize="12" Margin="0,5,0,0"/>
-                                                    <ProgressBar Value="{Binding ProgressPercent}" Maximum="100" Height="4" Margin="0,10,0,0" Background="#2A3B57" Foreground="#2FA7FF" BorderThickness="0"/>
+                                                    <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}" Maximum="100" Height="4" Margin="0,10,0,0" Background="#2A3B57" Foreground="#2FA7FF" BorderThickness="0"/>
                                                 </StackPanel>
                                                 <Button Grid.Row="2" Style="{StaticResource AnimePageButton}" Content="Página do Anime  →" Click="AnimeCard_Click"/>
                                             </Grid>
@@ -224,7 +263,7 @@
                         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"><ItemsControl ItemsSource="{Binding ReviewItems}"><ItemsControl.ItemTemplate><DataTemplate>
                             <Border Style="{StaticResource ManagementCard}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="180"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                 <StackPanel><TextBlock Text="{Binding FileName}" Foreground="White" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding SuggestedText}" Foreground="#8EA9CC" FontSize="11" Margin="0,5,0,0"/><TextBlock Text="{Binding Reasons}" Foreground="#5FAFE4" FontSize="10" Margin="0,4,0,0"/></StackPanel>
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="Confiança" Foreground="#7896BA" FontSize="10"/><ProgressBar Value="{Binding ConfidencePercent}" Maximum="100" Height="5" Margin="0,5,18,0" Foreground="#36B8FF" Background="#243650" BorderThickness="0"/><TextBlock Text="{Binding ConfidenceLabel}" Foreground="#CFE9FF" FontSize="11" Margin="0,4,18,0"/></StackPanel>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="Confiança" Foreground="#7896BA" FontSize="10"/><ProgressBar Value="{Binding ConfidencePercent, Mode=OneWay}" Maximum="100" Height="5" Margin="0,5,18,0" Foreground="#36B8FF" Background="#243650" BorderThickness="0"/><TextBlock Text="{Binding ConfidenceLabel}" Foreground="#CFE9FF" FontSize="11" Margin="0,4,18,0"/></StackPanel>
                                 <Button Grid.Column="2" Style="{StaticResource BrandButton}" Content="Revisar →" Tag="{Binding Id}" Click="ReviewItem_Click"/>
                             </Grid></Border>
                         </DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer>

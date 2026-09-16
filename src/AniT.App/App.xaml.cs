@@ -1,6 +1,8 @@
 ﻿using System.Configuration;
 using System.Data;
+using System.IO;
 using System.Windows;
+using System.Windows.Threading;
 using Microsoft.EntityFrameworkCore;
 
 namespace AniT.App;
@@ -32,6 +34,7 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        DispatcherUnhandledException += OnDispatcherUnhandledException;
         var dataDirectory = global::System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AniT", "Data");
         databasePath = global::System.IO.Path.Combine(dataDirectory, "anit.db");
         Database = global::AniT.Infrastructure.AniTDatabase.Create(databasePath);
@@ -62,9 +65,33 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        DispatcherUnhandledException -= OnDispatcherUnhandledException;
         MediaPlayer?.Dispose();
         Database?.Dispose();
         base.OnExit(e);
+    }
+
+    private static void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    {
+        try
+        {
+            var logDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AniT", "Data");
+            Directory.CreateDirectory(logDirectory);
+            File.AppendAllText(
+                Path.Combine(logDirectory, "app.log"),
+                $"{DateTimeOffset.Now:O}{Environment.NewLine}{e.Exception}{Environment.NewLine}{Environment.NewLine}");
+        }
+        catch
+        {
+            // Diagnostics must never replace the original application error.
+        }
+
+        MessageBox.Show(
+            "Uma tela do AniT encontrou um problema e não pôde ser exibida. O restante do aplicativo continuará aberto.",
+            "AniT",
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
+        e.Handled = true;
     }
 
     public static async Task PlayEpisodeAsync(Guid episodeId)
