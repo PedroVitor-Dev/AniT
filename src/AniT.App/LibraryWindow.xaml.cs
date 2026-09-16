@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Input;
 
 namespace AniT.App;
 
@@ -15,10 +16,13 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
     public ObservableCollection<FileStateItem> UnavailableItems { get; } = [];
     public int ReviewCount => ReviewItems.Count;
     public event PropertyChangedEventHandler? PropertyChanged;
+    private readonly List<AnimeLibraryItem> allAnime = [];
     private CancellationTokenSource? coverLoadingCancellation;
     private CancellationTokenSource? libraryRefreshCancellation;
     private bool isRefreshing;
     private readonly SemaphoreSlim loadGate = new(1, 1);
+    private string libraryEmptyTitle = "Nenhuma pasta adicionada ainda";
+    private string libraryEmptyDetail = "Adicione uma pasta. O AniT encontra os vídeos sem exigir que você renomeie ou reorganize nada.";
 
     public LibraryWindow()
     {
@@ -69,13 +73,17 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
 
     private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        SearchBanner.Visibility = ActualWidth < 920 ? Visibility.Collapsed : Visibility.Visible;
+        var shouldHideSearch = ActualWidth < 920;
+        SearchBanner.Visibility = shouldHideSearch ? Visibility.Collapsed : Visibility.Visible;
+        if (shouldHideSearch && LibrarySearchBox is not null && LibrarySearchBox.Text.Length > 0)
+            LibrarySearchBox.Clear();
     }
 
     private void Window_Closed(object? sender, EventArgs e)
     {
         coverLoadingCancellation?.Cancel();
         libraryRefreshCancellation?.Cancel();
+        foreach (var item in allAnime) item.PropertyChanged -= AnimeItem_PropertyChanged;
     }
 
     private async Task LoadAsync()
@@ -103,6 +111,8 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
             .Include(file => file.Episode)!.ThenInclude(episode => episode!.Season)!.ThenInclude(season => season!.Anime)
             .ToListAsync();
 
+        foreach (var existingItem in allAnime) existingItem.PropertyChanged -= AnimeItem_PropertyChanged;
+        allAnime.Clear();
         Anime.Clear();
         var missingMetadata = new List<(AnimeLibraryItem Item, string? SavedCoverPath)>();
         foreach (var item in anime)
@@ -133,22 +143,23 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
                             : $"{watched} assistido(s)",
                 totalPercent,
                 File.Exists(item.CoverPath) ? item.CoverPath : null);
-            Anime.Add(viewItem);
+            viewItem.PropertyChanged += AnimeItem_PropertyChanged;
+            allAnime.Add(viewItem);
             if (viewItem.CoverPath is null || string.IsNullOrWhiteSpace(viewItem.EnglishTitle))
             {
                 missingMetadata.Add((viewItem, item.CoverPath));
             }
         }
 
-        EmptyState.Visibility = Anime.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        EmptyTitleText.Text = roots.Count == 0
+        libraryEmptyTitle = roots.Count == 0
             ? "Nenhuma pasta adicionada ainda"
             : reviewItems.Count > 0 ? "Há arquivos aguardando revisão" : "Nenhum título identificado";
-        EmptyDetailText.Text = roots.Count == 0
+        libraryEmptyDetail = roots.Count == 0
             ? "Adicione uma pasta. O AniT encontra os vídeos sem exigir que você renomeie ou reorganize nada."
             : reviewItems.Count > 0
                 ? "Abra a aba Revisão para confirmar os arquivos ambíguos com segurança."
                 : "Atualize a Biblioteca depois de adicionar vídeos às pastas monitoradas.";
+        ApplySearchFilter();
         LibraryRoots.Clear();
         foreach (var root in roots)
         {
@@ -190,6 +201,78 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
 
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ReviewCount)));
         _ = LoadMissingMetadataAsync(missingMetadata, coverLoadingCancellation.Token);
+    }
+
+    private void SearchBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+        if (!IsLoaded) return;
+        SearchPlaceholder.Visibility = LibrarySearchBox.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+        ClearSearchButton.Visibility = LibrarySearchBox.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
+        ApplySearchFilter();
+    }
+
+    private void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Escape) return;
+        LibrarySearchBox.Clear();
+        e.Handled = true;
+    }
+
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.F || Keyboard.Modifiers != ModifierKeys.Control || SearchBanner.Visibility != Visibility.Visible) return;
+        LibrarySearchBox.Focus();
+        LibrarySearchBox.SelectAll();
+        e.Handled = true;
+    }
+
+    private void ClearSearch_Click(object sender, RoutedEventArgs e)
+    {
+        LibrarySearchBox.Clear();
+        LibrarySearchBox.Focus();
+    }
+
+    private void AnimeItem_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(AnimeLibraryItem.EnglishTitle)
+            && LibrarySearchBox.Text.Length > 0)
+        {
+            ApplySearchFilter();
+        }
+    }
+
+    private void ApplySearchFilter()
+    {
+        var query = LibrarySearchBox.Text;
+        Anime.Clear();
+        foreach (var item in allAnime.Where(item => global::AniT.Core.AnimeSearch.Matches(query, item.Title, item.EnglishTitle)))
+            Anime.Add(item);
+
+        UpdateEmptyState(query);
+    }
+
+    private void UpdateEmptyState(string query)
+    {
+        if (allAnime.Count == 0)
+        {
+            EmptyState.Visibility = Visibility.Visible;
+            EmptyTitleText.Text = libraryEmptyTitle;
+            EmptyDetailText.Text = libraryEmptyDetail;
+            EmptyActionButton.Visibility = Visibility.Visible;
+            return;
+        }
+
+        if (Anime.Count == 0)
+        {
+            EmptyState.Visibility = Visibility.Visible;
+            EmptyTitleText.Text = "Nenhum título encontrado";
+            EmptyDetailText.Text = $"Não encontramos resultados para “{query.Trim()}”. Tente outro título ou limpe a pesquisa.";
+            EmptyActionButton.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        EmptyState.Visibility = Visibility.Collapsed;
+        EmptyActionButton.Visibility = Visibility.Visible;
     }
 
     private static FileStateItem ToFileState(global::AniT.Core.MediaFile file, string status)

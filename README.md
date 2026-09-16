@@ -36,7 +36,7 @@ O projeto é **local-first**: sua biblioteca, avaliações e histórico ficam no
 
 | Recurso | Como ajuda |
 | --- | --- |
-| **Biblioteca inteligente** | Escaneia `.mkv`, `.mp4`, `.avi`, `.mov`, `.webm`, `.m4v` e `.wmv`, inclusive em subpastas. |
+| **Biblioteca inteligente** | Escaneia vídeos em subpastas e oferece pesquisa instantânea por título principal ou em inglês. |
 | **Reconhecimento seguro** | Interpreta nomes comuns de episódios e envia casos ambíguos para revisão em vez de adivinhar silenciosamente. |
 | **Capas e metadados** | Consulta título em inglês, capa, sinopse e nota pública no AniList, mantendo cache local e fallback visual. |
 | **Progresso local** | Salva posição, status e conclusão por episódio em SQLite. |

@@ -10,6 +10,7 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 - Home premium responsiva com destaques da biblioteca.
 - Biblioteca inteligente com múltiplas pastas, revisão, duplicatas e indisponíveis.
+- Pesquisa instantânea por título principal ou em inglês, tolerante a acentos e pontuação.
 - Metadados e capas via AniList com cache e fallback local.
 - Página do anime com sinopse, nota pública e avaliações por episódio.
 - Organizador opcional com prévia e suporte a legendas sidecar.
