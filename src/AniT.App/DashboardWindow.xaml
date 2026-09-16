@@ -30,10 +30,18 @@
         <Border Background="{StaticResource HomeSidebarBrush}" BorderBrush="#174576" BorderThickness="0,0,1,0">
             <Grid ClipToBounds="True">
                 <Grid.RowDefinitions><RowDefinition Height="118"/><RowDefinition Height="*"/><RowDefinition Height="205"/></Grid.RowDefinitions>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,2,0,0">
-                    <Image Source="Assets/fire.png" Width="34" Height="43" Stretch="Uniform" Margin="0,0,-8,0"/>
-                    <Border Width="93" Height="48"><Border.Background><ImageBrush ImageSource="Assets/logo-letter-white.png" Viewbox="0.04,0.20,0.92,0.45" ViewboxUnits="RelativeToBoundingBox" Stretch="Uniform"/></Border.Background></Border>
-                </StackPanel>
+                <Border Width="178"
+                        Height="92"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Margin="0,2,0,0">
+                    <Border.Background>
+                        <ImageBrush ImageSource="Assets/logo-fire.png"
+                                    Viewbox="0,0.28,1,0.46"
+                                    ViewboxUnits="RelativeToBoundingBox"
+                                    Stretch="Uniform"/>
+                    </Border.Background>
+                </Border>
                 <StackPanel Grid.Row="1" Margin="0,12,0,0">
                     <TextBlock Text="NAVEGAÇÃO" Foreground="#587DA9" FontSize="10" FontWeight="SemiBold" Margin="24,0,0,9"/>
                     <Button Style="{StaticResource HomeActiveNavButton}" Content="⌂    Início"/>
