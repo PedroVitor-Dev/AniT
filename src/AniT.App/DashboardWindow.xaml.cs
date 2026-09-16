@@ -1,16 +1,25 @@
 using Microsoft.EntityFrameworkCore;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace AniT.App;
 
-public partial class DashboardWindow : Window
+public partial class DashboardWindow : Window, INotifyPropertyChanged
 {
+    private static readonly Brush ActiveHeroDotBrush = new SolidColorBrush(Color.FromRgb(168, 231, 255));
+    private static readonly Brush InactiveHeroDotBrush = new SolidColorBrush(Color.FromRgb(49, 90, 137));
+    private readonly DispatcherTimer heroRotationTimer = new() { Interval = TimeSpan.FromSeconds(8) };
+    private readonly List<DashboardHeroSlide> heroSlides = [];
     private Guid? heroAnimeId;
     private Guid? heroEpisodeId;
+    private int heroSlideIndex;
 
     public ObservableCollection<DashboardCard> ContinueCards { get; } = [];
     public ObservableCollection<DashboardCard> RecentCards { get; } = [];
@@ -20,13 +29,17 @@ public partial class DashboardWindow : Window
 
     public string HeroTitle { get; private set; } = "Sua próxima história";
     public string HeroSubtitle { get; private set; } = "Sua estante está pronta";
-    public string? HeroCoverPath { get; private set; }
+    public string HeroCoverPath { get; private set; } = "Assets/normal-sf.png";
+    public string HeroQuote { get; private set; } = AnimeQuoteCatalog.GetFor(Guid.Empty);
     public bool CanPlayHero { get; private set; }
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     public DashboardWindow()
     {
         InitializeComponent();
         ResponsiveWindow.FitToWorkArea(this, 1380, 860);
+        heroRotationTimer.Tick += HeroRotationTimer_Tick;
+        Closed += (_, _) => heroRotationTimer.Stop();
         DataContext = this;
     }
 
@@ -101,20 +114,7 @@ public partial class DashboardWindow : Window
             CalendarItems.Add(new DashboardCalendarItem("LOCAL", item.Anime.Title, $"Ep. {item.Episode!.Number}"));
         }
 
-        var hero = watching.FirstOrDefault();
-        if (hero is not null)
-        {
-            SetHero(hero.Anime, hero.Episode, true);
-        }
-        else
-        {
-            var heroAnime = recent.FirstOrDefault();
-            var nextEpisode = heroAnime?.Seasons.SelectMany(season => season.Episodes)
-                .Where(episode => episode.Status != global::AniT.Core.WatchStatus.Completed)
-                .OrderBy(episode => episode.Number)
-                .FirstOrDefault();
-            SetHero(heroAnime, nextEpisode, nextEpisode is not null);
-        }
+        BuildHeroSlides(anime);
 
         ContinueEmptyText.Visibility = ContinueCards.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         FavoritesEmptyText.Visibility = FavoriteCards.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -123,16 +123,99 @@ public partial class DashboardWindow : Window
         DataContext = this;
     }
 
-    private void SetHero(global::AniT.Core.Anime? anime, global::AniT.Core.Episode? episode, bool canPlay)
+    private void BuildHeroSlides(IReadOnlyCollection<global::AniT.Core.Anime> anime)
     {
-        heroAnimeId = anime?.Id;
-        heroEpisodeId = episode?.Id;
-        HeroTitle = anime?.Title ?? "Sua próxima história";
-        HeroSubtitle = episode is null
-            ? "Adicione um anime para começar"
-            : $"Episódio {episode.Number:00}  •  {(episode.Status == global::AniT.Core.WatchStatus.Watching ? "Continue agora" : "Pronto para assistir")}";
-        HeroCoverPath = IsUsableCover(anime?.CoverPath) ? anime!.CoverPath : null;
-        CanPlayHero = canPlay;
+        heroRotationTimer.Stop();
+        heroSlides.Clear();
+
+        var latestWatched = anime
+            .Select(item => new
+            {
+                Anime = item,
+                Episode = item.Seasons
+                    .SelectMany(season => season.Episodes)
+                    .Where(episode => episode.PlaybackProgress is not null)
+                    .OrderByDescending(episode => episode.PlaybackProgress!.LastPlayedAt)
+                    .FirstOrDefault()
+            })
+            .Where(item => item.Episode is not null)
+            .OrderByDescending(item => item.Episode!.PlaybackProgress!.LastPlayedAt)
+            .Take(4);
+
+        foreach (var item in latestWatched)
+        {
+            var episode = item.Episode!;
+            var action = episode.Status switch
+            {
+                global::AniT.Core.WatchStatus.Watching => "Continue agora",
+                global::AniT.Core.WatchStatus.Completed => "Visto recentemente",
+                _ => "Pronto para assistir"
+            };
+            heroSlides.Add(new DashboardHeroSlide(
+                item.Anime.Id,
+                episode.Id,
+                item.Anime.Title,
+                $"Episódio {episode.Number:00}  •  {action}",
+                IsUsableCover(item.Anime.CoverPath) ? item.Anime.CoverPath! : "Assets/normal-sf.png",
+                AnimeQuoteCatalog.GetFor(item.Anime.Id),
+                true));
+        }
+
+        if (heroSlides.Count == 0)
+        {
+            heroSlides.Add(new DashboardHeroSlide(
+                null,
+                null,
+                "Sua próxima história",
+                "Assista a um episódio para começar",
+                "Assets/normal-sf.png",
+                AnimeQuoteCatalog.GetFor(Guid.Empty),
+                false));
+        }
+
+        ShowHeroSlide(0);
+        if (heroSlides.Count > 1) heroRotationTimer.Start();
+    }
+
+    private void ShowHeroSlide(int index)
+    {
+        if (heroSlides.Count == 0) return;
+        heroSlideIndex = (index % heroSlides.Count + heroSlides.Count) % heroSlides.Count;
+        var slide = heroSlides[heroSlideIndex];
+        heroAnimeId = slide.AnimeId;
+        heroEpisodeId = slide.EpisodeId;
+        HeroTitle = slide.Title;
+        HeroSubtitle = slide.Subtitle;
+        HeroCoverPath = slide.CoverPath;
+        HeroQuote = slide.Quote;
+        CanPlayHero = slide.CanPlay;
+
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HeroTitle)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HeroSubtitle)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HeroCoverPath)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HeroQuote)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanPlayHero)));
+        UpdateHeroDots();
+    }
+
+    private void UpdateHeroDots()
+    {
+        Ellipse[] dots = [HeroDot0, HeroDot1, HeroDot2, HeroDot3];
+        for (var index = 0; index < dots.Length; index++)
+        {
+            dots[index].Visibility = index < heroSlides.Count ? Visibility.Visible : Visibility.Collapsed;
+            dots[index].Fill = index == heroSlideIndex ? ActiveHeroDotBrush : InactiveHeroDotBrush;
+        }
+    }
+
+    private void HeroRotationTimer_Tick(object? sender, EventArgs e) => ShowHeroSlide(heroSlideIndex + 1);
+
+    private void HeroDot_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement element || !int.TryParse(element.Tag?.ToString(), out var index) || index >= heroSlides.Count) return;
+        ShowHeroSlide(index);
+        heroRotationTimer.Stop();
+        if (heroSlides.Count > 1) heroRotationTimer.Start();
     }
 
     private static DashboardCard CreateContinueCard(global::AniT.Core.Anime anime, global::AniT.Core.Episode episode)
@@ -232,7 +315,7 @@ public partial class DashboardWindow : Window
             SearchContainer.MaxWidth = 330;
             CollectionsTopButton.Visibility = Visibility.Collapsed;
             MyListTopButton.Visibility = Visibility.Collapsed;
-            HeroQuote.Visibility = Visibility.Collapsed;
+            HeroQuoteText.Visibility = Visibility.Collapsed;
             HeroTitleText.FontSize = 29;
         }
         else if (logicalWidth < 1450)
@@ -243,7 +326,7 @@ public partial class DashboardWindow : Window
             SearchContainer.MaxWidth = 430;
             CollectionsTopButton.Visibility = Visibility.Collapsed;
             MyListTopButton.Visibility = Visibility.Visible;
-            HeroQuote.Visibility = Visibility.Visible;
+            HeroQuoteText.Visibility = Visibility.Visible;
             HeroTitleText.FontSize = 34;
         }
         else
@@ -254,7 +337,7 @@ public partial class DashboardWindow : Window
             SearchContainer.MaxWidth = 520;
             CollectionsTopButton.Visibility = Visibility.Visible;
             MyListTopButton.Visibility = Visibility.Visible;
-            HeroQuote.Visibility = Visibility.Visible;
+            HeroQuoteText.Visibility = Visibility.Visible;
             HeroTitleText.FontSize = 36;
         }
     }
@@ -272,3 +355,12 @@ public sealed record DashboardCard(
     string ScoreLabel);
 
 public sealed record DashboardCalendarItem(string DayLabel, string Title, string EpisodeLabel);
+
+public sealed record DashboardHeroSlide(
+    Guid? AnimeId,
+    Guid? EpisodeId,
+    string Title,
+    string Subtitle,
+    string CoverPath,
+    string Quote,
+    bool CanPlay);
