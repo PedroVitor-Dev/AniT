@@ -27,6 +27,7 @@ public partial class DashboardWindow : Window
     {
         InitializeComponent();
         ResponsiveWindow.FitToWorkArea(this, 1380, 860);
+        WindowState = WindowState.Maximized;
         DataContext = this;
     }
 

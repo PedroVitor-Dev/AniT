@@ -14,8 +14,10 @@ internal static class ResponsiveWindow
 
         window.MinWidth = Math.Min(window.MinWidth, availableWidth);
         window.MinHeight = Math.Min(window.MinHeight, availableHeight);
-        window.MaxWidth = availableWidth;
-        window.MaxHeight = availableHeight;
+        // Limit only the initial size. Capping MaxWidth/MaxHeight here leaves a
+        // visible ScreenMargin strip even after the user maximizes the window.
+        window.MaxWidth = double.PositiveInfinity;
+        window.MaxHeight = double.PositiveInfinity;
         window.Width = Math.Min(preferredWidth, availableWidth);
         window.Height = Math.Min(preferredHeight, availableHeight);
     }
