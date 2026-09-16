@@ -159,11 +159,6 @@
                                                 <Button Style="{StaticResource HomeOutlineButton}" Content="▱   Abrir biblioteca" MinWidth="170" Margin="12,0,0,0" Click="Library_Click"/>
                                             </StackPanel>
                                         </StackPanel>
-                                        <Border Width="166" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,25,20,0"
-                                                Background="#E8081B38" BorderBrush="#71DFFF" BorderThickness="1" CornerRadius="12" Padding="13,9">
-                                            <Border.Effect><DropShadowEffect Color="#020A18" BlurRadius="14" ShadowDepth="2" Opacity="0.72"/></Border.Effect>
-                                            <TextBlock Text="Juntos para novos mundos! ♥" Foreground="White" FontFamily="Georgia" FontStyle="Italic" FontWeight="SemiBold" FontSize="14" TextWrapping="Wrap" TextAlignment="Center"/>
-                                        </Border>
                                     </Grid>
                                 </Border>
                             </Border>
@@ -176,8 +171,11 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <Button Style="{StaticResource HomeCardButton}" Tag="{Binding Name}" Click="Genre_Click" Margin="0,0,7,9">
-                                                <Border Width="108" Height="143" CornerRadius="13" Background="#0B2345" BorderBrush="#2B70A8" BorderThickness="1" ClipToBounds="True" SizeChanged="RoundedPanel_SizeChanged" Tag="13">
-                                                    <Grid><Grid.RowDefinitions><RowDefinition Height="102"/><RowDefinition Height="*"/></Grid.RowDefinitions><Border Background="#09234A"><Image Source="{Binding ImagePath}" Stretch="UniformToFill" Margin="-4"/></Border><Border Grid.Row="1" Background="#D4081B37" Padding="8,0"><StackPanel Orientation="Horizontal" VerticalAlignment="Center"><TextBlock Text="{Binding Icon}" Foreground="{Binding Accent}" FontSize="17"/><TextBlock Text="{Binding Name}" Foreground="White" FontSize="12" FontWeight="SemiBold" Margin="7,0,0,0"/></StackPanel></Border></Grid>
+                                                <Border Width="108" Height="143" CornerRadius="13" Background="#43C8FF" Padding="1.5"
+                                                        ClipToBounds="True" SizeChanged="RoundedPanel_SizeChanged" Tag="13">
+                                                    <Border CornerRadius="11.5" Background="#0B2345" ClipToBounds="True" SizeChanged="RoundedPanel_SizeChanged" Tag="11.5">
+                                                        <Grid><Grid.RowDefinitions><RowDefinition Height="101"/><RowDefinition Height="*"/></Grid.RowDefinitions><Border Background="#09234A"><Image Source="{Binding ImagePath}" Stretch="UniformToFill" Margin="-4"/></Border><Border Grid.Row="1" Background="#F0081B37" Padding="8,0"><StackPanel Orientation="Horizontal" VerticalAlignment="Center"><TextBlock Text="{Binding Icon}" Foreground="{Binding Accent}" FontSize="17"/><TextBlock Text="{Binding Name}" Foreground="White" FontSize="12" FontWeight="SemiBold" Margin="7,0,0,0"/></StackPanel></Border></Grid>
+                                                    </Border>
                                                 </Border>
                                             </Button>
                                         </DataTemplate>
