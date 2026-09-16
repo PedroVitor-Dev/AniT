@@ -313,6 +313,15 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
         if (SearchHint is not null) SearchHint.Visibility = string.IsNullOrEmpty(SearchBox.Text) ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    private void RoundedPanel_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (sender is not Border border || border.ActualWidth <= 0 || border.ActualHeight <= 0) return;
+        var radius = double.TryParse(border.Tag?.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var parsedRadius)
+            ? parsedRadius
+            : 18;
+        border.Clip = new RectangleGeometry(new Rect(0, 0, border.ActualWidth, border.ActualHeight), radius, radius);
+    }
+
     private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
     {
         UpdateResponsiveLayout(e.NewSize.Width, e.NewSize.Height);
