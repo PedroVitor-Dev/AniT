@@ -100,7 +100,7 @@
                     <Button Style="{StaticResource HomeNavButton}" Content="⌂    Início" Click="Home_Click"/>
                     <Button Style="{StaticResource HomeActiveNavButton}" Content="◉    Explorar"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="▱    Biblioteca" Click="Library_Click"/>
-                    <Button Style="{StaticResource HomeNavButton}" Content="▣    Calendário"/>
+                    <Button Style="{StaticResource HomeNavButton}" Content="▣    Calendário" Click="Calendar_Click"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="◷    Histórico" Click="Library_Click"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="☆    Avaliações" Click="Library_Click"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="♙    Perfil"/>

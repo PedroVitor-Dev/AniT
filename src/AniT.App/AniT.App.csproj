@@ -34,6 +34,14 @@
     <Resource Include="..\..\assets\explore\6.png" Link="Assets\Explore\6.png" />
     <Resource Include="..\..\assets\explore\7.png" Link="Assets\Explore\7.png" />
     <Resource Include="..\..\assets\explore\8.png" Link="Assets\Explore\8.png" />
+    <Resource Include="..\..\assets\calendario\banner.png" Link="Assets\Calendar\banner.png" />
+    <Resource Include="..\..\assets\calendario\samurai.png" Link="Assets\Calendar\samurai.png" />
+    <Resource Include="..\..\assets\calendario\1.png" Link="Assets\Calendar\1.png" />
+    <Resource Include="..\..\assets\calendario\2.png" Link="Assets\Calendar\2.png" />
+    <Resource Include="..\..\assets\calendario\3.png" Link="Assets\Calendar\3.png" />
+    <Resource Include="..\..\assets\calendario\4.png" Link="Assets\Calendar\4.png" />
+    <Resource Include="..\..\assets\calendario\5.png" Link="Assets\Calendar\5.png" />
+    <Resource Include="..\..\assets\calendario\6.png" Link="Assets\Calendar\6.png" />
     <Resource Include="..\..\assets\baki-pi\normal-sf.png" Link="Assets\normal-sf.png" />
     <Resource Include="..\..\assets\baki-pi\angry-sf.png" Link="Assets\angry-sf.png" />
     <Resource Include="..\..\assets\baki-pi\sad-sf.png" Link="Assets\sad-sf.png" />

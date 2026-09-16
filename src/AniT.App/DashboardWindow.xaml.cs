@@ -22,6 +22,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
     private int heroSlideIndex;
     private LibraryWindow? libraryWindow;
     private ExploreWindow? exploreWindow;
+    private CalendarWindow? calendarWindow;
 
     public ObservableCollection<DashboardCard> ContinueCards { get; } = [];
     public ObservableCollection<DashboardCard> RecentCards { get; } = [];
@@ -293,6 +294,20 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
         exploreWindow = new ExploreWindow { Owner = this };
         exploreWindow.Closed += (_, _) => exploreWindow = null;
         exploreWindow.Show();
+    }
+
+    private void Calendar_Click(object sender, RoutedEventArgs e)
+    {
+        if (calendarWindow is { IsLoaded: true })
+        {
+            if (calendarWindow.WindowState == WindowState.Minimized) calendarWindow.WindowState = WindowState.Maximized;
+            calendarWindow.Activate();
+            return;
+        }
+
+        calendarWindow = new CalendarWindow { Owner = this };
+        calendarWindow.Closed += (_, _) => calendarWindow = null;
+        calendarWindow.Show();
     }
 
     private async void ConfigureShelf_Click(object sender, RoutedEventArgs e)

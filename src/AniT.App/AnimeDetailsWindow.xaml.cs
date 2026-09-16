@@ -12,6 +12,7 @@ public partial class AnimeDetailsWindow : Window
     private readonly Guid animeId;
     private LibraryWindow? libraryWindow;
     private ExploreWindow? exploreWindow;
+    private CalendarWindow? calendarWindow;
     private bool isLoadingPage;
     private bool loadFailureShown;
     public ObservableCollection<EpisodeItem> Episodes { get; } = [];
@@ -307,6 +308,20 @@ public partial class AnimeDetailsWindow : Window
         exploreWindow = new ExploreWindow { Owner = this };
         exploreWindow.Closed += (_, _) => exploreWindow = null;
         exploreWindow.Show();
+    }
+
+    private void Calendar_Click(object sender, RoutedEventArgs e)
+    {
+        if (calendarWindow is { IsLoaded: true })
+        {
+            if (calendarWindow.WindowState == WindowState.Minimized) calendarWindow.WindowState = WindowState.Maximized;
+            calendarWindow.Activate();
+            return;
+        }
+
+        calendarWindow = new CalendarWindow { Owner = this };
+        calendarWindow.Closed += (_, _) => calendarWindow = null;
+        calendarWindow.Show();
     }
 
     private void OpenEpisodeRatings_Click(object sender, RoutedEventArgs e) => AnimeTabControl.SelectedItem = EpisodesTab;

@@ -12,6 +12,7 @@ namespace AniT.App;
 public partial class ExploreWindow : Window
 {
     private LibraryWindow? libraryWindow;
+    private CalendarWindow? calendarWindow;
     private Guid? nextEpisodeId;
     private readonly List<ExploreAnimeCard> sourceCards = [];
 
@@ -196,6 +197,20 @@ public partial class ExploreWindow : Window
     }
 
     private void Home_Click(object sender, RoutedEventArgs e) => Close();
+
+    private void Calendar_Click(object sender, RoutedEventArgs e)
+    {
+        if (calendarWindow is { IsLoaded: true })
+        {
+            if (calendarWindow.WindowState == WindowState.Minimized) calendarWindow.WindowState = WindowState.Maximized;
+            calendarWindow.Activate();
+            return;
+        }
+
+        calendarWindow = new CalendarWindow { Owner = this };
+        calendarWindow.Closed += (_, _) => calendarWindow = null;
+        calendarWindow.Show();
+    }
 
     private void RoundedPanel_SizeChanged(object sender, SizeChangedEventArgs e)
     {
