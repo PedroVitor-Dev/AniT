@@ -38,7 +38,7 @@
                     <TextBlock Text="NAVEGAÇÃO" Foreground="#587DA9" FontSize="10" FontWeight="SemiBold" Margin="24,0,0,9"/>
                     <Button Style="{StaticResource HomeActiveNavButton}" Content="⌂    Início"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="◉    Explorar" Click="Library_Click"/>
-                    <Button Style="{StaticResource HomeNavButton}" Content="▱    Minha lista" Click="Library_Click"/>
+                    <Button Style="{StaticResource HomeNavButton}" Content="▱    Biblioteca" Click="Library_Click"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="▣    Calendário"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="◷    Histórico" Click="Library_Click"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="☆    Avaliações" Click="Library_Click"/>
@@ -62,7 +62,7 @@
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button Style="{StaticResource HomeTopButton}" Content="⌂  Início"/>
                         <Button Style="{StaticResource HomeTopButton}" Content="▶  Continuar" Click="ContinueTop_Click"/>
-                        <Button x:Name="MyListTopButton" Style="{StaticResource HomeTopButton}" Content="♡  Minha Lista" Click="Library_Click"/>
+                        <Button x:Name="MyListTopButton" Style="{StaticResource HomeTopButton}" Content="♡  Biblioteca" Click="Library_Click"/>
                         <Button x:Name="CollectionsTopButton" Style="{StaticResource HomeTopButton}" Content="▱  Coleções" Click="Library_Click"/>
                         <Border Width="1" Height="30" Background="#24527F" Margin="10,0,12,0"/>
                         <Border Width="44" Height="44" CornerRadius="22" Background="#103461" BorderBrush="#4BC8FF" BorderThickness="1" ToolTip="Perfil (em breve)" Cursor="Hand"><Grid><Ellipse Fill="#153F70" Margin="3"/><TextBlock Text="♙" Foreground="#C9F0FF" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid></Border>
