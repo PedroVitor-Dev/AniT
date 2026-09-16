@@ -455,6 +455,7 @@ public partial class AnimeDetailsWindow : Window
             CollectionsTopButton.Visibility = Visibility.Collapsed;
             HeroBanner.Height = 286;
             HeroTitleText.FontSize = 34;
+            HeroCopy.MaxWidth = 560;
             HeroArtwork.Width = 300;
         }
         else if (width < 1600)
@@ -468,6 +469,7 @@ public partial class AnimeDetailsWindow : Window
             CollectionsTopButton.Visibility = Visibility.Collapsed;
             HeroBanner.Height = 322;
             HeroTitleText.FontSize = 42;
+            HeroCopy.MaxWidth = 720;
             HeroArtwork.Width = 410;
         }
         else if (width < 2300)
@@ -481,6 +483,7 @@ public partial class AnimeDetailsWindow : Window
             CollectionsTopButton.Visibility = Visibility.Visible;
             HeroBanner.Height = 350;
             HeroTitleText.FontSize = 46;
+            HeroCopy.MaxWidth = 860;
             HeroArtwork.Width = 460;
         }
         else
@@ -494,6 +497,7 @@ public partial class AnimeDetailsWindow : Window
             CollectionsTopButton.Visibility = Visibility.Visible;
             HeroBanner.Height = 380;
             HeroTitleText.FontSize = 50;
+            HeroCopy.MaxWidth = 1100;
             HeroArtwork.Width = 520;
         }
     }
