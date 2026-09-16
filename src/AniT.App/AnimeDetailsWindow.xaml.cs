@@ -203,7 +203,10 @@ public partial class AnimeDetailsWindow : Window
         var episode = await context.Episodes.FirstOrDefaultAsync(item => item.Id == episodeItem.Id);
         if (episode is null) return;
 
-        episode.Rating = Math.Clamp(rating, 1, 5);
+        var requestedRating = Math.Clamp(rating, 1, 5);
+        episode.Rating = NormalizeSavedRating(episode.Rating) == requestedRating
+            ? null
+            : requestedRating;
         await context.SaveChangesAsync();
         await LoadSafelyAsync();
     }
