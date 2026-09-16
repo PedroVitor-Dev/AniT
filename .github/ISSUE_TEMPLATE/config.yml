@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Manual e solução de problemas
+    url: https://github.com/PedroVitor-Dev/AniT/tree/main/docs
+    about: Consulte os guias antes de abrir uma issue.
+  - name: Relatar vulnerabilidade em privado
+    url: https://github.com/PedroVitor-Dev/AniT/security/policy
+    about: Não publique detalhes de segurança em uma issue.

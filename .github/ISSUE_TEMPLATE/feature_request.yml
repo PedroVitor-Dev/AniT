@@ -1,0 +1,57 @@
+name: Propor uma melhoria
+description: Sugira uma experiência, capacidade ou melhoria técnica.
+title: "[Proposta]: "
+labels: [enhancement]
+body:
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Verificações iniciais
+      options:
+        - label: Procurei propostas semelhantes.
+          required: true
+        - label: Consultei o roadmap atual.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema
+      description: Qual dificuldade existe hoje? Quem é afetado?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposta
+      description: Descreva o menor resultado útil, sem prender a discussão a uma implementação específica.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área principal
+      options:
+        - Biblioteca e scanner
+        - Player e progresso
+        - Metadados e capas
+        - Interface e acessibilidade
+        - Organização de arquivos
+        - Documentação
+        - Infraestrutura e testes
+        - Outra
+    validations:
+      required: true
+
+  - type: textarea
+    id: safety
+    attributes:
+      label: Impacto em dados e privacidade
+      description: A proposta lê, move, envia ou persiste algo novo? Como continua segura e local-first?

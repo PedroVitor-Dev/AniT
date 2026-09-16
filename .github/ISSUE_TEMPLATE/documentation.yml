@@ -1,0 +1,24 @@
+name: Melhorar documentação
+description: Relate conteúdo ausente, incorreto ou difícil de entender.
+title: "[Docs]: "
+labels: [documentation]
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Página ou seção
+      placeholder: docs/USER_GUIDE.md — seção Biblioteca
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: O que está incorreto ou ausente?
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Sugestão de melhoria

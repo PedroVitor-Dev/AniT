@@ -1,0 +1,75 @@
+name: Relatar um bug
+description: Informe um problema reproduzível no AniT.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por ajudar. Remova caminhos pessoais, nomes privados e conteúdo sensível de logs e screenshots.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Verificações iniciais
+      options:
+        - label: Procurei issues abertas e fechadas.
+          required: true
+        - label: Consultei a documentação e a solução de problemas.
+          required: true
+        - label: O relato não contém uma vulnerabilidade de segurança.
+          required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Versão ou commit
+      placeholder: Ex. main @ 68ad022
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Ambiente
+      description: Windows, resolução, escala e versão do .NET quando relevante.
+      placeholder: Windows 11, 1920x1080, 125%, .NET 10
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para reproduzir
+      placeholder: |
+        1. Abra...
+        2. Clique...
+        3. Observe...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Resultado esperado
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Resultado observado
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs e evidências
+      description: Arraste screenshots ou cole somente o trecho relevante de logs revisados.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto adicional
+      description: Tipo de arquivo, padrão de nome, pasta offline, player ou qualquer detalhe útil.
