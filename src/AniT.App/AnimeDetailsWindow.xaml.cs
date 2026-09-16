@@ -15,6 +15,8 @@ public partial class AnimeDetailsWindow : Window
     private double selectedRating;
     private LibraryWindow? libraryWindow;
     private ExploreWindow? exploreWindow;
+    private bool isLoadingPage;
+    private bool loadFailureShown;
     public ObservableCollection<EpisodeItem> Episodes { get; } = [];
     public string AnimeTitle { get; private set; } = string.Empty;
     public string EnglishTitleDisplay { get; private set; } = string.Empty;
@@ -43,9 +45,38 @@ public partial class AnimeDetailsWindow : Window
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
         UpdateResponsiveLayout(ActualWidth);
-        await LoadAsync();
+        await LoadSafelyAsync();
     }
-    private async void Window_Activated(object? sender, EventArgs e) => await LoadAsync();
+    private async void Window_Activated(object? sender, EventArgs e) => await LoadSafelyAsync();
+
+    private async Task LoadSafelyAsync()
+    {
+        if (isLoadingPage) return;
+
+        isLoadingPage = true;
+        try
+        {
+            await LoadAsync();
+            loadFailureShown = false;
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Debug.WriteLine($"Falha ao carregar a pagina do anime: {exception}");
+            if (!loadFailureShown)
+            {
+                loadFailureShown = true;
+                MessageBox.Show(
+                    "Nao foi possivel carregar a pagina deste anime. Tente novamente.",
+                    "AniT",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+        finally
+        {
+            isLoadingPage = false;
+        }
+    }
 
     private async Task LoadAsync()
     {
@@ -300,7 +331,7 @@ public partial class AnimeDetailsWindow : Window
             episode.WatchedAt = DateTimeOffset.UtcNow;
         }
         await context.SaveChangesAsync();
-        await LoadAsync();
+        await LoadSafelyAsync();
     }
 
     private void EpisodeFiles_Click(object sender, RoutedEventArgs e)
