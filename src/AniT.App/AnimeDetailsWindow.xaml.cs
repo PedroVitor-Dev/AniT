@@ -338,6 +338,9 @@ public partial class AnimeDetailsWindow : Window
     private void UpdateResponsiveLayout(double width)
     {
         if (SidebarColumn is null || DetailsContentHost is null || RightRailColumn is null) return;
+        var episodeTemplate = (DataTemplate)FindResource(width >= 1800 ? "EpisodeCardLargeTemplate" : "EpisodeCardTemplate");
+        SynopsisEpisodeList.ItemTemplate = episodeTemplate;
+        EpisodeList.ItemTemplate = episodeTemplate;
         if (width < 1180)
         {
             SidebarColumn.Width = new GridLength(184);
