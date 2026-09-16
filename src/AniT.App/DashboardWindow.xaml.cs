@@ -31,6 +31,12 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
     public string HeroSubtitle { get; private set; } = "Sua estante está pronta";
     public string HeroCoverPath { get; private set; } = "Assets/normal-sf.png";
     public string HeroQuote { get; private set; } = AnimeQuoteCatalog.GetFor(Guid.Empty);
+    public double HeroProgressPercent { get; private set; }
+    public string HeroProgressLabel { get; private set; } = "Pronto para começar";
+    public string LibraryAnimeCount { get; private set; } = "0";
+    public string LibraryEpisodeCount { get; private set; } = "0";
+    public string LibraryCompletedCount { get; private set; } = "0";
+    public string SessionMessage { get; private set; } = "Grandes histórias te esperam aqui.";
     public bool CanPlayHero { get; private set; }
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -114,6 +120,17 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
             CalendarItems.Add(new DashboardCalendarItem("LOCAL", item.Anime.Title, $"Ep. {item.Episode!.Number}"));
         }
 
+        var allEpisodes = anime.SelectMany(item => item.Seasons).SelectMany(season => season.Episodes).ToList();
+        LibraryAnimeCount = anime.Count.ToString();
+        LibraryEpisodeCount = allEpisodes.Count.ToString();
+        LibraryCompletedCount = allEpisodes.Count(episode => episode.Status == global::AniT.Core.WatchStatus.Completed).ToString();
+        SessionMessage = ContinueCards.Count switch
+        {
+            0 => "Escolha uma história na biblioteca e aproveite.",
+            1 => "Uma história está pronta para você continuar.",
+            _ => $"Você tem {ContinueCards.Count} histórias prontas para continuar."
+        };
+
         BuildHeroSlides(anime);
 
         ContinueEmptyText.Visibility = ContinueCards.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -145,6 +162,12 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
         foreach (var item in latestWatched)
         {
             var episode = item.Episode!;
+            var progress = episode.PlaybackProgress;
+            var progressPercent = episode.Status == global::AniT.Core.WatchStatus.Completed
+                ? 100
+                : progress is { DurationSeconds: > 0 }
+                    ? Math.Clamp(progress.PositionSeconds / progress.DurationSeconds * 100, 0, 100)
+                    : 0;
             var action = episode.Status switch
             {
                 global::AniT.Core.WatchStatus.Watching => "Continue agora",
@@ -157,6 +180,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
                 item.Anime.Title,
                 $"Episódio {episode.Number:00}  •  {action}",
                 IsUsableCover(item.Anime.CoverPath) ? item.Anime.CoverPath! : "Assets/normal-sf.png",
+                progressPercent,
                 AnimeQuoteCatalog.GetFor(item.Anime.Id),
                 true));
         }
@@ -169,6 +193,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
                 "Sua próxima história",
                 "Assista a um episódio para começar",
                 "Assets/normal-sf.png",
+                0,
                 AnimeQuoteCatalog.GetFor(Guid.Empty),
                 false));
         }
@@ -188,12 +213,16 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
         HeroSubtitle = slide.Subtitle;
         HeroCoverPath = slide.CoverPath;
         HeroQuote = slide.Quote;
+        HeroProgressPercent = slide.ProgressPercent;
+        HeroProgressLabel = slide.CanPlay ? $"{slide.ProgressPercent:0}% assistido" : "Pronto para começar";
         CanPlayHero = slide.CanPlay;
 
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HeroTitle)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HeroSubtitle)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HeroCoverPath)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HeroQuote)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HeroProgressPercent)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HeroProgressLabel)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanPlayHero)));
         UpdateHeroDots();
     }
@@ -205,6 +234,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
         {
             dots[index].Visibility = index < heroSlides.Count ? Visibility.Visible : Visibility.Collapsed;
             dots[index].Fill = index == heroSlideIndex ? ActiveHeroDotBrush : InactiveHeroDotBrush;
+            dots[index].Width = index == heroSlideIndex ? 18 : 7;
         }
     }
 
@@ -224,13 +254,13 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
         var percent = progress is { DurationSeconds: > 0 }
             ? Math.Clamp(progress.PositionSeconds / progress.DurationSeconds * 100, 0, 100)
             : 0;
-        return new DashboardCard(anime.Id, episode.Id, anime.Title, $"Episódio {episode.Number:00}", anime.EnglishTitle ?? "Anime local", IsUsableCover(anime.CoverPath) ? anime.CoverPath : null, percent, $"{percent:0}%", string.Empty);
+        return new DashboardCard(anime.Id, episode.Id, anime.Title, $"Episódio {episode.Number:00}", anime.EnglishTitle ?? "Anime local", IsUsableCover(anime.CoverPath) ? anime.CoverPath! : "Assets/normal-sf.png", percent, $"{percent:0}%", string.Empty);
     }
 
     private static DashboardCard CreateAnimeCard(global::AniT.Core.Anime anime, string scoreLabel = "")
     {
         var episodeCount = anime.Seasons.Sum(season => season.Episodes.Count);
-        return new DashboardCard(anime.Id, null, anime.Title, string.Empty, anime.EnglishTitle ?? $"{episodeCount} episódio{(episodeCount == 1 ? string.Empty : "s")}", IsUsableCover(anime.CoverPath) ? anime.CoverPath : null, 0, string.Empty, scoreLabel);
+        return new DashboardCard(anime.Id, null, anime.Title, string.Empty, anime.EnglishTitle ?? $"{episodeCount} episódio{(episodeCount == 1 ? string.Empty : "s")}", IsUsableCover(anime.CoverPath) ? anime.CoverPath! : "Assets/normal-sf.png", 0, string.Empty, scoreLabel);
     }
 
     private static bool IsUsableCover(string? path) => !string.IsNullOrWhiteSpace(path) && File.Exists(path);
@@ -290,55 +320,59 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
 
     private void UpdateResponsiveLayout(double width, double height)
     {
-        if (SidebarColumn is null || CalendarColumn is null || SessionCardColumn is null || InterfaceScale is null) return;
+        if (SidebarColumn is null || RightRailColumn is null || MainContentHost is null) return;
 
-        // WPF works in device-independent pixels. On ultrawide/high-resolution displays,
-        // fluid columns alone only stretch the empty space while text and cards stay tiny.
-        // Scale the complete visual system using both axes, then make breakpoint decisions
-        // with the logical width that remains available after that scale.
-        var widthScale = width / 1380d;
-        // The dashboard contains four stacked content bands. Use their complete
-        // visual height as the vertical baseline so ultrawide windows show the
-        // final band instead of enlarging the upper bands beyond the viewport.
-        var heightScale = height / 1040d;
-        var scale = Math.Clamp(Math.Min(widthScale, heightScale), 0.82d, 1.45d);
-        InterfaceScale.ScaleX = scale;
-        InterfaceScale.ScaleY = scale;
-
-        var logicalWidth = width / scale;
-
-        if (logicalWidth < 1160)
+        if (width < 1220)
         {
-            SidebarColumn.Width = new GridLength(178);
-            CalendarColumn.Width = new GridLength(235);
-            SessionCardColumn.Width = new GridLength(215);
-            SearchContainer.MaxWidth = 330;
+            SidebarColumn.Width = new GridLength(184);
+            RightRailColumn.Width = new GridLength(270);
+            MainContentHost.Margin = new Thickness(18, 16, 18, 34);
+            SearchContainer.MaxWidth = 350;
             CollectionsTopButton.Visibility = Visibility.Collapsed;
             MyListTopButton.Visibility = Visibility.Collapsed;
-            HeroQuoteText.Visibility = Visibility.Collapsed;
-            HeroTitleText.FontSize = 29;
+            HeroQuotePanel.Visibility = Visibility.Collapsed;
+            HeroArtwork.Width = 230;
+            HeroTitleText.FontSize = 30;
+            HeroBanner.Height = height < 780 ? 286 : 310;
         }
-        else if (logicalWidth < 1450)
+        else if (width < 1600)
         {
             SidebarColumn.Width = new GridLength(220);
-            CalendarColumn.Width = new GridLength(300);
-            SessionCardColumn.Width = new GridLength(235);
-            SearchContainer.MaxWidth = 430;
+            RightRailColumn.Width = new GridLength(310);
+            MainContentHost.Margin = new Thickness(24, 20, 24, 40);
+            SearchContainer.MaxWidth = 500;
             CollectionsTopButton.Visibility = Visibility.Collapsed;
             MyListTopButton.Visibility = Visibility.Visible;
-            HeroQuoteText.Visibility = Visibility.Visible;
-            HeroTitleText.FontSize = 34;
+            HeroQuotePanel.Visibility = Visibility.Visible;
+            HeroArtwork.Width = 280;
+            HeroTitleText.FontSize = 37;
+            HeroBanner.Height = height < 820 ? 308 : 336;
+        }
+        else if (width < 2300)
+        {
+            SidebarColumn.Width = new GridLength(232);
+            RightRailColumn.Width = new GridLength(340);
+            MainContentHost.Margin = new Thickness(30, 22, 30, 44);
+            SearchContainer.MaxWidth = 580;
+            CollectionsTopButton.Visibility = Visibility.Visible;
+            MyListTopButton.Visibility = Visibility.Visible;
+            HeroQuotePanel.Visibility = Visibility.Visible;
+            HeroArtwork.Width = 310;
+            HeroTitleText.FontSize = 41;
+            HeroBanner.Height = 352;
         }
         else
         {
-            SidebarColumn.Width = new GridLength(240);
-            CalendarColumn.Width = new GridLength(340);
-            SessionCardColumn.Width = new GridLength(260);
-            SearchContainer.MaxWidth = 520;
+            SidebarColumn.Width = new GridLength(250);
+            RightRailColumn.Width = new GridLength(380);
+            MainContentHost.Margin = new Thickness(42, 28, 42, 52);
+            SearchContainer.MaxWidth = 660;
             CollectionsTopButton.Visibility = Visibility.Visible;
             MyListTopButton.Visibility = Visibility.Visible;
-            HeroQuoteText.Visibility = Visibility.Visible;
-            HeroTitleText.FontSize = 36;
+            HeroQuotePanel.Visibility = Visibility.Visible;
+            HeroArtwork.Width = 330;
+            HeroTitleText.FontSize = 44;
+            HeroBanner.Height = 380;
         }
     }
 }
@@ -362,5 +396,6 @@ public sealed record DashboardHeroSlide(
     string Title,
     string Subtitle,
     string CoverPath,
+    double ProgressPercent,
     string Quote,
     bool CanPlay);

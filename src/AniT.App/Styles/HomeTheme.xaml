@@ -1,0 +1,211 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="HomePageBrush" Color="#020B1D"/>
+    <SolidColorBrush x:Key="HomeSidebarBrush" Color="#E6051835"/>
+    <SolidColorBrush x:Key="HomePanelBrush" Color="#E9081D3C"/>
+    <SolidColorBrush x:Key="HomePanelRaisedBrush" Color="#F20B2348"/>
+    <SolidColorBrush x:Key="HomeBorderBrush" Color="#245B91"/>
+    <SolidColorBrush x:Key="HomeBorderStrongBrush" Color="#45C7FF"/>
+    <SolidColorBrush x:Key="HomeTextBrush" Color="#F7FAFF"/>
+    <SolidColorBrush x:Key="HomeMutedBrush" Color="#91AED2"/>
+    <SolidColorBrush x:Key="HomeAccentBrush" Color="#42C8FF"/>
+    <SolidColorBrush x:Key="HomeAccentSoftBrush" Color="#153E6B"/>
+
+    <Style x:Key="HomeSectionTitle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource HomeTextBrush}"/>
+        <Setter Property="FontSize" Value="22"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="HomeNavButton" TargetType="Button">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="#BED4F2"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="Padding" Value="22,14"/>
+        <Setter Property="Margin" Value="10,3,12,3"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="NavSurface" Background="{TemplateBinding Background}" CornerRadius="12" Padding="{TemplateBinding Padding}" BorderBrush="Transparent" BorderThickness="1">
+                        <Grid RenderTransformOrigin="0,0.5">
+                            <Grid.RenderTransform><TranslateTransform x:Name="NavShift"/></Grid.RenderTransform>
+                            <ContentPresenter/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="NavSurface" Property="Background" Value="#153E6D"/>
+                            <Setter TargetName="NavSurface" Property="BorderBrush" Value="#235A8E"/>
+                            <Setter Property="Foreground" Value="White"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True"><Setter TargetName="NavSurface" Property="Opacity" Value="0.78"/></Trigger>
+                        <EventTrigger RoutedEvent="MouseEnter">
+                            <BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="NavShift" Storyboard.TargetProperty="X" To="4" Duration="0:0:0.16"/></Storyboard></BeginStoryboard>
+                        </EventTrigger>
+                        <EventTrigger RoutedEvent="MouseLeave">
+                            <BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="NavShift" Storyboard.TargetProperty="X" To="0" Duration="0:0:0.18"/></Storyboard></BeginStoryboard>
+                        </EventTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="HomeActiveNavButton" TargetType="Button" BasedOn="{StaticResource HomeNavButton}">
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="#1E5C9F" CornerRadius="12" Padding="{TemplateBinding Padding}" BorderBrush="#3478BA" BorderThickness="1">
+                        <Grid>
+                            <Border Width="4" Height="24" CornerRadius="2" Background="#69DCFF" HorizontalAlignment="Left" Margin="-15,0,0,0">
+                                <Border.Effect><DropShadowEffect Color="#4DCEFF" BlurRadius="11" ShadowDepth="0" Opacity="0.9"/></Border.Effect>
+                            </Border>
+                            <ContentPresenter/>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="HomeTopButton" TargetType="Button">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="#DCEAFF"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="13,10"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="HoverSurface" Background="Transparent" CornerRadius="12" BorderBrush="Transparent" BorderThickness="1" Padding="{TemplateBinding Padding}" RenderTransformOrigin="0.5,0.5">
+                        <Border.RenderTransform><ScaleTransform x:Name="HoverScale" ScaleX="1" ScaleY="1"/></Border.RenderTransform>
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="HoverSurface" Property="Background" Value="#173F6D"/>
+                            <Setter TargetName="HoverSurface" Property="BorderBrush" Value="#3889C5"/>
+                            <Setter Property="Foreground" Value="White"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True"><Setter TargetName="HoverSurface" Property="Opacity" Value="0.74"/></Trigger>
+                        <EventTrigger RoutedEvent="MouseEnter"><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="HoverScale" Storyboard.TargetProperty="ScaleX" To="1.035" Duration="0:0:0.14"/><DoubleAnimation Storyboard.TargetName="HoverScale" Storyboard.TargetProperty="ScaleY" To="1.035" Duration="0:0:0.14"/></Storyboard></BeginStoryboard></EventTrigger>
+                        <EventTrigger RoutedEvent="MouseLeave"><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="HoverScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.18"/><DoubleAnimation Storyboard.TargetName="HoverScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.18"/></Storyboard></BeginStoryboard></EventTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="HomePrimaryButton" TargetType="Button">
+        <Setter Property="Background" Value="#31AFFF"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="23,12"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="PrimarySurface" Background="{TemplateBinding Background}" CornerRadius="12" Padding="{TemplateBinding Padding}" RenderTransformOrigin="0.5,0.5">
+                        <Border.RenderTransform><ScaleTransform x:Name="PrimaryScale"/></Border.RenderTransform>
+                        <Border.Effect><DropShadowEffect Color="#1C9BFF" BlurRadius="22" ShadowDepth="0" Opacity="0.42"/></Border.Effect>
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="PrimarySurface" Property="Background" Value="#58C2FF"/></Trigger>
+                        <Trigger Property="IsPressed" Value="True"><Setter TargetName="PrimarySurface" Property="Opacity" Value="0.78"/></Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter TargetName="PrimarySurface" Property="Opacity" Value="0.42"/></Trigger>
+                        <EventTrigger RoutedEvent="MouseEnter"><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="PrimaryScale" Storyboard.TargetProperty="ScaleX" To="1.025" Duration="0:0:0.14"/><DoubleAnimation Storyboard.TargetName="PrimaryScale" Storyboard.TargetProperty="ScaleY" To="1.025" Duration="0:0:0.14"/></Storyboard></BeginStoryboard></EventTrigger>
+                        <EventTrigger RoutedEvent="MouseLeave"><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="PrimaryScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.18"/><DoubleAnimation Storyboard.TargetName="PrimaryScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.18"/></Storyboard></BeginStoryboard></EventTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="HomeOutlineButton" TargetType="Button" BasedOn="{StaticResource HomeTopButton}">
+        <Setter Property="Background" Value="#70061732"/>
+        <Setter Property="BorderBrush" Value="#8FDFFF"/>
+        <Setter Property="BorderThickness" Value="1.5"/>
+        <Setter Property="Padding" Value="22,11"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="OutlineSurface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12" Padding="{TemplateBinding Padding}" RenderTransformOrigin="0.5,0.5">
+                        <Border.RenderTransform><ScaleTransform x:Name="OutlineScale"/></Border.RenderTransform>
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="OutlineSurface" Property="Background" Value="#173F6D"/><Setter TargetName="OutlineSurface" Property="BorderBrush" Value="#C6F2FF"/><Setter Property="Foreground" Value="White"/></Trigger>
+                        <Trigger Property="IsPressed" Value="True"><Setter TargetName="OutlineSurface" Property="Opacity" Value="0.72"/></Trigger>
+                        <EventTrigger RoutedEvent="MouseEnter"><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="OutlineScale" Storyboard.TargetProperty="ScaleX" To="1.025" Duration="0:0:0.14"/><DoubleAnimation Storyboard.TargetName="OutlineScale" Storyboard.TargetProperty="ScaleY" To="1.025" Duration="0:0:0.14"/></Storyboard></BeginStoryboard></EventTrigger>
+                        <EventTrigger RoutedEvent="MouseLeave"><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="OutlineScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.18"/><DoubleAnimation Storyboard.TargetName="OutlineScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.18"/></Storyboard></BeginStoryboard></EventTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="HomeCardButton" TargetType="Button">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="CardSurface" Background="{TemplateBinding Background}" CornerRadius="17" Padding="3" BorderBrush="Transparent" BorderThickness="1" RenderTransformOrigin="0.5,0.5">
+                        <Border.RenderTransform><TransformGroup><ScaleTransform x:Name="CardScale"/><TranslateTransform x:Name="CardLift"/></TransformGroup></Border.RenderTransform>
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="CardSurface" Property="Background" Value="#163B68"/><Setter TargetName="CardSurface" Property="BorderBrush" Value="#4EC9FF"/><Setter TargetName="CardSurface" Property="Effect"><Setter.Value><DropShadowEffect Color="#168BFF" BlurRadius="22" ShadowDepth="2" Opacity="0.38"/></Setter.Value></Setter></Trigger>
+                        <Trigger Property="IsPressed" Value="True"><Setter TargetName="CardSurface" Property="Opacity" Value="0.76"/></Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="CardSurface" Property="BorderBrush" Value="#B5F0FF"/></Trigger>
+                        <EventTrigger RoutedEvent="MouseEnter"><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="CardScale" Storyboard.TargetProperty="ScaleX" To="1.018" Duration="0:0:0.16"/><DoubleAnimation Storyboard.TargetName="CardScale" Storyboard.TargetProperty="ScaleY" To="1.018" Duration="0:0:0.16"/><DoubleAnimation Storyboard.TargetName="CardLift" Storyboard.TargetProperty="Y" To="-4" Duration="0:0:0.16"/></Storyboard></BeginStoryboard></EventTrigger>
+                        <EventTrigger RoutedEvent="MouseLeave"><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="CardScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.2"/><DoubleAnimation Storyboard.TargetName="CardScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.2"/><DoubleAnimation Storyboard.TargetName="CardLift" Storyboard.TargetProperty="Y" To="0" Duration="0:0:0.2"/></Storyboard></BeginStoryboard></EventTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="HomeSectionLink" TargetType="Button" BasedOn="{StaticResource HomeTopButton}">
+        <Setter Property="Foreground" Value="#9FD7F7"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Padding" Value="10,6"/>
+    </Style>
+
+    <Style x:Key="HomeProgress" TargetType="ProgressBar">
+        <Setter Property="Height" Value="6"/>
+        <Setter Property="Foreground" Value="#53D1FF"/>
+        <Setter Property="Background" Value="#25466B"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ProgressBar">
+                    <Grid ClipToBounds="True">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="3"/>
+                        <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" CornerRadius="3" HorizontalAlignment="Left">
+                            <Border.Effect><DropShadowEffect Color="#53D1FF" BlurRadius="8" ShadowDepth="0" Opacity="0.48"/></Border.Effect>
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>
