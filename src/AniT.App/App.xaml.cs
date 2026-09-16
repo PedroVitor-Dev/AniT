@@ -72,18 +72,23 @@ public partial class App : Application
         if (MediaPlayer is null) throw new InvalidOperationException("O MPC-HC integrado não foi encontrado. Reinstale o AniT ou escolha outro player nas configurações.");
         await using var context = OpenFreshDatabase();
         var episode = await context.Episodes
-            .Include(item => item.MediaFile)
-            .ThenInclude(file => file!.LibraryRoot)
+            .Include(item => item.MediaFiles)
+            .ThenInclude(file => file.LibraryRoot)
             .Include(item => item.PlaybackProgress)
             .AsNoTracking()
             .FirstOrDefaultAsync(item => item.Id == episodeId)
             ?? throw new InvalidOperationException("O episódio não existe mais na biblioteca.");
-        if (episode.MediaFile is null) throw new InvalidOperationException("Este episódio ainda não possui um arquivo de mídia associado.");
+        var mediaFile = episode.MediaFiles
+            .Where(file => file.Availability == global::AniT.Core.MediaFileAvailability.Available && file.LibraryRoot is not null)
+            .OrderByDescending(file => file.IsPreferred)
+            .ThenByDescending(file => file.Resolution)
+            .FirstOrDefault(file => global::System.IO.File.Exists(global::System.IO.Path.Combine(file.LibraryRoot!.Path, file.RelativePath)));
+        if (mediaFile is null) throw new InvalidOperationException("Nenhuma versão disponível deste episódio foi encontrada. Atualize a Biblioteca ou conecte o disco onde o arquivo está salvo.");
 
         activeEpisodeId = episodeId;
         TimeSpan? resumeAt = episode.PlaybackProgress is { PositionSeconds: > 0 } progress ? TimeSpan.FromSeconds(progress.PositionSeconds) : null;
         WritePlaybackLog($"[DB] Episódio {episodeId}: retomando de {resumeAt?.TotalSeconds.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? "0"}s.");
-        await MediaPlayer.PlayAsync(episode.MediaFile, resumeAt);
+        await MediaPlayer.PlayAsync(mediaFile, resumeAt);
         activePlaybackStartPosition = resumeAt ?? TimeSpan.Zero;
         activePlaybackStartedAt = DateTimeOffset.UtcNow;
         await MarkEpisodeAsWatchingAsync(episodeId);

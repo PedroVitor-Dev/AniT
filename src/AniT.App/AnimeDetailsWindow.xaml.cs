@@ -43,6 +43,9 @@ public partial class AnimeDetailsWindow : Window
             .Include(item => item.Seasons)
             .ThenInclude(season => season.Episodes)
             .ThenInclude(episode => episode.PlaybackProgress)
+            .Include(item => item.Seasons)
+            .ThenInclude(season => season.Episodes)
+            .ThenInclude(episode => episode.MediaFiles)
             .AsNoTracking()
             .FirstOrDefaultAsync(item => item.Id == animeId);
         if (anime is null) return;
@@ -85,7 +88,9 @@ public partial class AnimeDetailsWindow : Window
                 episode.Status,
                 percent,
                 episode.Rating,
-                episode.ReviewNotes));
+                episode.ReviewNotes,
+                episode.MediaFiles.Count,
+                episode.MediaFiles.Count(file => file.Availability == global::AniT.Core.MediaFileAvailability.Available)));
         }
         DataContext = null;
         DataContext = this;
@@ -265,6 +270,12 @@ public partial class AnimeDetailsWindow : Window
         await LoadAsync();
     }
 
+    private void EpisodeFiles_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: Guid episodeId }) return;
+        new MediaVersionsWindow(episodeId) { Owner = this }.ShowDialog();
+    }
+
     private async void EpisodeRow_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (e.OriginalSource is Button) return;
@@ -312,7 +323,9 @@ public sealed class EpisodeItem(
     global::AniT.Core.WatchStatus status,
     double progressPercent,
     double? rating,
-    string? reviewNotes)
+    string? reviewNotes,
+    int versionCount,
+    int availableVersionCount)
 {
     public Guid Id { get; } = id;
     public string Number { get; } = number;
@@ -321,6 +334,12 @@ public sealed class EpisodeItem(
     public double ProgressPercent { get; } = progressPercent;
     public double? Rating { get; set; } = rating;
     public string? ReviewNotes { get; set; } = reviewNotes;
+    public int VersionCount { get; } = versionCount;
+    public int AvailableVersionCount { get; } = availableVersionCount;
+    public string VersionSummary => VersionCount == 0
+        ? "Sem arquivo disponível"
+        : VersionCount == 1 ? (AvailableVersionCount == 1 ? "1 versão local" : "1 versão indisponível")
+        : $"{AvailableVersionCount} de {VersionCount} versões disponíveis";
     public string ReviewDisplay => $"Episódio {Number} · {Title}";
 
     public string StatusLabel => Status switch

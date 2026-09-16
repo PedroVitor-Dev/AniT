@@ -74,6 +74,42 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="LibraryTab" TargetType="TabItem">
+            <Setter Property="Foreground" Value="#8EA9CC"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="16,10"/>
+            <Setter Property="Margin" Value="0,0,7,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="TabSurface" Background="#0C1525" BorderBrush="#253A57" BorderThickness="1" CornerRadius="10" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter ContentSource="Header" HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="TabSurface" Property="Background" Value="#173C68"/>
+                                <Setter TargetName="TabSurface" Property="BorderBrush" Value="#43B8FF"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="TabSurface" Property="BorderBrush" Value="#3982B8"/><Setter Property="Foreground" Value="#E8F6FF"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ManagementCard" TargetType="Border">
+            <Setter Property="Background" Value="#0E1829"/>
+            <Setter Property="BorderBrush" Value="#263D5C"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="13"/>
+            <Setter Property="Padding" Value="17"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+        <Style x:Key="QuietButton" TargetType="Button" BasedOn="{StaticResource CancelButton}">
+            <Setter Property="Padding" Value="13,7"/>
+            <Setter Property="FontSize" Value="11"/>
+        </Style>
     </Window.Resources>
 
     <Grid>
@@ -116,66 +152,103 @@
                             Height="40"
                             Margin="12,0,0,0"
                             Click="RefreshLibrary_Click"/>
+                    <Button x:Name="AddFolderButton"
+                            Style="{StaticResource QuietButton}"
+                            Content="＋  Adicionar pasta"
+                            Height="40"
+                            Margin="10,0,0,0"
+                            Click="AddFolder_Click"/>
                 </StackPanel>
             </Grid>
 
-            <Grid Grid.Row="1" Margin="0,34,0,0">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <ItemsControl ItemsSource="{Binding Anime}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate><WrapPanel HorizontalAlignment="Left"/></ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Style="{StaticResource AnimeCard}" Width="220" Height="348" Margin="0,0,19,20">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="180"/>
-                                            <RowDefinition Height="*"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        <Border CornerRadius="15,15,0,0">
-                                            <Grid ClipToBounds="True">
-                                                <Border>
-                                                    <Border.Background>
-                                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                                            <GradientStop Color="#173C65" Offset="0"/>
-                                                            <GradientStop Color="#0D1A31" Offset="0.62"/>
-                                                            <GradientStop Color="#102B4D" Offset="1"/>
-                                                        </LinearGradientBrush>
-                                                    </Border.Background>
+            <TabControl Grid.Row="1" Margin="0,25,0,0" Background="Transparent" BorderThickness="0" ItemContainerStyle="{StaticResource LibraryTab}">
+                <TabItem Header="Títulos">
+                    <Grid Margin="0,20,0,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl ItemsSource="{Binding Anime}">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel HorizontalAlignment="Left"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Style="{StaticResource AnimeCard}" Width="220" Height="348" Margin="0,0,19,20">
+                                            <Grid>
+                                                <Grid.RowDefinitions><RowDefinition Height="180"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                                <Border CornerRadius="15,15,0,0">
+                                                    <Grid ClipToBounds="True">
+                                                        <Border><Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#173C65" Offset="0"/><GradientStop Color="#0D1A31" Offset="0.62"/><GradientStop Color="#102B4D" Offset="1"/></LinearGradientBrush></Border.Background></Border>
+                                                        <Image Source="Assets/normal-sf.png" Width="125" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-18,-20" Opacity="0.18"/>
+                                                        <TextBlock Text="{Binding Initial}" Foreground="#53B6FF" FontSize="64" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.9"/>
+                                                        <Rectangle RadiusX="15" RadiusY="15"><Rectangle.Fill><ImageBrush ImageSource="{Binding CoverPath}" Stretch="UniformToFill"/></Rectangle.Fill></Rectangle>
+                                                        <Border VerticalAlignment="Bottom" Height="48" Background="#B5081122"><TextBlock Text="{Binding EpisodeSummary}" Foreground="White" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="14,0"/></Border>
+                                                    </Grid>
                                                 </Border>
-                                                <Image Source="Assets/normal-sf.png" Width="125" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-18,-20" Opacity="0.18"/>
-                                                <TextBlock Text="{Binding Initial}" Foreground="#53B6FF" FontSize="64" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.9"/>
-                                                <Rectangle RadiusX="15" RadiusY="15">
-                                                    <Rectangle.Fill><ImageBrush ImageSource="{Binding CoverPath}" Stretch="UniformToFill"/></Rectangle.Fill>
-                                                </Rectangle>
-                                                <Border VerticalAlignment="Bottom" Height="48" Background="#B5081122">
-                                                    <TextBlock Text="{Binding EpisodeSummary}" Foreground="White" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="14,0"/>
-                                                </Border>
+                                                <StackPanel Grid.Row="1" Margin="15,12">
+                                                    <TextBlock Text="{Binding Title}" Foreground="White" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding EnglishTitleDisplay}" Foreground="#7896BA" FontSize="11" FontStyle="Italic" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding Status}" Foreground="#A5BDDC" FontSize="12" Margin="0,5,0,0"/>
+                                                    <ProgressBar Value="{Binding ProgressPercent}" Maximum="100" Height="4" Margin="0,10,0,0" Background="#2A3B57" Foreground="#2FA7FF" BorderThickness="0"/>
+                                                </StackPanel>
+                                                <Button Grid.Row="2" Style="{StaticResource AnimePageButton}" Content="Página do Anime  →" Click="AnimeCard_Click"/>
                                             </Grid>
                                         </Border>
-                                        <StackPanel Grid.Row="1" Margin="15,12">
-                                            <TextBlock Text="{Binding Title}" Foreground="White" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{Binding EnglishTitleDisplay}" Foreground="#7896BA" FontSize="11" FontStyle="Italic" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{Binding Status}" Foreground="#A5BDDC" FontSize="12" Margin="0,5,0,0"/>
-                                            <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}" Maximum="100" Height="4" Margin="0,10,0,0" Background="#2A3B57" Foreground="#2FA7FF" BorderThickness="0"/>
-                                        </StackPanel>
-                                        <Button Grid.Row="2"
-                                                Style="{StaticResource AnimePageButton}"
-                                                Content="Página do Anime  →"
-                                                Click="AnimeCard_Click"/>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-                <StackPanel x:Name="EmptyState" Width="420" HorizontalAlignment="Center" VerticalAlignment="Center" TextBlock.TextAlignment="Center">
-                    <TextBlock Text="Sua biblioteca ainda está vazia" Foreground="White" FontSize="22" FontWeight="SemiBold"/>
-                    <TextBlock Text="Atualize os títulos ou configure uma pasta com seus animes para começar." Foreground="#9DB2D0" FontSize="14" TextWrapping="Wrap" LineHeight="22" Margin="0,12,0,0"/>
-                </StackPanel>
-            </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                        <StackPanel x:Name="EmptyState" Width="430" HorizontalAlignment="Center" VerticalAlignment="Center" TextBlock.TextAlignment="Center">
+                            <Image Source="Assets/normal-sf.png" Width="105" Opacity="0.82"/>
+                            <TextBlock x:Name="EmptyTitleText" Text="Nenhuma pasta adicionada ainda" Foreground="White" FontSize="22" FontWeight="SemiBold" Margin="0,12,0,0"/>
+                            <TextBlock x:Name="EmptyDetailText" Text="Adicione uma pasta. O AniT encontra os vídeos sem exigir que você renomeie ou reorganize nada." Foreground="#9DB2D0" FontSize="14" TextWrapping="Wrap" LineHeight="22" Margin="0,10,0,0"/>
+                            <Button Style="{StaticResource BrandButton}" Content="＋  Adicionar pasta" Width="170" Margin="0,18,0,0" Click="AddFolder_Click"/>
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Pastas">
+                    <Grid Margin="0,20,0,0">
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                        <DockPanel Margin="0,0,0,15"><TextBlock Text="Pastas monitoradas" Foreground="White" FontSize="20" FontWeight="SemiBold"/><Button DockPanel.Dock="Right" Style="{StaticResource BrandButton}" Content="＋ Adicionar pasta" Click="AddFolder_Click"/></DockPanel>
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"><ItemsControl ItemsSource="{Binding LibraryRoots}"><ItemsControl.ItemTemplate><DataTemplate>
+                            <Border Style="{StaticResource ManagementCard}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <StackPanel><TextBlock Text="{Binding DisplayName}" Foreground="White" FontSize="15" FontWeight="SemiBold"/><TextBlock Text="{Binding Path}" Foreground="#7896BA" FontSize="11" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding StatusText}" Foreground="#63C8FF" FontSize="11" Margin="0,7,0,0"/></StackPanel>
+                                <CheckBox Grid.Column="1" Content="Subpastas" IsChecked="{Binding IncludeSubfolders}" Foreground="#AFC8E7" VerticalAlignment="Center" Margin="16,0" Tag="{Binding Id}" Click="RootSubfolders_Click"/>
+                                <CheckBox Grid.Column="2" Content="Ativa" IsChecked="{Binding IsEnabled}" Foreground="#AFC8E7" VerticalAlignment="Center" Tag="{Binding Id}" Click="RootEnabled_Click"/>
+                            </Grid></Border>
+                        </DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer>
+                    </Grid>
+                </TabItem>
+
+                <TabItem>
+                    <TabItem.Header><StackPanel Orientation="Horizontal"><TextBlock Text="Revisão"/><Border Background="#E33B8FE8" CornerRadius="9" Padding="6,1" Margin="7,-1,0,-1"><TextBlock Text="{Binding ReviewCount}" Foreground="White" FontSize="10"/></Border></StackPanel></TabItem.Header>
+                    <Grid Margin="0,20,0,0"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                        <StackPanel Margin="0,0,0,15"><TextBlock Text="Precisam de revisão" Foreground="White" FontSize="20" FontWeight="SemiBold"/><TextBlock Text="Confirme apenas o que fizer sentido. Ao salvar, o AniT pode aprender esse nome para os próximos scans." Foreground="#8EA9CC" Margin="0,5,0,0"/></StackPanel>
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"><ItemsControl ItemsSource="{Binding ReviewItems}"><ItemsControl.ItemTemplate><DataTemplate>
+                            <Border Style="{StaticResource ManagementCard}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="180"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <StackPanel><TextBlock Text="{Binding FileName}" Foreground="White" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding SuggestedText}" Foreground="#8EA9CC" FontSize="11" Margin="0,5,0,0"/><TextBlock Text="{Binding Reasons}" Foreground="#5FAFE4" FontSize="10" Margin="0,4,0,0"/></StackPanel>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="Confiança" Foreground="#7896BA" FontSize="10"/><ProgressBar Value="{Binding ConfidencePercent}" Maximum="100" Height="5" Margin="0,5,18,0" Foreground="#36B8FF" Background="#243650" BorderThickness="0"/><TextBlock Text="{Binding ConfidenceLabel}" Foreground="#CFE9FF" FontSize="11" Margin="0,4,18,0"/></StackPanel>
+                                <Button Grid.Column="2" Style="{StaticResource BrandButton}" Content="Revisar →" Tag="{Binding Id}" Click="ReviewItem_Click"/>
+                            </Grid></Border>
+                        </DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Duplicatas">
+                    <Grid Margin="0,20,0,0"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions><TextBlock Text="Duplicatas físicas" Foreground="White" FontSize="20" FontWeight="SemiBold"/>
+                        <ScrollViewer Grid.Row="1" Margin="0,15,0,0"><ItemsControl ItemsSource="{Binding DuplicateItems}"><ItemsControl.ItemTemplate><DataTemplate><Border Style="{StaticResource ManagementCard}"><StackPanel><TextBlock Text="{Binding Title}" Foreground="White" FontWeight="SemiBold"/><TextBlock Text="{Binding Path}" Foreground="#8EA9CC" FontSize="11" Margin="0,5,0,0"/><TextBlock Text="Mesmo conteúdo; nenhum arquivo será excluído automaticamente." Foreground="#F0B86B" FontSize="10" Margin="0,5,0,0"/></StackPanel></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Indisponíveis">
+                    <Grid Margin="0,20,0,0"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions><TextBlock Text="Arquivos indisponíveis" Foreground="White" FontSize="20" FontWeight="SemiBold"/>
+                        <ScrollViewer Grid.Row="1" Margin="0,15,0,0"><ItemsControl ItemsSource="{Binding UnavailableItems}"><ItemsControl.ItemTemplate><DataTemplate><Border Style="{StaticResource ManagementCard}"><StackPanel><TextBlock Text="{Binding Title}" Foreground="White" FontWeight="SemiBold"/><TextBlock Text="{Binding Path}" Foreground="#8EA9CC" FontSize="11" Margin="0,5,0,0"/><TextBlock Text="{Binding Status}" Foreground="#F0B86B" FontSize="10" Margin="0,5,0,0"/></StackPanel></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Organizar">
+                    <Border Style="{StaticResource ManagementCard}" Margin="0,20,0,0" MaxWidth="720" HorizontalAlignment="Left" VerticalAlignment="Top">
+                        <StackPanel><TextBlock Text="Organizador opcional" Foreground="White" FontSize="20" FontWeight="SemiBold"/><TextBlock Text="O AniT não move nem renomeia nada sozinho. Gere uma prévia completa e escolha quais operações executar. Legendas sidecar acompanham o vídeo e destinos existentes nunca são sobrescritos." Foreground="#9DB2D0" TextWrapping="Wrap" LineHeight="21" Margin="0,9,0,0"/><Button Style="{StaticResource BrandButton}" Content="Gerar prévia de organização" Width="220" HorizontalAlignment="Left" Margin="0,18,0,0" Click="OpenOrganizer_Click"/></StackPanel>
+                    </Border>
+                </TabItem>
+            </TabControl>
         </Grid>
 
         <Grid x:Name="RefreshOverlay" Panel.ZIndex="50" Background="#E8070B16" Visibility="Collapsed">

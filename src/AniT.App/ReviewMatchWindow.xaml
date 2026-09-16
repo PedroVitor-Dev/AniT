@@ -1,0 +1,31 @@
+<Window x:Class="AniT.App.ReviewMatchWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Revisar identificação · AniT" Width="660" Height="570" MinWidth="580" MinHeight="500"
+        Background="#070B16" WindowStartupLocation="CenterOwner" Loaded="Window_Loaded">
+    <Window.Resources>
+        <Style TargetType="TextBox"><Setter Property="Background" Value="#101C30"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderBrush" Value="#315277"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Padding" Value="11,9"/><Setter Property="CaretBrush" Value="White"/></Style>
+        <Style TargetType="ComboBox"><Setter Property="Background" Value="#101C30"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderBrush" Value="#315277"/><Setter Property="Padding" Value="9,7"/></Style>
+    </Window.Resources>
+    <Grid Margin="34">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel>
+            <Border Width="48" Height="48" CornerRadius="15" Background="#173F69" HorizontalAlignment="Left"><TextBlock Text="⌕" Foreground="#63C8FF" FontSize="27" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+            <TextBlock Text="Confirmar identificação" Foreground="White" FontSize="26" FontWeight="SemiBold" Margin="0,17,0,0"/>
+            <TextBlock x:Name="FileNameText" Foreground="#91AED1" FontSize="13" Margin="0,7,0,0" TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+        <Border Grid.Row="1" Background="#0D1728" BorderBrush="#294563" BorderThickness="1" CornerRadius="16" Padding="22" Margin="0,22,0,18">
+            <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                <StackPanel><TextBlock Text="Anime existente" Foreground="#B9D0EB" FontWeight="SemiBold"/><ComboBox x:Name="AnimeSelector" Margin="0,7,0,0" Height="40" DisplayMemberPath="Title"/></StackPanel>
+                <StackPanel Grid.Row="1" Margin="0,15,0,0"><TextBlock Text="Ou crie um título local" Foreground="#B9D0EB" FontWeight="SemiBold"/><TextBox x:Name="NewAnimeTitleText" Margin="0,7,0,0" ToolTip="Deixe vazio para usar o anime selecionado acima"/></StackPanel>
+                <Grid Grid.Row="2" Margin="0,15,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="16"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                    <StackPanel><TextBlock Text="Temporada" Foreground="#B9D0EB" FontWeight="SemiBold"/><TextBox x:Name="SeasonText" Text="1" Margin="0,7,0,0"/></StackPanel>
+                    <StackPanel Grid.Column="2"><TextBlock Text="Episódio" Foreground="#B9D0EB" FontWeight="SemiBold"/><TextBox x:Name="EpisodeText" Text="1" Margin="0,7,0,0"/></StackPanel>
+                </Grid>
+                <CheckBox x:Name="LearnAliasCheck" Grid.Row="3" IsChecked="True" Content="Aprender este nome como alias para os próximos arquivos" Foreground="#B8D3EF" Margin="0,17,0,0"/>
+                <TextBlock x:Name="StatusText" Grid.Row="4" Foreground="#FFB879" Margin="0,13,0,0" TextWrapping="Wrap"/>
+            </Grid>
+        </Border>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right"><Button Content="Cancelar" Padding="18,10" Margin="0,0,10,0" Click="Cancel_Click"/><Button Style="{StaticResource BrandButton}" Content="Confirmar associação" Click="Confirm_Click"/></StackPanel>
+    </Grid>
+</Window>
