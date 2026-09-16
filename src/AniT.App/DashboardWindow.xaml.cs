@@ -255,7 +255,7 @@ public partial class DashboardWindow : Window
             CollectionsTopButton.Visibility = Visibility.Visible;
             MyListTopButton.Visibility = Visibility.Visible;
             HeroQuote.Visibility = Visibility.Visible;
-            HeroTitleText.FontSize = 38;
+            HeroTitleText.FontSize = 36;
         }
     }
 }
