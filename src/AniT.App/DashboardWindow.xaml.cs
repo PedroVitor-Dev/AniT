@@ -21,6 +21,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
     private Guid? heroEpisodeId;
     private int heroSlideIndex;
     private LibraryWindow? libraryWindow;
+    private ExploreWindow? exploreWindow;
 
     public ObservableCollection<DashboardCard> ContinueCards { get; } = [];
     public ObservableCollection<DashboardCard> RecentCards { get; } = [];
@@ -278,6 +279,20 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
         libraryWindow = new LibraryWindow { Owner = this };
         libraryWindow.Closed += (_, _) => libraryWindow = null;
         libraryWindow.Show();
+    }
+
+    private void Explore_Click(object sender, RoutedEventArgs e)
+    {
+        if (exploreWindow is { IsLoaded: true })
+        {
+            if (exploreWindow.WindowState == WindowState.Minimized) exploreWindow.WindowState = WindowState.Maximized;
+            exploreWindow.Activate();
+            return;
+        }
+
+        exploreWindow = new ExploreWindow { Owner = this };
+        exploreWindow.Closed += (_, _) => exploreWindow = null;
+        exploreWindow.Show();
     }
 
     private async void ConfigureShelf_Click(object sender, RoutedEventArgs e)

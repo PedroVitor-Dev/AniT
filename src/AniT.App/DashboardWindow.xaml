@@ -45,7 +45,7 @@
                 <StackPanel Grid.Row="1" Margin="0,12,0,0">
                     <TextBlock Text="NAVEGAÇÃO" Foreground="#587DA9" FontSize="10" FontWeight="SemiBold" Margin="24,0,0,9"/>
                     <Button Style="{StaticResource HomeActiveNavButton}" Content="⌂    Início"/>
-                    <Button Style="{StaticResource HomeNavButton}" Content="◉    Explorar" Click="Library_Click"/>
+                    <Button Style="{StaticResource HomeNavButton}" Content="◉    Explorar" Click="Explore_Click"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="▱    Biblioteca" Click="Library_Click"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="▣    Calendário"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="◷    Histórico" Click="Library_Click"/>

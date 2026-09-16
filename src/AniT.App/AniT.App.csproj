@@ -24,6 +24,16 @@
     <Resource Include="..\..\assets\ghost_background.png" Link="Assets\ghost_background.png" />
     <Resource Include="..\..\assets\ghost_popcorn.png" Link="Assets\ghost_popcorn.png" />
     <Resource Include="..\..\assets\fire.png" Link="Assets\fire.png" />
+    <Resource Include="..\..\assets\explore\backg.png" Link="Assets\Explore\backg.png" />
+    <Resource Include="..\..\assets\explore\banner.png" Link="Assets\Explore\banner.png" />
+    <Resource Include="..\..\assets\explore\1.png" Link="Assets\Explore\1.png" />
+    <Resource Include="..\..\assets\explore\2.png" Link="Assets\Explore\2.png" />
+    <Resource Include="..\..\assets\explore\3.png" Link="Assets\Explore\3.png" />
+    <Resource Include="..\..\assets\explore\4.png" Link="Assets\Explore\4.png" />
+    <Resource Include="..\..\assets\explore\5.png" Link="Assets\Explore\5.png" />
+    <Resource Include="..\..\assets\explore\6.png" Link="Assets\Explore\6.png" />
+    <Resource Include="..\..\assets\explore\7.png" Link="Assets\Explore\7.png" />
+    <Resource Include="..\..\assets\explore\8.png" Link="Assets\Explore\8.png" />
     <Resource Include="..\..\assets\baki-pi\normal-sf.png" Link="Assets\normal-sf.png" />
     <Resource Include="..\..\assets\baki-pi\angry-sf.png" Link="Assets\angry-sf.png" />
     <Resource Include="..\..\assets\baki-pi\sad-sf.png" Link="Assets\sad-sf.png" />
