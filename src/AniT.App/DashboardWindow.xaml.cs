@@ -20,6 +20,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
     private Guid? heroAnimeId;
     private Guid? heroEpisodeId;
     private int heroSlideIndex;
+    private LibraryWindow? libraryWindow;
 
     public ObservableCollection<DashboardCard> ContinueCards { get; } = [];
     public ObservableCollection<DashboardCard> RecentCards { get; } = [];
@@ -265,7 +266,19 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
 
     private static bool IsUsableCover(string? path) => !string.IsNullOrWhiteSpace(path) && File.Exists(path);
 
-    private void Library_Click(object sender, RoutedEventArgs e) => new LibraryWindow { Owner = this }.ShowDialog();
+    private void Library_Click(object sender, RoutedEventArgs e)
+    {
+        if (libraryWindow is { IsLoaded: true })
+        {
+            if (libraryWindow.WindowState == WindowState.Minimized) libraryWindow.WindowState = WindowState.Normal;
+            libraryWindow.Activate();
+            return;
+        }
+
+        libraryWindow = new LibraryWindow { Owner = this };
+        libraryWindow.Closed += (_, _) => libraryWindow = null;
+        libraryWindow.Show();
+    }
 
     private async void ConfigureShelf_Click(object sender, RoutedEventArgs e)
     {

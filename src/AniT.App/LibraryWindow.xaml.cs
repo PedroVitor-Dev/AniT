@@ -18,6 +18,7 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
     private CancellationTokenSource? coverLoadingCancellation;
     private CancellationTokenSource? libraryRefreshCancellation;
     private bool isRefreshing;
+    private readonly SemaphoreSlim loadGate = new(1, 1);
 
     public LibraryWindow()
     {
@@ -26,10 +27,44 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
         DataContext = this;
     }
 
-    private async void Window_Loaded(object sender, RoutedEventArgs e) => await LoadAsync();
+    private async void Window_Loaded(object sender, RoutedEventArgs e) => await LoadSafelyAsync();
     private async void Window_Activated(object? sender, EventArgs e)
     {
-        if (!isRefreshing) await LoadAsync();
+        if (!isRefreshing) await LoadSafelyAsync();
+    }
+
+    private async Task LoadSafelyAsync()
+    {
+        if (!await loadGate.WaitAsync(0)) return;
+        try
+        {
+            await LoadAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            // A previous metadata load is routinely cancelled when the window regains focus.
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Debug.WriteLine($"AniT Library failed to load: {exception}");
+            try
+            {
+                var logDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AniT", "Data");
+                Directory.CreateDirectory(logDirectory);
+                await File.AppendAllTextAsync(Path.Combine(logDirectory, "library.log"), $"{DateTimeOffset.Now:O}{Environment.NewLine}{exception}{Environment.NewLine}{Environment.NewLine}");
+            }
+            catch
+            {
+                // A diagnostic write must not hide the recoverable UI state.
+            }
+            EmptyState.Visibility = Visibility.Visible;
+            EmptyTitleText.Text = "Não foi possível abrir a Biblioteca";
+            EmptyDetailText.Text = "Seus dados continuam seguros. Feche e abra novamente; os detalhes técnicos foram salvos em library.log.";
+        }
+        finally
+        {
+            loadGate.Release();
+        }
     }
 
     private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
