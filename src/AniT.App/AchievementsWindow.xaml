@@ -8,14 +8,94 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Styles/HomeTheme.xaml"/></ResourceDictionary.MergedDictionaries>
             <Style x:Key="FilterCombo" TargetType="ComboBox">
-                <Setter Property="Foreground" Value="#D7EDFF"/><Setter Property="Background" Value="#0C2342"/>
-                <Setter Property="BorderBrush" Value="#285F8D"/><Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="Padding" Value="13,8"/><Setter Property="MinWidth" Value="150"/>
+                <Setter Property="Height" Value="44"/>
+                <Setter Property="MinWidth" Value="172"/>
+                <Setter Property="Foreground" Value="#E8F4FF"/>
+                <Setter Property="Background" Value="#0A2343"/>
+                <Setter Property="BorderBrush" Value="#3475A8"/>
+                <Setter Property="BorderThickness" Value="1.5"/>
+                <Setter Property="Padding" Value="14,0"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="ItemContainerStyle">
+                    <Setter.Value>
+                        <Style TargetType="ComboBoxItem">
+                            <Setter Property="Foreground" Value="#DDEEFF"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Padding" Value="13,10"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ComboBoxItem">
+                                        <Border x:Name="ItemSurface" Background="{TemplateBinding Background}" CornerRadius="9" Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="ItemSurface" Property="Background" Value="#174F83"/><Setter Property="Foreground" Value="White"/></Trigger>
+                                            <Trigger Property="IsSelected" Value="True"><Setter TargetName="ItemSurface" Property="Background" Value="#1C6BAE"/><Setter Property="Foreground" Value="White"/></Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ComboBox">
+                            <Grid>
+                                <Border x:Name="ComboSurface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12">
+                                    <Grid Margin="14,0,12,0">
+                                        <ContentPresenter Content="{TemplateBinding SelectionBoxItem}"
+                                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                          ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
+                                                          TextElement.Foreground="{TemplateBinding Foreground}"
+                                                          VerticalAlignment="Center" Margin="0,0,24,0"/>
+                                        <Path Data="M 0 0 L 5 5 L 10 0" Stroke="#9FDDFF" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                                <ToggleButton Background="Transparent" BorderThickness="0" Focusable="False" Cursor="Hand"
+                                              IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"/>
+                                <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" AllowsTransparency="True" PopupAnimation="Fade">
+                                    <Border Width="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}" Margin="0,6,0,0" Padding="6"
+                                            Background="#FF091F3D" BorderBrush="#3B83B8" BorderThickness="1.5" CornerRadius="12">
+                                        <ScrollViewer MaxHeight="280" VerticalScrollBarVisibility="Auto"><StackPanel IsItemsHost="True"/></ScrollViewer>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ComboSurface" Property="BorderBrush" Value="#61D4FF"/><Setter TargetName="ComboSurface" Property="Background" Value="#10345D"/></Trigger>
+                                <Trigger Property="IsDropDownOpen" Value="True"><Setter TargetName="ComboSurface" Property="BorderBrush" Value="#8BE8FF"/><Setter TargetName="ComboSurface" Property="Background" Value="#123C68"/></Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="AchievementCardButton" TargetType="Button">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid x:Name="CardHitSurface" Background="Transparent">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="CardHitSurface" Property="Opacity" Value="0.93"/></Trigger>
+                                <Trigger Property="IsPressed" Value="True"><Setter TargetName="CardHitSurface" Property="Opacity" Value="0.76"/></Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="CardHitSurface" Property="Opacity" Value="0.88"/></Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
             <DataTemplate x:Key="AchievementCardTemplate">
-                <Button Click="Achievement_Click" Tag="{Binding Id}" Background="Transparent" BorderThickness="0" Padding="0" Margin="8" Cursor="Hand">
-                    <Border Width="282" Height="346" CornerRadius="22" Padding="15" Background="{Binding CardBackground}" BorderBrush="{Binding AccentBrush}" BorderThickness="1.5">
-                        <Border.Effect><DropShadowEffect Color="{Binding GlowColor}" BlurRadius="18" ShadowDepth="0" Opacity="0.25"/></Border.Effect>
+                <Button Click="Achievement_Click" Tag="{Binding Id}" Style="{StaticResource AchievementCardButton}" Margin="8">
+                    <Border Width="282" Height="346" CornerRadius="22" Padding="15" Background="{Binding CardBackground}" BorderBrush="{Binding AccentBrush}" BorderThickness="1.5" ClipToBounds="True">
                         <Grid>
                             <Grid.RowDefinitions><RowDefinition Height="154"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                             <Border CornerRadius="17" Background="#0B1E39" BorderBrush="#315F87" BorderThickness="1">
