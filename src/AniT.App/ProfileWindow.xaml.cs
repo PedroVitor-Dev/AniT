@@ -47,6 +47,9 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
     public string FavoriteCountLabel { get; private set; } = "♡  0 favoritos";
     public string CompletedCountLabel { get; private set; } = "✓  0 concluídos";
     public string WatchingCountLabel { get; private set; } = "▶  0 em andamento";
+    public string AchievementsUnlockedLabel { get; private set; } = "0 de 0 desbloqueadas";
+    public string AchievementPointsLabel { get; private set; } = "0 pontos";
+    public double AchievementProgressPercent { get; private set; }
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public ProfileWindow()
@@ -116,7 +119,14 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
             BuildHighlights(anime, watchedDates, ratings);
             BuildFavorites(anime);
             BuildRanking(anime);
-            BuildAchievements(anime.Count, activities.Count, watchedDates.Count, ratings.Count);
+            BuildAchievements(
+                anime.Count,
+                activities.Count,
+                ratings.Count,
+                anime.Count(item => item.IsFavorite),
+                completedAnime,
+                CalculateStreak(watchedDates),
+                activities.Sum(item => item.WatchedSeconds) / 3600d);
             BuildRecentActivity();
             BuildCalendar(watchedDates);
             FavoritesEmpty.Visibility = Favorites.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -158,18 +168,58 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private void BuildAchievements(int animeCount, int episodeCount, int daysCount, int ratingsCount)
+    private void BuildAchievements(int animeCount, int episodeCount, int ratingsCount, int favoriteCount, int completedAnime, int streak, double watchedHours)
     {
         Achievements.Clear();
-        AddAchievement("✧", "Primeiro passo", "Assista 1 episódio", episodeCount >= 1, "#69DFFF", "#174D76");
-        AddAchievement("♨", "Maratona", "7 dias ativos", daysCount >= 7, "#FFAA55", "#5A3A27");
-        AddAchievement("★", "Explorador", "10 episódios vistos", episodeCount >= 10, "#8EC6FF", "#254D7A");
-        AddAchievement("♛", "Colecionador", "25 animes na estante", animeCount >= 25, "#FFD267", "#5A4627");
-        AddAchievement("✎", "Crítico", "10 avaliações", ratingsCount >= 10, "#D8A8FF", "#493361");
-        AddAchievement("☾", "Notívago", "100 horas assistidas", activities.Sum(item => item.WatchedSeconds) >= 360000, "#AABFFF", "#303B65");
+        AddAchievement("Primeiro passo", "Assista ao seu primeiro episódio.", "Assets/Badges/Play de Cristal.png", episodeCount, 1, "COMUM", 10, "#6FE3FF", "#173B62");
+        AddAchievement("Sessão animada", "Complete 10 episódios na sua jornada.", "Assets/Badges/Cósmico do Cinema.png", episodeCount, 10, "RARO", 20, "#78CFFF", "#1E3C71");
+        AddAchievement("Maratona cósmica", "Alcance a marca de 25 episódios assistidos.", "Assets/Badges/Emblema Celestial de Cinema e Pipoca.png", episodeCount, 25, "ÉPICO", 35, "#B694FF", "#3B2F66");
+        AddAchievement("Lenda da tela", "Assista a 100 episódios.", "Assets/Badges/Troféu Celestial Dourado com Cristal Azul.png", episodeCount, 100, "LENDÁRIO", 75, "#FFD66E", "#514025");
+        AddAchievement("Biblioteca encantada", "Adicione 5 animes à sua estante.", "Assets/Badges/Emblema Cósmico da Biblioteca Mágica.png", animeCount, 5, "COMUM", 10, "#6FE3FF", "#173B62");
+        AddAchievement("Colecionador celestial", "Construa uma coleção com 25 animes.", "Assets/Badges/Emblema da Biblioteca Celestial.png", animeCount, 25, "ÉPICO", 40, "#B694FF", "#3B2F66");
+        AddAchievement("Coração da estante", "Escolha 3 animes favoritos.", "Assets/Badges/Emblema Cósmico do Coração Cristalino.png", favoriteCount, 3, "RARO", 25, "#FF8FCF", "#533252");
+        AddAchievement("História completa", "Conclua todos os episódios de um anime.", "Assets/Badges/Medalha Celestial da História Completa.png", completedAnime, 1, "ÉPICO", 40, "#B694FF", "#3B2F66");
+        AddAchievement("Voz da crítica", "Avalie 10 episódios.", "Assets/Badges/Distintivo Cósmico da Crítica Celestial.png", ratingsCount, 10, "ÉPICO", 40, "#B694FF", "#3B2F66");
+        AddAchievement("Centelha constante", "Mantenha uma sequência de 3 dias.", "Assets/Badges/Emblema Cósmico da Sequência de Três Dias.png", streak, 3, "COMUM", 15, "#6FE3FF", "#173B62");
+        AddAchievement("Semana celestial", "Assista por 7 dias consecutivos.", "Assets/Badges/Emblema Celestial da Sequência de Sete Dias.png", streak, 7, "RARO", 30, "#78CFFF", "#1E3C71");
+        AddAchievement("Constelação de 14 dias", "Mantenha sua sequência por duas semanas.", "Assets/Badges/Medalha Cósmica de 14 Dias.png", streak, 14, "ÉPICO", 50, "#B694FF", "#3B2F66");
+        AddAchievement("Órbita de 21 dias", "Alcance 21 dias consecutivos assistindo.", "Assets/Badges/Emblema Cósmico da Sequência de 21 Dias.png", streak, 21, "LENDÁRIO", 80, "#FFD66E", "#514025");
+        AddAchievement("Além do tempo", "Some 100 horas de histórias assistidas.", "Assets/Badges/Emblema Cósmico do Infinito Celestial.png", watchedHours, 100, "LENDÁRIO", 100, "#FFD66E", "#514025", "h");
+
+        var unlocked = Achievements.Count(item => item.IsUnlocked);
+        var points = Achievements.Where(item => item.IsUnlocked).Sum(item => item.Points);
+        AchievementsUnlockedLabel = $"{unlocked} de {Achievements.Count} desbloqueadas";
+        AchievementPointsLabel = $"✦ {points} pontos";
+        AchievementProgressPercent = Achievements.Count == 0 ? 0 : unlocked * 100d / Achievements.Count;
     }
 
-    private void AddAchievement(string icon, string title, string detail, bool unlocked, string accent, string background) => Achievements.Add(new(icon, title, detail, unlocked ? 1 : 0.42, unlocked ? accent : "#687D96", unlocked ? background : "#1C2A3A", unlocked ? accent : "#27435E"));
+    private void AddAchievement(string title, string description, string badgePath, double current, double target, string rarity, int points, string accent, string background, string unit = "")
+    {
+        var unlocked = current >= target;
+        var progress = target <= 0 ? 100 : Math.Clamp(current / target * 100, 0, 100);
+        var currentLabel = unit == "h" ? Math.Floor(current).ToString("0", Portuguese) : Math.Floor(current).ToString("0", Portuguese);
+        var targetLabel = target.ToString("0", Portuguese);
+        var status = unlocked ? "✓ DESBLOQUEADA" : $"FALTAM {Math.Max(0, Math.Ceiling(target - current)):0}{unit}";
+        Achievements.Add(new(
+            title,
+            description,
+            badgePath,
+            rarity,
+            $"{currentLabel}{unit} / {targetLabel}{unit}",
+            progress,
+            status,
+            $"+{points} pts",
+            points,
+            unlocked,
+            unlocked ? 1 : 0.76,
+            unlocked ? 1 : 0.32,
+            accent,
+            background,
+            unlocked ? "#E80A2142" : "#D909172C",
+            unlocked ? accent : "#344C68",
+            unlocked ? accent : "#506984",
+            unlocked ? Visibility.Collapsed : Visibility.Visible));
+    }
 
     private void BuildRecentActivity()
     {
@@ -251,7 +301,7 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
     private static string FormatDuration(double seconds) { var span = TimeSpan.FromSeconds(Math.Max(0, seconds)); return span.TotalHours >= 1 ? $"{(int)span.TotalHours}h {span.Minutes:00}m" : $"{Math.Max(0, span.Minutes)}m"; }
     private static string RelativeTime(DateTime value) { var delta = DateTime.Now - value; if (value.Date == DateTime.Today) return delta.TotalHours < 1 ? "agora" : $"há {(int)delta.TotalHours}h"; if (value.Date == DateTime.Today.AddDays(-1)) return "ontem"; return value.ToString("dd/MM"); }
     private void Raise(params string[] names) { foreach (var name in names) PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name)); }
-    private void RaiseAll() => Raise(nameof(DisplayName), nameof(Bio), nameof(AvatarPath), nameof(LevelLabel), nameof(MemberSinceLabel), nameof(DaysWatchedLabel), nameof(EpisodesWatchedLabel), nameof(HoursWatchedLabel), nameof(CompletedAnimeLabel), nameof(AverageRatingLabel), nameof(RatingsCountLabel), nameof(CurrentMonthLabel), nameof(FavoriteCountLabel), nameof(CompletedCountLabel), nameof(WatchingCountLabel));
+    private void RaiseAll() => Raise(nameof(DisplayName), nameof(Bio), nameof(AvatarPath), nameof(LevelLabel), nameof(MemberSinceLabel), nameof(DaysWatchedLabel), nameof(EpisodesWatchedLabel), nameof(HoursWatchedLabel), nameof(CompletedAnimeLabel), nameof(AverageRatingLabel), nameof(RatingsCountLabel), nameof(CurrentMonthLabel), nameof(FavoriteCountLabel), nameof(CompletedCountLabel), nameof(WatchingCountLabel), nameof(AchievementsUnlockedLabel), nameof(AchievementPointsLabel), nameof(AchievementProgressPercent));
 }
 
 public sealed record ProfileSettings(string DisplayName, string Bio, DateTimeOffset MemberSince);
@@ -272,7 +322,28 @@ internal static class ProfileSettingsStore
 public sealed record ProfileHighlight(string Icon, string Label, string Value, string Detail, string Accent, string AccentBackground);
 public sealed record ProfileAnimeCard(Guid AnimeId, string Title, string Subtitle, string CoverPath);
 public sealed record ProfileRankItem(Guid AnimeId, int Rank, string Title, string Subtitle, string CoverPath, string ScoreLabel);
-public sealed record ProfileAchievement(string Icon, string Title, string Detail, double Opacity, string Accent, string Background, string Border);
+public sealed record ProfileAchievement(
+    string Title,
+    string Description,
+    string BadgePath,
+    string Rarity,
+    string ProgressLabel,
+    double ProgressPercent,
+    string StatusLabel,
+    string PointsLabel,
+    int Points,
+    bool IsUnlocked,
+    double Opacity,
+    double BadgeOpacity,
+    string Accent,
+    string RarityBackground,
+    string CardBackground,
+    string Border,
+    string GlowColor,
+    Visibility LockedVisibility)
+{
+    public string Glow => GlowColor;
+}
 public sealed record ProfileActivityItem(Guid AnimeId, string Title, string Detail, string CoverPath, string WhenLabel);
 public sealed record ProfileCalendarDay(string Day, string Background, string Border, string Foreground);
 internal sealed record ProfileActivity(Guid AnimeId, Guid EpisodeId, string AnimeTitle, int EpisodeNumber, string CoverPath, DateTimeOffset? ActivityAt, global::AniT.Core.WatchStatus Status, double? Rating, double WatchedSeconds);
