@@ -15,10 +15,6 @@ public partial class HistoryWindow : Window, INotifyPropertyChanged
 {
     private static readonly CultureInfo Portuguese = CultureInfo.GetCultureInfo("pt-BR");
     private readonly List<HistoryActivityRecord> activities = [];
-    private LibraryWindow? libraryWindow;
-    private ExploreWindow? exploreWindow;
-    private CalendarWindow? calendarWindow;
-    private ProfileWindow? profileWindow;
     private HistoryPeriod period = HistoryPeriod.Today;
     private bool isLoading;
     private bool isInitialized;
@@ -324,39 +320,11 @@ public partial class HistoryWindow : Window, INotifyPropertyChanged
         catch (Exception exception) { MessageBox.Show(exception.Message, "Não foi possível continuar", MessageBoxButton.OK, MessageBoxImage.Warning); }
     }
 
-    private void Library_Click(object sender, RoutedEventArgs e)
-    {
-        if (libraryWindow is { IsLoaded: true }) { libraryWindow.Activate(); return; }
-        libraryWindow = new LibraryWindow { Owner = this };
-        libraryWindow.Closed += (_, _) => libraryWindow = null;
-        libraryWindow.Show();
-    }
-
-    private void Explore_Click(object sender, RoutedEventArgs e)
-    {
-        if (exploreWindow is { IsLoaded: true }) { exploreWindow.Activate(); return; }
-        exploreWindow = new ExploreWindow { Owner = this };
-        exploreWindow.Closed += (_, _) => exploreWindow = null;
-        exploreWindow.Show();
-    }
-
-    private void Calendar_Click(object sender, RoutedEventArgs e)
-    {
-        if (calendarWindow is { IsLoaded: true }) { calendarWindow.Activate(); return; }
-        calendarWindow = new CalendarWindow { Owner = this };
-        calendarWindow.Closed += (_, _) => calendarWindow = null;
-        calendarWindow.Show();
-    }
-
-    private void Home_Click(object sender, RoutedEventArgs e) => Close();
-
-    private void Profile_Click(object sender, RoutedEventArgs e)
-    {
-        if (profileWindow is { IsLoaded: true }) { profileWindow.Activate(); return; }
-        profileWindow = new ProfileWindow { Owner = this };
-        profileWindow.Closed += (_, _) => profileWindow = null;
-        profileWindow.Show();
-    }
+    private void Library_Click(object sender, RoutedEventArgs e) => AppNavigation.OpenLibrary(this);
+    private void Explore_Click(object sender, RoutedEventArgs e) => AppNavigation.Explore(this);
+    private void Calendar_Click(object sender, RoutedEventArgs e) => AppNavigation.Calendar(this);
+    private void Home_Click(object sender, RoutedEventArgs e) => AppNavigation.Home(this);
+    private void Profile_Click(object sender, RoutedEventArgs e) => AppNavigation.Profile(this);
 
     private void RoundedPanel_SizeChanged(object sender, SizeChangedEventArgs e)
     {

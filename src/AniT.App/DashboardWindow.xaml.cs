@@ -20,11 +20,6 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
     private Guid? heroAnimeId;
     private Guid? heroEpisodeId;
     private int heroSlideIndex;
-    private LibraryWindow? libraryWindow;
-    private ExploreWindow? exploreWindow;
-    private CalendarWindow? calendarWindow;
-    private HistoryWindow? historyWindow;
-    private ProfileWindow? profileWindow;
 
     public ObservableCollection<DashboardCard> ContinueCards { get; } = [];
     public ObservableCollection<DashboardCard> RecentCards { get; } = [];
@@ -270,69 +265,11 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
 
     private static bool IsUsableCover(string? path) => !string.IsNullOrWhiteSpace(path) && File.Exists(path);
 
-    private void Library_Click(object sender, RoutedEventArgs e)
-    {
-        if (libraryWindow is { IsLoaded: true })
-        {
-            if (libraryWindow.WindowState == WindowState.Minimized) libraryWindow.WindowState = WindowState.Normal;
-            libraryWindow.Activate();
-            return;
-        }
-
-        libraryWindow = new LibraryWindow { Owner = this };
-        libraryWindow.Closed += (_, _) => libraryWindow = null;
-        libraryWindow.Show();
-    }
-
-    private void Explore_Click(object sender, RoutedEventArgs e)
-    {
-        if (exploreWindow is { IsLoaded: true })
-        {
-            if (exploreWindow.WindowState == WindowState.Minimized) exploreWindow.WindowState = WindowState.Maximized;
-            exploreWindow.Activate();
-            return;
-        }
-
-        exploreWindow = new ExploreWindow { Owner = this };
-        exploreWindow.Closed += (_, _) => exploreWindow = null;
-        exploreWindow.Show();
-    }
-
-    private void Calendar_Click(object sender, RoutedEventArgs e)
-    {
-        if (calendarWindow is { IsLoaded: true })
-        {
-            if (calendarWindow.WindowState == WindowState.Minimized) calendarWindow.WindowState = WindowState.Maximized;
-            calendarWindow.Activate();
-            return;
-        }
-
-        calendarWindow = new CalendarWindow { Owner = this };
-        calendarWindow.Closed += (_, _) => calendarWindow = null;
-        calendarWindow.Show();
-    }
-
-    private void History_Click(object sender, RoutedEventArgs e)
-    {
-        if (historyWindow is { IsLoaded: true })
-        {
-            if (historyWindow.WindowState == WindowState.Minimized) historyWindow.WindowState = WindowState.Maximized;
-            historyWindow.Activate();
-            return;
-        }
-
-        historyWindow = new HistoryWindow { Owner = this };
-        historyWindow.Closed += (_, _) => historyWindow = null;
-        historyWindow.Show();
-    }
-
-    private void Profile_Click(object sender, RoutedEventArgs e)
-    {
-        if (profileWindow is { IsLoaded: true }) { profileWindow.Activate(); return; }
-        profileWindow = new ProfileWindow { Owner = this };
-        profileWindow.Closed += (_, _) => profileWindow = null;
-        profileWindow.Show();
-    }
+    private void Library_Click(object sender, RoutedEventArgs e) => AppNavigation.OpenLibrary(this);
+    private void Explore_Click(object sender, RoutedEventArgs e) => AppNavigation.Explore(this);
+    private void Calendar_Click(object sender, RoutedEventArgs e) => AppNavigation.Calendar(this);
+    private void History_Click(object sender, RoutedEventArgs e) => AppNavigation.History(this);
+    private void Profile_Click(object sender, RoutedEventArgs e) => AppNavigation.Profile(this);
 
     private async void ConfigureShelf_Click(object sender, RoutedEventArgs e)
     {

@@ -16,10 +16,6 @@ namespace AniT.App;
 public partial class ProfileWindow : Window, INotifyPropertyChanged
 {
     private static readonly CultureInfo Portuguese = CultureInfo.GetCultureInfo("pt-BR");
-    private LibraryWindow? libraryWindow;
-    private ExploreWindow? exploreWindow;
-    private CalendarWindow? calendarWindow;
-    private HistoryWindow? historyWindow;
     private List<ProfileActivity> activities = [];
     private Guid? latestEpisodeId;
     private ProfileSettings settings = ProfileSettingsStore.Load();
@@ -276,11 +272,11 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
     }
 
     private void AnimeCard_Click(object sender, RoutedEventArgs e) { if (sender is Button { Tag: Guid id }) new AnimeDetailsWindow(id) { Owner = this }.ShowDialog(); }
-    private void Home_Click(object sender, RoutedEventArgs e) => Close();
-    private void Library_Click(object sender, RoutedEventArgs e) { if (libraryWindow is { IsLoaded: true }) { libraryWindow.Activate(); return; } libraryWindow = new LibraryWindow { Owner = this }; libraryWindow.Closed += (_, _) => libraryWindow = null; libraryWindow.Show(); }
-    private void Explore_Click(object sender, RoutedEventArgs e) { if (exploreWindow is { IsLoaded: true }) { exploreWindow.Activate(); return; } exploreWindow = new ExploreWindow { Owner = this }; exploreWindow.Closed += (_, _) => exploreWindow = null; exploreWindow.Show(); }
-    private void Calendar_Click(object sender, RoutedEventArgs e) { if (calendarWindow is { IsLoaded: true }) { calendarWindow.Activate(); return; } calendarWindow = new CalendarWindow { Owner = this }; calendarWindow.Closed += (_, _) => calendarWindow = null; calendarWindow.Show(); }
-    private void History_Click(object sender, RoutedEventArgs e) { if (historyWindow is { IsLoaded: true }) { historyWindow.Activate(); return; } historyWindow = new HistoryWindow { Owner = this }; historyWindow.Closed += (_, _) => historyWindow = null; historyWindow.Show(); }
+    private void Home_Click(object sender, RoutedEventArgs e) => AppNavigation.Home(this);
+    private void Library_Click(object sender, RoutedEventArgs e) => AppNavigation.OpenLibrary(this);
+    private void Explore_Click(object sender, RoutedEventArgs e) => AppNavigation.Explore(this);
+    private void Calendar_Click(object sender, RoutedEventArgs e) => AppNavigation.Calendar(this);
+    private void History_Click(object sender, RoutedEventArgs e) => AppNavigation.History(this);
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e) { if (SearchHint is not null) SearchHint.Visibility = string.IsNullOrEmpty(SearchBox.Text) ? Visibility.Visible : Visibility.Collapsed; }
     private void SearchBox_KeyDown(object sender, KeyEventArgs e) { if (e.Key == Key.Enter) Library_Click(sender, e); }
     private void RoundedPanel_SizeChanged(object sender, SizeChangedEventArgs e) { if (sender is not Border border || border.ActualWidth <= 0 || border.ActualHeight <= 0) return; var radius = double.TryParse(border.Tag?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) ? parsed : 16; border.Clip = new RectangleGeometry(new Rect(0, 0, border.ActualWidth, border.ActualHeight), radius, radius); }

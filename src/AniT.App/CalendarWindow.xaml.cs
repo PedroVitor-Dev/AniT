@@ -16,10 +16,6 @@ public partial class CalendarWindow : Window, INotifyPropertyChanged
     private static readonly CultureInfo Portuguese = CultureInfo.GetCultureInfo("pt-BR");
     private readonly List<CalendarActivityRecord> activities = [];
     private readonly Dictionary<string, string> notes = CalendarNoteStore.Load();
-    private LibraryWindow? libraryWindow;
-    private ExploreWindow? exploreWindow;
-    private HistoryWindow? historyWindow;
-    private ProfileWindow? profileWindow;
     private DateTime selectedDate = DateTime.Today;
     private DateTime displayedMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private bool isLoading;
@@ -278,39 +274,11 @@ public partial class CalendarWindow : Window, INotifyPropertyChanged
         catch (Exception exception) { MessageBox.Show(exception.Message, "Não foi possível continuar", MessageBoxButton.OK, MessageBoxImage.Warning); }
     }
 
-    private void Library_Click(object sender, RoutedEventArgs e)
-    {
-        if (libraryWindow is { IsLoaded: true }) { libraryWindow.Activate(); return; }
-        libraryWindow = new LibraryWindow { Owner = this };
-        libraryWindow.Closed += (_, _) => libraryWindow = null;
-        libraryWindow.Show();
-    }
-
-    private void Explore_Click(object sender, RoutedEventArgs e)
-    {
-        if (exploreWindow is { IsLoaded: true }) { exploreWindow.Activate(); return; }
-        exploreWindow = new ExploreWindow { Owner = this };
-        exploreWindow.Closed += (_, _) => exploreWindow = null;
-        exploreWindow.Show();
-    }
-
-    private void History_Click(object sender, RoutedEventArgs e)
-    {
-        if (historyWindow is { IsLoaded: true }) { historyWindow.Activate(); return; }
-        historyWindow = new HistoryWindow { Owner = this };
-        historyWindow.Closed += (_, _) => historyWindow = null;
-        historyWindow.Show();
-    }
-
-    private void Profile_Click(object sender, RoutedEventArgs e)
-    {
-        if (profileWindow is { IsLoaded: true }) { profileWindow.Activate(); return; }
-        profileWindow = new ProfileWindow { Owner = this };
-        profileWindow.Closed += (_, _) => profileWindow = null;
-        profileWindow.Show();
-    }
-
-    private void Home_Click(object sender, RoutedEventArgs e) => Close();
+    private void Library_Click(object sender, RoutedEventArgs e) => AppNavigation.OpenLibrary(this);
+    private void Explore_Click(object sender, RoutedEventArgs e) => AppNavigation.Explore(this);
+    private void History_Click(object sender, RoutedEventArgs e) => AppNavigation.History(this);
+    private void Profile_Click(object sender, RoutedEventArgs e) => AppNavigation.Profile(this);
+    private void Home_Click(object sender, RoutedEventArgs e) => AppNavigation.Home(this);
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e) => SearchHint.Visibility = string.IsNullOrEmpty(SearchBox.Text) ? Visibility.Visible : Visibility.Collapsed;
     private void SearchBox_KeyDown(object sender, KeyEventArgs e) { if (e.Key == Key.Enter) Library_Click(sender, e); }
 
