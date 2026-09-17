@@ -5,7 +5,8 @@ namespace AniT.Infrastructure;
 
 public static class AniTDatabase
 {
-    private const int CurrentSchemaVersion = 3;
+    private const int SmartLibrarySchemaVersion = 3;
+    private const int CurrentSchemaVersion = 4;
 
     public static AniTDbContext Create(string databasePath)
     {
@@ -18,6 +19,7 @@ public static class AniTDatabase
         context.Database.EnsureCreated();
         EnsureLegacyColumns(context);
         EnsureSmartLibrarySchema(context);
+        EnsureAchievementSchema(context);
         return context;
     }
 
@@ -38,7 +40,7 @@ public static class AniTDatabase
 
     private static void EnsureSmartLibrarySchema(AniTDbContext context)
     {
-        if (GetSchemaVersion(context) >= CurrentSchemaVersion) return;
+        if (GetSchemaVersion(context) >= SmartLibrarySchemaVersion) return;
         EnsureColumn(context, "LibraryRoots", "IncludeSubfolders", "INTEGER NOT NULL DEFAULT 1");
         EnsureColumn(context, "LibraryRoots", "IsEnabled", "INTEGER NOT NULL DEFAULT 1");
         EnsureColumn(context, "LibraryRoots", "LastScanAt", "TEXT NULL");
@@ -112,6 +114,52 @@ public static class AniTDatabase
             Execute(connection, transaction, "CREATE UNIQUE INDEX IF NOT EXISTS IX_AnimeAliases_AnimeId_NormalizedAlias ON AnimeAliases (AnimeId, NormalizedAlias);");
             Execute(connection, transaction, "CREATE UNIQUE INDEX IF NOT EXISTS IX_LibraryReviewItems_LibraryRootId_RelativePath ON LibraryReviewItems (LibraryRootId, RelativePath);");
             Execute(connection, transaction, "CREATE INDEX IF NOT EXISTS IX_LibraryReviewItems_QuickHash ON LibraryReviewItems (QuickHash);");
+            Execute(connection, transaction, "CREATE TABLE IF NOT EXISTS AniTSchemaInfo (Id INTEGER NOT NULL PRIMARY KEY CHECK (Id = 1), Version INTEGER NOT NULL);");
+            Execute(connection, transaction, $"INSERT INTO AniTSchemaInfo (Id, Version) VALUES (1, {SmartLibrarySchemaVersion}) ON CONFLICT(Id) DO UPDATE SET Version = excluded.Version;");
+            transaction.Commit();
+        }
+        finally
+        {
+            if (shouldClose) connection.Close();
+        }
+    }
+
+    private static void EnsureAchievementSchema(AniTDbContext context)
+    {
+        if (GetSchemaVersion(context) >= CurrentSchemaVersion) return;
+        var connection = context.Database.GetDbConnection();
+        var shouldClose = connection.State != ConnectionState.Open;
+        if (shouldClose) connection.Open();
+        try
+        {
+            using var transaction = connection.BeginTransaction();
+            Execute(connection, transaction, """
+                CREATE TABLE IF NOT EXISTS UserAchievements (
+                    AchievementId INTEGER NOT NULL PRIMARY KEY,
+                    CurrentValue INTEGER NOT NULL DEFAULT 0,
+                    IsUnlocked INTEGER NOT NULL DEFAULT 0,
+                    UnlockedAt TEXT NULL,
+                    PopupShown INTEGER NOT NULL DEFAULT 0
+                );
+                """);
+            Execute(connection, transaction, """
+                CREATE TABLE IF NOT EXISTS AchievementHistory (
+                    Id TEXT NOT NULL PRIMARY KEY,
+                    AchievementId INTEGER NOT NULL,
+                    UnlockedAt TEXT NOT NULL,
+                    Points INTEGER NOT NULL
+                );
+                """);
+            Execute(connection, transaction, """
+                CREATE TABLE IF NOT EXISTS AchievementMetrics (
+                    Key TEXT NOT NULL PRIMARY KEY,
+                    Value INTEGER NOT NULL DEFAULT 0,
+                    UpdatedAt TEXT NOT NULL
+                );
+                """);
+            Execute(connection, transaction, "CREATE INDEX IF NOT EXISTS IX_UserAchievements_IsUnlocked ON UserAchievements (IsUnlocked);");
+            Execute(connection, transaction, "CREATE UNIQUE INDEX IF NOT EXISTS IX_AchievementHistory_AchievementId ON AchievementHistory (AchievementId);");
+            Execute(connection, transaction, "CREATE INDEX IF NOT EXISTS IX_AchievementHistory_UnlockedAt ON AchievementHistory (UnlockedAt);");
             Execute(connection, transaction, "CREATE TABLE IF NOT EXISTS AniTSchemaInfo (Id INTEGER NOT NULL PRIMARY KEY CHECK (Id = 1), Version INTEGER NOT NULL);");
             Execute(connection, transaction, $"INSERT INTO AniTSchemaInfo (Id, Version) VALUES (1, {CurrentSchemaVersion}) ON CONFLICT(Id) DO UPDATE SET Version = excluded.Version;");
             transaction.Commit();

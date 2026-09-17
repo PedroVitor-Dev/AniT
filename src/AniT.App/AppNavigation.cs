@@ -33,6 +33,7 @@ internal static class AppNavigation
     public static void Calendar(Window current) => OpenDestination(current, static () => new CalendarWindow());
     public static void History(Window current) => OpenDestination(current, static () => new HistoryWindow());
     public static void Profile(Window current) => OpenDestination(current, static () => new ProfileWindow());
+    public static void Achievements(Window current) => OpenDestination(current, static () => new AchievementsWindow());
 
     public static void OpenLibrary(Window current) => OpenDestination(current, static () => new LibraryWindow());
 

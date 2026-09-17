@@ -385,6 +385,8 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
             summary.UnavailableRoots += result.RootUnavailable ? 1 : 0;
         }
 
+        await App.Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
+            global::AniT.Core.Achievements.AchievementEventType.LibraryChanged), cancellationToken);
         return summary;
     }
 
@@ -500,6 +502,8 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
             var progress = new Progress<global::AniT.Infrastructure.LibraryScanProgress>(scan =>
                 ShowRefreshOverlay("Escaneando nova pasta", $"{scan.FilesProcessed} de {scan.TotalFiles} · {scan.NeedsReview} para revisão", scan.TotalFiles == 0 ? 100 : scan.FilesProcessed * 100d / scan.TotalFiles));
             await new global::AniT.Infrastructure.LibraryScanner(context).ScanAsync(root, progress);
+            await App.Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
+                global::AniT.Core.Achievements.AchievementEventType.LibraryChanged));
             await LoadAsync();
         }
         finally

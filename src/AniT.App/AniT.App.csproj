@@ -50,20 +50,7 @@
     <Resource Include="..\..\assets\histórico\4.png" Link="Assets\History\4.png" />
     <Resource Include="..\..\assets\perfil\1.png" Link="Assets\Profile\1.png" />
     <Resource Include="..\..\assets\perfil\2.png" Link="Assets\Profile\2.png" />
-    <Resource Include="..\..\assets\badges\Play de Cristal.png" Link="Assets\Badges\Play de Cristal.png" />
-    <Resource Include="..\..\assets\badges\Cósmico do Cinema.png" Link="Assets\Badges\Cósmico do Cinema.png" />
-    <Resource Include="..\..\assets\badges\Emblema Celestial de Cinema e Pipoca.png" Link="Assets\Badges\Emblema Celestial de Cinema e Pipoca.png" />
-    <Resource Include="..\..\assets\badges\Troféu Celestial Dourado com Cristal Azul.png" Link="Assets\Badges\Troféu Celestial Dourado com Cristal Azul.png" />
-    <Resource Include="..\..\assets\badges\Emblema Cósmico da Biblioteca Mágica.png" Link="Assets\Badges\Emblema Cósmico da Biblioteca Mágica.png" />
-    <Resource Include="..\..\assets\badges\Emblema da Biblioteca Celestial.png" Link="Assets\Badges\Emblema da Biblioteca Celestial.png" />
-    <Resource Include="..\..\assets\badges\Emblema Cósmico do Coração Cristalino.png" Link="Assets\Badges\Emblema Cósmico do Coração Cristalino.png" />
-    <Resource Include="..\..\assets\badges\Medalha Celestial da História Completa.png" Link="Assets\Badges\Medalha Celestial da História Completa.png" />
-    <Resource Include="..\..\assets\badges\Distintivo Cósmico da Crítica Celestial.png" Link="Assets\Badges\Distintivo Cósmico da Crítica Celestial.png" />
-    <Resource Include="..\..\assets\badges\Emblema Cósmico da Sequência de Três Dias.png" Link="Assets\Badges\Emblema Cósmico da Sequência de Três Dias.png" />
-    <Resource Include="..\..\assets\badges\Emblema Celestial da Sequência de Sete Dias.png" Link="Assets\Badges\Emblema Celestial da Sequência de Sete Dias.png" />
-    <Resource Include="..\..\assets\badges\Medalha Cósmica de 14 Dias.png" Link="Assets\Badges\Medalha Cósmica de 14 Dias.png" />
-    <Resource Include="..\..\assets\badges\Emblema Cósmico da Sequência de 21 Dias.png" Link="Assets\Badges\Emblema Cósmico da Sequência de 21 Dias.png" />
-    <Resource Include="..\..\assets\badges\Emblema Cósmico do Infinito Celestial.png" Link="Assets\Badges\Emblema Cósmico do Infinito Celestial.png" />
+    <Resource Include="..\..\assets\badges\**\*" Link="Assets\Badges\%(RecursiveDir)%(Filename)%(Extension)" />
     <Resource Include="..\..\assets\baki-pi\normal-sf.png" Link="Assets\normal-sf.png" />
     <Resource Include="..\..\assets\baki-pi\angry-sf.png" Link="Assets\angry-sf.png" />
     <Resource Include="..\..\assets\baki-pi\sad-sf.png" Link="Assets\sad-sf.png" />

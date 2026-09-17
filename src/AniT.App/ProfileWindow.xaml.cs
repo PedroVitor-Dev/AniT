@@ -115,14 +115,7 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
             BuildHighlights(anime, watchedDates, ratings);
             BuildFavorites(anime);
             BuildRanking(anime);
-            BuildAchievements(
-                anime.Count,
-                activities.Count,
-                ratings.Count,
-                anime.Count(item => item.IsFavorite),
-                completedAnime,
-                CalculateStreak(watchedDates),
-                activities.Sum(item => item.WatchedSeconds) / 3600d);
+            await BuildAchievementsAsync();
             BuildRecentActivity();
             BuildCalendar(watchedDates);
             FavoritesEmpty.Visibility = Favorites.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -164,57 +157,45 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private void BuildAchievements(int animeCount, int episodeCount, int ratingsCount, int favoriteCount, int completedAnime, int streak, double watchedHours)
+    private async Task BuildAchievementsAsync()
     {
+        var progress = await App.Achievements.GetProgressAsync();
         Achievements.Clear();
-        AddAchievement("Primeiro passo", "Assista ao seu primeiro episódio.", "Assets/Badges/Play de Cristal.png", episodeCount, 1, "COMUM", 10, "#6FE3FF", "#173B62");
-        AddAchievement("Sessão animada", "Complete 10 episódios na sua jornada.", "Assets/Badges/Cósmico do Cinema.png", episodeCount, 10, "RARO", 20, "#78CFFF", "#1E3C71");
-        AddAchievement("Maratona cósmica", "Alcance a marca de 25 episódios assistidos.", "Assets/Badges/Emblema Celestial de Cinema e Pipoca.png", episodeCount, 25, "ÉPICO", 35, "#B694FF", "#3B2F66");
-        AddAchievement("Lenda da tela", "Assista a 100 episódios.", "Assets/Badges/Troféu Celestial Dourado com Cristal Azul.png", episodeCount, 100, "LENDÁRIO", 75, "#FFD66E", "#514025");
-        AddAchievement("Biblioteca encantada", "Adicione 5 animes à sua estante.", "Assets/Badges/Emblema Cósmico da Biblioteca Mágica.png", animeCount, 5, "COMUM", 10, "#6FE3FF", "#173B62");
-        AddAchievement("Colecionador celestial", "Construa uma coleção com 25 animes.", "Assets/Badges/Emblema da Biblioteca Celestial.png", animeCount, 25, "ÉPICO", 40, "#B694FF", "#3B2F66");
-        AddAchievement("Coração da estante", "Escolha 3 animes favoritos.", "Assets/Badges/Emblema Cósmico do Coração Cristalino.png", favoriteCount, 3, "RARO", 25, "#FF8FCF", "#533252");
-        AddAchievement("História completa", "Conclua todos os episódios de um anime.", "Assets/Badges/Medalha Celestial da História Completa.png", completedAnime, 1, "ÉPICO", 40, "#B694FF", "#3B2F66");
-        AddAchievement("Voz da crítica", "Avalie 10 episódios.", "Assets/Badges/Distintivo Cósmico da Crítica Celestial.png", ratingsCount, 10, "ÉPICO", 40, "#B694FF", "#3B2F66");
-        AddAchievement("Centelha constante", "Mantenha uma sequência de 3 dias.", "Assets/Badges/Emblema Cósmico da Sequência de Três Dias.png", streak, 3, "COMUM", 15, "#6FE3FF", "#173B62");
-        AddAchievement("Semana celestial", "Assista por 7 dias consecutivos.", "Assets/Badges/Emblema Celestial da Sequência de Sete Dias.png", streak, 7, "RARO", 30, "#78CFFF", "#1E3C71");
-        AddAchievement("Constelação de 14 dias", "Mantenha sua sequência por duas semanas.", "Assets/Badges/Medalha Cósmica de 14 Dias.png", streak, 14, "ÉPICO", 50, "#B694FF", "#3B2F66");
-        AddAchievement("Órbita de 21 dias", "Alcance 21 dias consecutivos assistindo.", "Assets/Badges/Emblema Cósmico da Sequência de 21 Dias.png", streak, 21, "LENDÁRIO", 80, "#FFD66E", "#514025");
-        AddAchievement("Além do tempo", "Some 100 horas de histórias assistidas.", "Assets/Badges/Emblema Cósmico do Infinito Celestial.png", watchedHours, 100, "LENDÁRIO", 100, "#FFD66E", "#514025", "h");
+        foreach (var item in progress
+                     .OrderByDescending(item => item.IsUnlocked)
+                     .ThenByDescending(item => item.UnlockedAt ?? DateTimeOffset.MinValue)
+                     .ThenByDescending(item => item.Percent)
+                     .Take(14))
+        {
+            var hidden = item.Definition.IsHiddenUntilUnlocked && !item.IsUnlocked;
+            var color = AchievementCardView.Accent(item.Definition.Rarity);
+            var accent = color.ToString();
+            Achievements.Add(new(
+                hidden ? "???" : item.Definition.Name,
+                hidden ? "Conquista secreta" : item.Definition.Description,
+                hidden ? string.Empty : item.Definition.IconPath,
+                hidden ? "SECRETA" : global::AniT.Core.Achievements.AchievementLabels.Rarity(item.Definition.Rarity).ToUpper(Portuguese),
+                AchievementCardView.FormatProgress(item),
+                item.Percent,
+                item.IsUnlocked ? "✓ DESBLOQUEADA" : item.CurrentValue > 0 ? "EM PROGRESSO" : "BLOQUEADA",
+                $"+{item.Points} AniPoints",
+                item.Points,
+                item.IsUnlocked,
+                item.IsUnlocked ? 1 : 0.8,
+                hidden ? 0 : item.IsUnlocked ? 1 : 0.42,
+                accent,
+                $"#{color.R:X2}{color.G:X2}{color.B:X2}33",
+                item.IsUnlocked ? "#E80A2142" : "#E009172C",
+                item.IsUnlocked ? accent : "#344C68",
+                accent,
+                item.IsUnlocked ? Visibility.Collapsed : Visibility.Visible));
+        }
 
-        var unlocked = Achievements.Count(item => item.IsUnlocked);
-        var points = Achievements.Where(item => item.IsUnlocked).Sum(item => item.Points);
-        AchievementsUnlockedLabel = $"{unlocked} de {Achievements.Count} desbloqueadas";
-        AchievementPointsLabel = $"✦ {points} pontos";
-        AchievementProgressPercent = Achievements.Count == 0 ? 0 : unlocked * 100d / Achievements.Count;
-    }
-
-    private void AddAchievement(string title, string description, string badgePath, double current, double target, string rarity, int points, string accent, string background, string unit = "")
-    {
-        var unlocked = current >= target;
-        var progress = target <= 0 ? 100 : Math.Clamp(current / target * 100, 0, 100);
-        var currentLabel = unit == "h" ? Math.Floor(current).ToString("0", Portuguese) : Math.Floor(current).ToString("0", Portuguese);
-        var targetLabel = target.ToString("0", Portuguese);
-        var status = unlocked ? "✓ DESBLOQUEADA" : $"FALTAM {Math.Max(0, Math.Ceiling(target - current)):0}{unit}";
-        Achievements.Add(new(
-            title,
-            description,
-            badgePath,
-            rarity,
-            $"{currentLabel}{unit} / {targetLabel}{unit}",
-            progress,
-            status,
-            $"+{points} pts",
-            points,
-            unlocked,
-            unlocked ? 1 : 0.76,
-            unlocked ? 1 : 0.32,
-            accent,
-            background,
-            unlocked ? "#E80A2142" : "#D909172C",
-            unlocked ? accent : "#344C68",
-            unlocked ? accent : "#506984",
-            unlocked ? Visibility.Collapsed : Visibility.Visible));
+        var unlocked = progress.Count(item => item.IsUnlocked);
+        var points = progress.Where(item => item.IsUnlocked).Sum(item => item.Points);
+        AchievementsUnlockedLabel = $"{unlocked} de {progress.Count} desbloqueadas";
+        AchievementPointsLabel = $"✦ {points.ToString("N0", Portuguese)} AniPoints";
+        AchievementProgressPercent = progress.Count == 0 ? 0 : unlocked * 100d / progress.Count;
     }
 
     private void BuildRecentActivity()
@@ -246,7 +227,7 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
         catch (Exception exception) { MessageBox.Show(exception.Message, "Não foi possível continuar", MessageBoxButton.OK, MessageBoxImage.Warning); }
     }
 
-    private void EditProfile_Click(object sender, RoutedEventArgs e)
+    private async void EditProfile_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new ProfileEditWindow(settings) { Owner = this };
         if (dialog.ShowDialog() != true || dialog.SavedSettings is not { } saved) return;
@@ -254,9 +235,11 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
         settings = saved;
         DisplayName = saved.DisplayName; Bio = saved.Bio;
         Raise(nameof(DisplayName), nameof(Bio));
+        await App.Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
+            global::AniT.Core.Achievements.AchievementEventType.ProfileUpdated));
     }
 
-    private void ExportBackup_Click(object sender, RoutedEventArgs e)
+    private async void ExportBackup_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new SaveFileDialog { Title = "Exportar backup do AniT", Filter = "Backup do AniT (*.zip)|*.zip", FileName = $"AniT-backup-{DateTime.Now:yyyy-MM-dd}.zip", AddExtension = true, DefaultExt = ".zip" };
         if (dialog.ShowDialog(this) != true) return;
@@ -266,6 +249,8 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
             if (!Directory.Exists(source)) throw new DirectoryNotFoundException("A pasta de dados do AniT ainda não existe.");
             if (File.Exists(dialog.FileName)) File.Delete(dialog.FileName);
             ZipFile.CreateFromDirectory(source, dialog.FileName, CompressionLevel.Optimal, false);
+            await App.Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
+                global::AniT.Core.Achievements.AchievementEventType.BackupCreated));
             MessageBox.Show("Backup exportado com sucesso.", "AniT", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception exception) { MessageBox.Show($"Não foi possível exportar o backup.\n\n{exception.Message}", "AniT", MessageBoxButton.OK, MessageBoxImage.Warning); }
@@ -277,6 +262,7 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
     private void Explore_Click(object sender, RoutedEventArgs e) => AppNavigation.Explore(this);
     private void Calendar_Click(object sender, RoutedEventArgs e) => AppNavigation.Calendar(this);
     private void History_Click(object sender, RoutedEventArgs e) => AppNavigation.History(this);
+    private void Achievements_Click(object sender, RoutedEventArgs e) => AppNavigation.Achievements(this);
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e) { if (SearchHint is not null) SearchHint.Visibility = string.IsNullOrEmpty(SearchBox.Text) ? Visibility.Visible : Visibility.Collapsed; }
     private void SearchBox_KeyDown(object sender, KeyEventArgs e) { if (e.Key == Key.Enter) Library_Click(sender, e); }
     private void RoundedPanel_SizeChanged(object sender, SizeChangedEventArgs e) { if (sender is not Border border || border.ActualWidth <= 0 || border.ActualHeight <= 0) return; var radius = double.TryParse(border.Tag?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) ? parsed : 16; border.Clip = new RectangleGeometry(new Rect(0, 0, border.ActualWidth, border.ActualHeight), radius, radius); }

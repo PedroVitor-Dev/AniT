@@ -14,6 +14,7 @@ Bem-vindo à documentação do AniT. Use este índice para encontrar rapidamente
 - [Guia de contribuição](../CONTRIBUTING.md): fluxo de issues, branches, commits e pull requests.
 - [Ambiente de desenvolvimento](DEVELOPMENT.md): ferramentas, comandos, banco local e padrões técnicos.
 - [Arquitetura](ARCHITECTURE.md): responsabilidades das camadas e fluxos principais.
+- [Sistema de conquistas](ACHIEVEMENTS.md): catálogo, AniPoints, persistência, eventos e extensibilidade.
 - [Roadmap](ROADMAP.md): prioridades atuais e ideias futuras.
 - [Processo de release](RELEASING.md): versionamento, validação e publicação.
 - [Governança](../GOVERNANCE.md): papéis, decisões e processo de manutenção.

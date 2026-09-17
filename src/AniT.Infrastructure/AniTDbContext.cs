@@ -13,6 +13,9 @@ public sealed class AniTDbContext(DbContextOptions<AniTDbContext> options) : DbC
     public DbSet<LibraryReviewItem> LibraryReviewItems => Set<LibraryReviewItem>();
     public DbSet<PlaybackProgress> PlaybackProgresses => Set<PlaybackProgress>();
     public DbSet<LibraryRoot> LibraryRoots => Set<LibraryRoot>();
+    public DbSet<global::AniT.Core.Achievements.UserAchievement> UserAchievements => Set<global::AniT.Core.Achievements.UserAchievement>();
+    public DbSet<global::AniT.Core.Achievements.AchievementHistoryEntry> AchievementHistory => Set<global::AniT.Core.Achievements.AchievementHistoryEntry>();
+    public DbSet<global::AniT.Core.Achievements.AchievementMetric> AchievementMetrics => Set<global::AniT.Core.Achievements.AchievementMetric>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -67,6 +70,26 @@ public sealed class AniTDbContext(DbContextOptions<AniTDbContext> options) : DbC
                 .WithMany(item => item.ReviewItems)
                 .HasForeignKey(item => item.LibraryRootId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<global::AniT.Core.Achievements.UserAchievement>(entity =>
+        {
+            entity.HasKey(item => item.AchievementId);
+            entity.Property(item => item.CurrentValue).IsRequired();
+            entity.HasIndex(item => item.IsUnlocked);
+        });
+
+        modelBuilder.Entity<global::AniT.Core.Achievements.AchievementHistoryEntry>(entity =>
+        {
+            entity.HasKey(item => item.Id);
+            entity.HasIndex(item => item.AchievementId).IsUnique();
+            entity.HasIndex(item => item.UnlockedAt);
+        });
+
+        modelBuilder.Entity<global::AniT.Core.Achievements.AchievementMetric>(entity =>
+        {
+            entity.HasKey(item => item.Key);
+            entity.Property(item => item.Key).HasMaxLength(100);
         });
     }
 }

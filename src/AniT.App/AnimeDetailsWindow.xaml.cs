@@ -202,10 +202,16 @@ public partial class AnimeDetailsWindow : Window
         if (episode is null) return;
 
         var requestedRating = Math.Clamp(rating, 1, 5);
-        episode.Rating = NormalizeSavedRating(episode.Rating) == requestedRating
+        var previousRating = NormalizeSavedRating(episode.Rating);
+        episode.Rating = previousRating == requestedRating
             ? null
             : requestedRating;
         await context.SaveChangesAsync();
+        await App.Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
+            global::AniT.Core.Achievements.AchievementEventType.RatingChanged,
+            episode.Id,
+            (long)(episode.Rating ?? 0),
+            (long)previousRating));
         await LoadSafelyAsync();
     }
 
@@ -215,7 +221,8 @@ public partial class AnimeDetailsWindow : Window
         await using var context = App.OpenFreshDatabase();
         var episode = await context.Episodes.FindAsync(episodeId);
         if (episode is null) return;
-        if (episode.Status == global::AniT.Core.WatchStatus.Completed)
+        var markedCompleted = episode.Status != global::AniT.Core.WatchStatus.Completed;
+        if (!markedCompleted)
         {
             episode.Status = global::AniT.Core.WatchStatus.NotStarted;
             episode.WatchedAt = null;
@@ -226,6 +233,16 @@ public partial class AnimeDetailsWindow : Window
             episode.WatchedAt = DateTimeOffset.UtcNow;
         }
         await context.SaveChangesAsync();
+        if (markedCompleted)
+        {
+            await App.Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
+                global::AniT.Core.Achievements.AchievementEventType.EpisodeCompleted,
+                episode.Id));
+        }
+        else
+        {
+            await App.Achievements.RecalculateAsync();
+        }
         await LoadSafelyAsync();
     }
 

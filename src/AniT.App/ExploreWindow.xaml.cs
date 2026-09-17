@@ -186,6 +186,7 @@ public partial class ExploreWindow : Window
     private void Calendar_Click(object sender, RoutedEventArgs e) => AppNavigation.Calendar(this);
     private void History_Click(object sender, RoutedEventArgs e) => AppNavigation.History(this);
     private void Profile_Click(object sender, RoutedEventArgs e) => AppNavigation.Profile(this);
+    private void Achievements_Click(object sender, RoutedEventArgs e) => AppNavigation.Achievements(this);
 
     private void RoundedPanel_SizeChanged(object sender, SizeChangedEventArgs e)
     {

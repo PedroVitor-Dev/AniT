@@ -1,0 +1,26 @@
+<Window x:Class="AniT.App.AchievementSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Configurações de conquistas · AniT" Width="560" Height="520"
+        Background="#06152B" WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+    <Window.Resources><ResourceDictionary><ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Styles/HomeTheme.xaml"/></ResourceDictionary.MergedDictionaries></ResourceDictionary></Window.Resources>
+    <Border Margin="22" CornerRadius="24" Background="#0A213F" BorderBrush="#2F78AC" BorderThickness="1.5" Padding="24">
+        <StackPanel>
+            <TextBlock Text="Conquistas" Foreground="White" FontSize="28" FontWeight="Bold"/>
+            <TextBlock Text="Escolha como o AniT celebra seus novos marcos." Foreground="#9CBBD8" FontSize="12" Margin="0,4,0,20"/>
+            <CheckBox x:Name="NotificationsCheck" Content="Mostrar notificações" Foreground="White" FontSize="14" Margin="0,8"/>
+            <CheckBox x:Name="SoundCheck" Content="Reproduzir som" Foreground="White" FontSize="14" Margin="0,8"/>
+            <TextBlock Text="Volume" Foreground="#CFE8FA" FontSize="13" Margin="0,18,0,5"/>
+            <Slider x:Name="VolumeSlider" Minimum="0" Maximum="100" TickFrequency="5"/>
+            <TextBlock Text="Posição do popup" Foreground="#CFE8FA" FontSize="13" Margin="0,18,0,6"/>
+            <ComboBox x:Name="PositionCombo" Padding="10"><ComboBoxItem Content="Centro inferior"/><ComboBoxItem Content="Canto inferior direito"/><ComboBoxItem Content="Canto superior direito"/></ComboBox>
+            <CheckBox x:Name="ReduceAnimationsCheck" Content="Reduzir animações (usar apenas fade)" Foreground="White" FontSize="14" Margin="0,18,0,8"/>
+            <Button Content="↻  Recalcular conquistas" Style="{StaticResource HomeSecondaryButton}" Click="Recalculate_Click" Margin="0,10,0,0" HorizontalAlignment="Left"/>
+            <TextBlock x:Name="StatusText" Foreground="#77DFFF" FontSize="11" Margin="0,8,0,0"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,24,0,0">
+                <Button Content="Cancelar" Style="{StaticResource HomeSecondaryButton}" Click="Cancel_Click" Margin="0,0,10,0"/>
+                <Button Content="Salvar" Style="{StaticResource HomePrimaryButton}" Click="Save_Click"/>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>

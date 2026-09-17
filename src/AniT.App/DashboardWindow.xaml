@@ -49,7 +49,7 @@
                     <Button Style="{StaticResource HomeNavButton}" Content="▱    Biblioteca" Click="Library_Click"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="▣    Calendário" Click="Calendar_Click"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="◷    Histórico" Click="History_Click"/>
-                    <Button Style="{StaticResource HomeNavButton}" Content="☆    Avaliações" Click="Library_Click"/>
+                    <Button Style="{StaticResource HomeNavButton}" Content="♛    Conquistas" Click="Achievements_Click"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="♙    Perfil" Click="Profile_Click"/>
                     <Border Height="1" Background="#214874" Margin="20,18,20,11"/>
                     <TextBlock Text="SISTEMA" Foreground="#587DA9" FontSize="10" FontWeight="SemiBold" Margin="24,0,0,7"/>

@@ -36,6 +36,8 @@ public partial class SetupShelfWindow : Window
         App.Database.LibraryRoots.Add(root);
         await App.Database.SaveChangesAsync();
         var result = await new global::AniT.Infrastructure.LibraryScanner(App.Database).ScanAsync(root);
+        await App.Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
+            global::AniT.Core.Achievements.AchievementEventType.LibraryChanged));
         StatusText.Text = $"{result.EpisodesAdded} episódio(s) encontrado(s).";
         DialogResult = true;
     }

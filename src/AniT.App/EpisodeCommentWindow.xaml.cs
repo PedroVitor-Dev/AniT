@@ -56,6 +56,12 @@ public partial class EpisodeCommentWindow : Window
 
         episode.ReviewNotes = string.IsNullOrWhiteSpace(CommentTextBox.Text) ? null : CommentTextBox.Text.Trim();
         await context.SaveChangesAsync();
+        if (!string.IsNullOrWhiteSpace(episode.ReviewNotes))
+        {
+            await App.Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
+                global::AniT.Core.Achievements.AchievementEventType.ReviewCreated,
+                episode.Id));
+        }
         StatusText.Text = episode.ReviewNotes is null ? "Comentário removido." : "✓ Comentário salvo localmente.";
         DialogResult = true;
     }
