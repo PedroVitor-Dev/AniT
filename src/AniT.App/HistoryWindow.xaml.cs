@@ -20,6 +20,7 @@ public partial class HistoryWindow : Window, INotifyPropertyChanged
     private CalendarWindow? calendarWindow;
     private HistoryPeriod period = HistoryPeriod.Today;
     private bool isLoading;
+    private bool isInitialized;
 
     public ObservableCollection<HistoryDayGroup> HistoryGroups { get; } = [];
     public ObservableCollection<string> AnimeFilters { get; } = ["Todos os animes"];
@@ -44,6 +45,7 @@ public partial class HistoryWindow : Window, INotifyPropertyChanged
     public HistoryWindow()
     {
         InitializeComponent();
+        isInitialized = true;
         ResponsiveWindow.FitToWorkArea(this, 1380, 860);
         DataContext = this;
     }
@@ -166,7 +168,7 @@ public partial class HistoryWindow : Window, INotifyPropertyChanged
 
     private void ApplyFilters()
     {
-        if (HistorySearchBox is null || AnimeFilter is null || OrderFilter is null) return;
+        if (!isInitialized || HistorySearchBox is null || AnimeFilter is null || OrderFilter is null || HistoryEmptyState is null) return;
         IEnumerable<HistoryActivityRecord> filtered = activities;
         var today = DateTime.Today;
         filtered = period switch
@@ -288,10 +290,10 @@ public partial class HistoryWindow : Window, INotifyPropertyChanged
     private void HistorySearchBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (HistorySearchHint is not null) HistorySearchHint.Visibility = string.IsNullOrEmpty(HistorySearchBox.Text) ? Visibility.Visible : Visibility.Collapsed;
-        if (!isLoading) ApplyFilters();
+        if (isInitialized && !isLoading) ApplyFilters();
     }
 
-    private void Filter_Changed(object sender, SelectionChangedEventArgs e) { if (!isLoading) ApplyFilters(); }
+    private void Filter_Changed(object sender, SelectionChangedEventArgs e) { if (isInitialized && !isLoading) ApplyFilters(); }
 
     private void GlobalSearchBox_TextChanged(object sender, TextChangedEventArgs e) => GlobalSearchHint.Visibility = string.IsNullOrEmpty(GlobalSearchBox.Text) ? Visibility.Visible : Visibility.Collapsed;
     private void GlobalSearchBox_KeyDown(object sender, KeyEventArgs e)
