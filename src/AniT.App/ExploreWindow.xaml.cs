@@ -13,6 +13,7 @@ public partial class ExploreWindow : Window
 {
     private LibraryWindow? libraryWindow;
     private CalendarWindow? calendarWindow;
+    private HistoryWindow? historyWindow;
     private Guid? nextEpisodeId;
     private readonly List<ExploreAnimeCard> sourceCards = [];
 
@@ -210,6 +211,20 @@ public partial class ExploreWindow : Window
         calendarWindow = new CalendarWindow { Owner = this };
         calendarWindow.Closed += (_, _) => calendarWindow = null;
         calendarWindow.Show();
+    }
+
+    private void History_Click(object sender, RoutedEventArgs e)
+    {
+        if (historyWindow is { IsLoaded: true })
+        {
+            if (historyWindow.WindowState == WindowState.Minimized) historyWindow.WindowState = WindowState.Maximized;
+            historyWindow.Activate();
+            return;
+        }
+
+        historyWindow = new HistoryWindow { Owner = this };
+        historyWindow.Closed += (_, _) => historyWindow = null;
+        historyWindow.Show();
     }
 
     private void RoundedPanel_SizeChanged(object sender, SizeChangedEventArgs e)

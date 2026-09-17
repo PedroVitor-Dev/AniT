@@ -44,6 +44,10 @@
     <Resource Include="..\..\assets\calendario\4.png" Link="Assets\Calendar\4.png" />
     <Resource Include="..\..\assets\calendario\5.png" Link="Assets\Calendar\5.png" />
     <Resource Include="..\..\assets\calendario\6.png" Link="Assets\Calendar\6.png" />
+    <Resource Include="..\..\assets\histórico\1.png" Link="Assets\History\1.png" />
+    <Resource Include="..\..\assets\histórico\2.png" Link="Assets\History\2.png" />
+    <Resource Include="..\..\assets\histórico\3.png" Link="Assets\History\3.png" />
+    <Resource Include="..\..\assets\histórico\4.png" Link="Assets\History\4.png" />
     <Resource Include="..\..\assets\baki-pi\normal-sf.png" Link="Assets\normal-sf.png" />
     <Resource Include="..\..\assets\baki-pi\angry-sf.png" Link="Assets\angry-sf.png" />
     <Resource Include="..\..\assets\baki-pi\sad-sf.png" Link="Assets\sad-sf.png" />

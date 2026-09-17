@@ -197,7 +197,7 @@
                     <Button Style="{StaticResource HomeNavButton}" Content="◉    Explorar" Click="Explore_Click"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="▱    Biblioteca" Click="Library_Click"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="▣    Calendário" Click="Calendar_Click"/>
-                    <Button Style="{StaticResource HomeNavButton}" Content="◷    Histórico" Click="Library_Click"/>
+                    <Button Style="{StaticResource HomeNavButton}" Content="◷    Histórico" Click="History_Click"/>
                     <Button Style="{StaticResource HomeActiveNavButton}" Content="☆    Página do Anime"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="♙    Perfil"/>
                 </StackPanel>

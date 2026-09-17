@@ -18,6 +18,7 @@ public partial class CalendarWindow : Window, INotifyPropertyChanged
     private readonly Dictionary<string, string> notes = CalendarNoteStore.Load();
     private LibraryWindow? libraryWindow;
     private ExploreWindow? exploreWindow;
+    private HistoryWindow? historyWindow;
     private DateTime selectedDate = DateTime.Today;
     private DateTime displayedMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private bool isLoading;
@@ -290,6 +291,14 @@ public partial class CalendarWindow : Window, INotifyPropertyChanged
         exploreWindow = new ExploreWindow { Owner = this };
         exploreWindow.Closed += (_, _) => exploreWindow = null;
         exploreWindow.Show();
+    }
+
+    private void History_Click(object sender, RoutedEventArgs e)
+    {
+        if (historyWindow is { IsLoaded: true }) { historyWindow.Activate(); return; }
+        historyWindow = new HistoryWindow { Owner = this };
+        historyWindow.Closed += (_, _) => historyWindow = null;
+        historyWindow.Show();
     }
 
     private void Home_Click(object sender, RoutedEventArgs e) => Close();
