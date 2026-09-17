@@ -31,7 +31,7 @@ public partial class AchievementsWindow : Window, INotifyPropertyChanged
             .Concat(Enum.GetValues<AchievementRarity>().Select(item => new FilterOption<AchievementRarity?>(AchievementLabels.Rarity(item), item)));
         StatusFilter.SelectedIndex = CategoryFilter.SelectedIndex = RarityFilter.SelectedIndex = SortFilter.SelectedIndex = 0;
 #if DEBUG
-        var debugButton = new Button { Content = "🧪  Debug", Style = (Style)FindResource("HomeSecondaryButton"), Margin = new Thickness(0, 0, 10, 0) };
+        var debugButton = new Button { Content = "🧪  Debug", Style = (Style)FindResource("HomeOutlineButton"), Margin = new Thickness(0, 0, 10, 0) };
         debugButton.Click += (_, _) => new AchievementDebugWindow { Owner = this }.ShowDialog();
         HeaderActions.Children.Insert(0, debugButton);
 #endif

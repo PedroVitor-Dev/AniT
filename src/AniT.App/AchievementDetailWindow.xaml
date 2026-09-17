@@ -19,7 +19,7 @@
                     <Border HorizontalAlignment="Left" CornerRadius="12" Padding="11,5" Background="{Binding RarityBackground}" Margin="0,10,0,0"><TextBlock Text="{Binding RarityLabel}" Foreground="{Binding AccentBrush}" FontWeight="Bold" FontSize="11"/></Border>
                     <TextBlock Text="{Binding DisplayDescription}" Foreground="#B7CEE4" FontSize="14" TextWrapping="Wrap" LineHeight="21" Margin="0,17,0,0"/>
                     <TextBlock Text="{Binding ProgressLabel}" Foreground="White" FontSize="15" FontWeight="SemiBold" Margin="0,20,0,6"/>
-                    <ProgressBar Value="{Binding ProgressPercent}" Maximum="100" Height="11" Style="{StaticResource HomeProgress}"/>
+                    <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}" Maximum="100" Height="11" Style="{StaticResource HomeProgress}"/>
                     <TextBlock Text="{Binding StatusLabel}" Foreground="{Binding AccentBrush}" FontSize="12" FontWeight="Bold" Margin="0,10,0,0"/>
                     <TextBlock Text="{Binding BakiPiLine}" Foreground="#8DB6D9" FontStyle="Italic" FontSize="12" TextWrapping="Wrap" Margin="0,18,0,0"/>
                     <Button Content="Fechar" Style="{StaticResource HomePrimaryButton}" HorizontalAlignment="Right" Margin="0,20,0,0" Click="Close_Click"/>

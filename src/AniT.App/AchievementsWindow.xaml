@@ -39,7 +39,7 @@
                             </StackPanel>
                             <StackPanel Grid.Row="2">
                                 <DockPanel Margin="0,0,0,5"><TextBlock Text="{Binding ProgressLabel}" Foreground="#D9ECFA" FontSize="10"/><TextBlock DockPanel.Dock="Right" Text="{Binding PercentLabel}" Foreground="{Binding AccentBrush}" FontSize="10" FontWeight="Bold"/></DockPanel>
-                                <ProgressBar Value="{Binding ProgressPercent}" Maximum="100" Height="7" Style="{StaticResource HomeProgress}"/>
+                                <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}" Maximum="100" Height="7" Style="{StaticResource HomeProgress}"/>
                                 <TextBlock Text="{Binding StatusLabel}" Foreground="{Binding AccentBrush}" FontSize="10" FontWeight="Bold" Margin="0,8,0,0"/>
                             </StackPanel>
                         </Grid>
@@ -60,10 +60,10 @@
                 </StackPanel>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="22,0">
                     <DockPanel><TextBlock Text="{Binding UnlockedLabel}" Foreground="White" FontSize="15" FontWeight="Bold"/><TextBlock DockPanel.Dock="Right" Text="{Binding AniPointsLabel}" Foreground="#FFE06D" FontSize="15" FontWeight="Bold"/></DockPanel>
-                    <ProgressBar Value="{Binding OverallPercent}" Maximum="100" Height="10" Style="{StaticResource HomeProgress}" Margin="0,9,0,0"/>
+                    <ProgressBar Value="{Binding OverallPercent, Mode=OneWay}" Maximum="100" Height="10" Style="{StaticResource HomeProgress}" Margin="0,9,0,0"/>
                 </StackPanel>
                 <StackPanel x:Name="HeaderActions" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Content="⚙  Configurações" Style="{StaticResource HomeSecondaryButton}" Click="Settings_Click" Margin="0,0,10,0"/>
+                    <Button Content="⚙  Configurações" Style="{StaticResource HomeOutlineButton}" Click="Settings_Click" Margin="0,0,10,0"/>
                     <Button Content="⌂  Início" Style="{StaticResource HomePrimaryButton}" Click="Home_Click"/>
                 </StackPanel>
             </Grid>
@@ -74,7 +74,7 @@
                 <ComboBox x:Name="CategoryFilter" Style="{StaticResource FilterCombo}" SelectionChanged="Filter_Changed" DisplayMemberPath="Label" SelectedValuePath="Value" Margin="5"/>
                 <ComboBox x:Name="RarityFilter" Style="{StaticResource FilterCombo}" SelectionChanged="Filter_Changed" DisplayMemberPath="Label" SelectedValuePath="Value" Margin="5"/>
                 <ComboBox x:Name="SortFilter" Style="{StaticResource FilterCombo}" SelectionChanged="Filter_Changed" Margin="5"><ComboBoxItem Content="Ordem original"/><ComboBoxItem Content="Raridade"/><ComboBoxItem Content="Progresso"/><ComboBoxItem Content="Recém desbloqueadas"/></ComboBox>
-                <Button Content="↻  Recalcular" Style="{StaticResource HomeSecondaryButton}" Click="Recalculate_Click" Margin="10,5,5,5"/>
+                <Button Content="↻  Recalcular" Style="{StaticResource HomeOutlineButton}" Click="Recalculate_Click" Margin="10,5,5,5"/>
             </WrapPanel>
         </Border>
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="24,18,24,42">

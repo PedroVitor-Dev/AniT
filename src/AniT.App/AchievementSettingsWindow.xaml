@@ -15,10 +15,10 @@
             <TextBlock Text="Posição do popup" Foreground="#CFE8FA" FontSize="13" Margin="0,18,0,6"/>
             <ComboBox x:Name="PositionCombo" Padding="10"><ComboBoxItem Content="Centro inferior"/><ComboBoxItem Content="Canto inferior direito"/><ComboBoxItem Content="Canto superior direito"/></ComboBox>
             <CheckBox x:Name="ReduceAnimationsCheck" Content="Reduzir animações (usar apenas fade)" Foreground="White" FontSize="14" Margin="0,18,0,8"/>
-            <Button Content="↻  Recalcular conquistas" Style="{StaticResource HomeSecondaryButton}" Click="Recalculate_Click" Margin="0,10,0,0" HorizontalAlignment="Left"/>
+            <Button Content="↻  Recalcular conquistas" Style="{StaticResource HomeOutlineButton}" Click="Recalculate_Click" Margin="0,10,0,0" HorizontalAlignment="Left"/>
             <TextBlock x:Name="StatusText" Foreground="#77DFFF" FontSize="11" Margin="0,8,0,0"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,24,0,0">
-                <Button Content="Cancelar" Style="{StaticResource HomeSecondaryButton}" Click="Cancel_Click" Margin="0,0,10,0"/>
+                <Button Content="Cancelar" Style="{StaticResource HomeOutlineButton}" Click="Cancel_Click" Margin="0,0,10,0"/>
                 <Button Content="Salvar" Style="{StaticResource HomePrimaryButton}" Click="Save_Click"/>
             </StackPanel>
         </StackPanel>
