@@ -14,6 +14,7 @@ public partial class ExploreWindow : Window
     private LibraryWindow? libraryWindow;
     private CalendarWindow? calendarWindow;
     private HistoryWindow? historyWindow;
+    private ProfileWindow? profileWindow;
     private Guid? nextEpisodeId;
     private readonly List<ExploreAnimeCard> sourceCards = [];
 
@@ -225,6 +226,14 @@ public partial class ExploreWindow : Window
         historyWindow = new HistoryWindow { Owner = this };
         historyWindow.Closed += (_, _) => historyWindow = null;
         historyWindow.Show();
+    }
+
+    private void Profile_Click(object sender, RoutedEventArgs e)
+    {
+        if (profileWindow is { IsLoaded: true }) { profileWindow.Activate(); return; }
+        profileWindow = new ProfileWindow { Owner = this };
+        profileWindow.Closed += (_, _) => profileWindow = null;
+        profileWindow.Show();
     }
 
     private void RoundedPanel_SizeChanged(object sender, SizeChangedEventArgs e)

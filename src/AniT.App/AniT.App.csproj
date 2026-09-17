@@ -48,6 +48,8 @@
     <Resource Include="..\..\assets\histórico\2.png" Link="Assets\History\2.png" />
     <Resource Include="..\..\assets\histórico\3.png" Link="Assets\History\3.png" />
     <Resource Include="..\..\assets\histórico\4.png" Link="Assets\History\4.png" />
+    <Resource Include="..\..\assets\perfil\1.png" Link="Assets\Profile\1.png" />
+    <Resource Include="..\..\assets\perfil\2.png" Link="Assets\Profile\2.png" />
     <Resource Include="..\..\assets\baki-pi\normal-sf.png" Link="Assets\normal-sf.png" />
     <Resource Include="..\..\assets\baki-pi\angry-sf.png" Link="Assets\angry-sf.png" />
     <Resource Include="..\..\assets\baki-pi\sad-sf.png" Link="Assets\sad-sf.png" />

@@ -24,6 +24,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
     private ExploreWindow? exploreWindow;
     private CalendarWindow? calendarWindow;
     private HistoryWindow? historyWindow;
+    private ProfileWindow? profileWindow;
 
     public ObservableCollection<DashboardCard> ContinueCards { get; } = [];
     public ObservableCollection<DashboardCard> RecentCards { get; } = [];
@@ -323,6 +324,14 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
         historyWindow = new HistoryWindow { Owner = this };
         historyWindow.Closed += (_, _) => historyWindow = null;
         historyWindow.Show();
+    }
+
+    private void Profile_Click(object sender, RoutedEventArgs e)
+    {
+        if (profileWindow is { IsLoaded: true }) { profileWindow.Activate(); return; }
+        profileWindow = new ProfileWindow { Owner = this };
+        profileWindow.Closed += (_, _) => profileWindow = null;
+        profileWindow.Show();
     }
 
     private async void ConfigureShelf_Click(object sender, RoutedEventArgs e)

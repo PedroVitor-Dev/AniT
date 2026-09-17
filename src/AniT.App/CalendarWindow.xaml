@@ -96,7 +96,7 @@
                     <Button Style="{StaticResource HomeNavButton}" Content="▱    Biblioteca" Click="Library_Click"/>
                     <Button Style="{StaticResource HomeActiveNavButton}" Content="▣    Calendário"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="◷    Histórico" Click="History_Click"/>
-                    <Button Style="{StaticResource HomeNavButton}" Content="♙    Perfil"/>
+                    <Button Style="{StaticResource HomeNavButton}" Content="♙    Perfil" Click="Profile_Click"/>
                 </StackPanel>
                 <Image Grid.Row="2" Source="Assets/Calendar/samurai.png" Width="245" Height="245" Stretch="Uniform" Opacity="0.72" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="-8,0,-8,-20" IsHitTestVisible="False"/>
             </Grid>

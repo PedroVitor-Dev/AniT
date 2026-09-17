@@ -14,6 +14,7 @@ public partial class AnimeDetailsWindow : Window
     private ExploreWindow? exploreWindow;
     private CalendarWindow? calendarWindow;
     private HistoryWindow? historyWindow;
+    private ProfileWindow? profileWindow;
     private bool isLoadingPage;
     private bool loadFailureShown;
     public ObservableCollection<EpisodeItem> Episodes { get; } = [];
@@ -337,6 +338,14 @@ public partial class AnimeDetailsWindow : Window
         historyWindow = new HistoryWindow { Owner = this };
         historyWindow.Closed += (_, _) => historyWindow = null;
         historyWindow.Show();
+    }
+
+    private void Profile_Click(object sender, RoutedEventArgs e)
+    {
+        if (profileWindow is { IsLoaded: true }) { profileWindow.Activate(); return; }
+        profileWindow = new ProfileWindow { Owner = this };
+        profileWindow.Closed += (_, _) => profileWindow = null;
+        profileWindow.Show();
     }
 
     private void OpenEpisodeRatings_Click(object sender, RoutedEventArgs e) => AnimeTabControl.SelectedItem = EpisodesTab;

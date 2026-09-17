@@ -19,6 +19,7 @@ public partial class CalendarWindow : Window, INotifyPropertyChanged
     private LibraryWindow? libraryWindow;
     private ExploreWindow? exploreWindow;
     private HistoryWindow? historyWindow;
+    private ProfileWindow? profileWindow;
     private DateTime selectedDate = DateTime.Today;
     private DateTime displayedMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private bool isLoading;
@@ -299,6 +300,14 @@ public partial class CalendarWindow : Window, INotifyPropertyChanged
         historyWindow = new HistoryWindow { Owner = this };
         historyWindow.Closed += (_, _) => historyWindow = null;
         historyWindow.Show();
+    }
+
+    private void Profile_Click(object sender, RoutedEventArgs e)
+    {
+        if (profileWindow is { IsLoaded: true }) { profileWindow.Activate(); return; }
+        profileWindow = new ProfileWindow { Owner = this };
+        profileWindow.Closed += (_, _) => profileWindow = null;
+        profileWindow.Show();
     }
 
     private void Home_Click(object sender, RoutedEventArgs e) => Close();
