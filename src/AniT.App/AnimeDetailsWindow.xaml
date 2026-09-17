@@ -201,7 +201,7 @@
                     <Button Style="{StaticResource HomeActiveNavButton}" Content="☆    Página do Anime"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="♙    Perfil" Click="Profile_Click"/>
                 </StackPanel>
-                <Image Grid.Row="2" Source="Assets/ghost_menu.png" Width="218" Height="218" Stretch="Uniform" Opacity="0.33" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="-18,0,0,-30" IsHitTestVisible="False"/>
+                <Image Grid.Row="2" Source="Assets/ghost_menu.png" Style="{StaticResource HomeSidebarMascot}"/>
             </Grid>
         </Border>
 

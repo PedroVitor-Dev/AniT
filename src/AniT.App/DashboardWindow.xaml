@@ -55,7 +55,7 @@
                     <TextBlock Text="SISTEMA" Foreground="#587DA9" FontSize="10" FontWeight="SemiBold" Margin="24,0,0,7"/>
                     <Button Style="{StaticResource HomeNavButton}" Content="⚙    Configurar estante" Click="ConfigureShelf_Click"/>
                 </StackPanel>
-                <Image Grid.Row="2" Source="Assets/ghost_menu.png" Width="218" Height="218" Stretch="Uniform" Opacity="0.33" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="-18,0,0,-30" IsHitTestVisible="False"/>
+                <Image Grid.Row="2" Source="Assets/ghost_menu.png" Style="{StaticResource HomeSidebarMascot}"/>
             </Grid>
         </Border>
 
