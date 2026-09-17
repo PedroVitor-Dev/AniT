@@ -47,7 +47,13 @@ public partial class CalendarWindow : Window, INotifyPropertyChanged
         await LoadAsync(selectLatestActivity: true);
     }
 
-    private async void Window_Activated(object? sender, EventArgs e) => await LoadAsync(selectLatestActivity: false);
+    private async void Window_Activated(object? sender, EventArgs e)
+    {
+        // The external player persists its last position asynchronously when it closes.
+        // A short delay prevents this screen from re-reading the previous progress value.
+        await Task.Delay(350);
+        await LoadAsync(selectLatestActivity: false);
+    }
 
     private async Task LoadAsync(bool selectLatestActivity)
     {

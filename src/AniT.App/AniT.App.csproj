@@ -12,6 +12,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>..\..\assets\anit.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,6 +25,7 @@
     <Resource Include="..\..\assets\ghost_background.png" Link="Assets\ghost_background.png" />
     <Resource Include="..\..\assets\ghost_popcorn.png" Link="Assets\ghost_popcorn.png" />
     <Resource Include="..\..\assets\fire.png" Link="Assets\fire.png" />
+    <Resource Include="..\..\assets\anit.ico" Link="Assets\anit.ico" />
     <Resource Include="..\..\assets\explore\backg.png" Link="Assets\Explore\backg.png" />
     <Resource Include="..\..\assets\explore\banner.png" Link="Assets\Explore\banner.png" />
     <Resource Include="..\..\assets\explore\1.png" Link="Assets\Explore\1.png" />

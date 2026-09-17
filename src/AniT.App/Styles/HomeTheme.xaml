@@ -199,8 +199,8 @@
             <Setter.Value>
                 <ControlTemplate TargetType="ProgressBar">
                     <Grid ClipToBounds="True">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="3"/>
-                        <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" CornerRadius="3" HorizontalAlignment="Left">
+                        <Border x:Name="PART_Track" Background="{TemplateBinding Background}" CornerRadius="3"/>
+                        <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" CornerRadius="3" HorizontalAlignment="Left" MinWidth="3">
                             <Border.Effect><DropShadowEffect Color="#53D1FF" BlurRadius="8" ShadowDepth="0" Opacity="0.48"/></Border.Effect>
                         </Border>
                     </Grid>
