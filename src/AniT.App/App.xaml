@@ -8,6 +8,8 @@
                 <ResourceDictionary Source="Themes/Colors.xaml"/>
                 <ResourceDictionary Source="Themes/Typography.xaml"/>
                 <ResourceDictionary Source="Themes/Effects.xaml"/>
+                <ResourceDictionary Source="Themes/Animations.xaml"/>
+                <ResourceDictionary Source="Themes/Buttons.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <Style x:Key="BrandButton" TargetType="Button">
