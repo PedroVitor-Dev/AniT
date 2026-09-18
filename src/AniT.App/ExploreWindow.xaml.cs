@@ -213,6 +213,11 @@ public partial class ExploreWindow : Window
             CollectionsTopButton.Visibility = Visibility.Collapsed;
             LibraryTopButton.Visibility = Visibility.Collapsed;
             DiscoveryBanner.Height = 248;
+            DiscoveryMascot.Width = 350;
+            DiscoveryMascot.Height = 330;
+            DiscoveryMascot.Margin = new Thickness(0, -34, -10, -42);
+            DiscoveryMascotGlow.Width = 250;
+            DiscoveryMascotGlow.Margin = new Thickness(0, 0, 16, -20);
         }
         else if (width < 1600)
         {
@@ -224,6 +229,11 @@ public partial class ExploreWindow : Window
             CollectionsTopButton.Visibility = Visibility.Collapsed;
             LibraryTopButton.Visibility = Visibility.Visible;
             DiscoveryBanner.Height = 276;
+            DiscoveryMascot.Width = 470;
+            DiscoveryMascot.Height = 420;
+            DiscoveryMascot.Margin = new Thickness(0, -52, -16, -58);
+            DiscoveryMascotGlow.Width = 330;
+            DiscoveryMascotGlow.Margin = new Thickness(0, 0, 24, -24);
         }
         else if (width < 2300)
         {
@@ -235,6 +245,11 @@ public partial class ExploreWindow : Window
             CollectionsTopButton.Visibility = Visibility.Visible;
             LibraryTopButton.Visibility = Visibility.Visible;
             DiscoveryBanner.Height = 292;
+            DiscoveryMascot.Width = 520;
+            DiscoveryMascot.Height = 456;
+            DiscoveryMascot.Margin = new Thickness(0, -58, -18, -62);
+            DiscoveryMascotGlow.Width = 370;
+            DiscoveryMascotGlow.Margin = new Thickness(0, 0, 26, -26);
         }
         else
         {
@@ -246,6 +261,11 @@ public partial class ExploreWindow : Window
             CollectionsTopButton.Visibility = Visibility.Visible;
             LibraryTopButton.Visibility = Visibility.Visible;
             DiscoveryBanner.Height = 310;
+            DiscoveryMascot.Width = 565;
+            DiscoveryMascot.Height = 490;
+            DiscoveryMascot.Margin = new Thickness(0, -62, -22, -68);
+            DiscoveryMascotGlow.Width = 405;
+            DiscoveryMascotGlow.Margin = new Thickness(0, 0, 30, -28);
         }
     }
 }
