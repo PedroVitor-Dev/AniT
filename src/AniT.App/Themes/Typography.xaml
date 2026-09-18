@@ -1,0 +1,55 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <FontFamily x:Key="AniT.Font.Family">Segoe UI</FontFamily>
+
+    <Style x:Key="AniT.Text.Display" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AniT.Font.Family}"/>
+        <Setter Property="FontSize" Value="42"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <Style x:Key="AniT.Text.PageTitle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AniT.Font.Family}"/>
+        <Setter Property="FontSize" Value="32"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <Style x:Key="AniT.Text.SectionTitle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AniT.Font.Family}"/>
+        <Setter Property="FontSize" Value="20"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/>
+    </Style>
+
+    <Style x:Key="AniT.Text.CardTitle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AniT.Font.Family}"/>
+        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/>
+    </Style>
+
+    <Style x:Key="AniT.Text.Body" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AniT.Font.Family}"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextSecondary}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <Style x:Key="AniT.Text.Caption" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AniT.Font.Family}"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextMuted}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <Style x:Key="AniT.Text.Label" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AniT.Font.Family}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextSecondary}"/>
+    </Style>
+</ResourceDictionary>
