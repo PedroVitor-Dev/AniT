@@ -11,6 +11,7 @@
                 <ResourceDictionary Source="Themes/Animations.xaml"/>
                 <ResourceDictionary Source="Themes/Buttons.xaml"/>
                 <ResourceDictionary Source="Themes/Cards.xaml"/>
+                <ResourceDictionary Source="Themes/Inputs.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <Style x:Key="BrandButton" TargetType="Button">
