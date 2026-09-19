@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Threading;
 using AniT.Core.Achievements;
 
 namespace AniT.App;
@@ -12,7 +13,13 @@ namespace AniT.App;
 public partial class AchievementsWindow : Window, INotifyPropertyChanged
 {
     private static readonly CultureInfo Portuguese = CultureInfo.GetCultureInfo("pt-BR");
+    private const int CardBatchSize = 18;
     private IReadOnlyList<AchievementProgress> all = [];
+    private IReadOnlyList<AchievementProgress> filtered = [];
+    private readonly Dictionary<int, AchievementCardView> cardCache = [];
+    private int renderedCount;
+    private bool isInitialized;
+    private bool isAddingBatch;
 
     public ObservableCollection<AchievementCardView> VisibleAchievements { get; } = [];
     public string UnlockedLabel { get; private set; } = "0 / 100 desbloqueadas";
@@ -37,19 +44,36 @@ public partial class AchievementsWindow : Window, INotifyPropertyChanged
 #endif
     }
 
-    private async void Window_Loaded(object sender, RoutedEventArgs e) => await LoadAsync();
+    private async void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        await Dispatcher.Yield(DispatcherPriority.Render);
+        await LoadAsync();
+    }
 
     private async Task LoadAsync()
     {
-        all = await App.Achievements.GetProgressAsync();
-        var unlocked = all.Count(item => item.IsUnlocked);
-        var points = all.Where(item => item.IsUnlocked).Sum(item => item.Points);
-        UnlockedLabel = $"{unlocked} / {AchievementCatalog.All.Count} desbloqueadas";
-        AniPointsLabel = $"{points.ToString("N0", Portuguese)} AniPoints";
-        OverallPercent = unlocked * 100d / AchievementCatalog.All.Count;
-        ChainSummary = BuildChainSummary();
-        Raise(nameof(UnlockedLabel), nameof(AniPointsLabel), nameof(OverallPercent), nameof(ChainSummary));
-        ApplyFilters();
+        ShowLoading("Carregando conquistas…", "Preparando suas jornadas e AniPoints.");
+        isInitialized = false;
+        try
+        {
+            all = await App.Achievements.GetProgressAsync();
+            cardCache.Clear();
+            var unlocked = all.Count(item => item.IsUnlocked);
+            var points = all.Where(item => item.IsUnlocked).Sum(item => item.Points);
+            UnlockedLabel = $"{unlocked} / {AchievementCatalog.All.Count} desbloqueadas";
+            AniPointsLabel = $"{points.ToString("N0", Portuguese)} AniPoints";
+            OverallPercent = unlocked * 100d / AchievementCatalog.All.Count;
+            ChainSummary = BuildChainSummary();
+            Raise(nameof(UnlockedLabel), nameof(AniPointsLabel), nameof(OverallPercent), nameof(ChainSummary));
+            isInitialized = true;
+            await ApplyFiltersAsync();
+            HideLoading();
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Debug.WriteLine($"AniT Achievements failed to load: {exception}");
+            ShowLoading("Não foi possível carregar as conquistas", "Seus dados continuam seguros. Tente abrir esta tela novamente.");
+        }
     }
 
     private string BuildChainSummary()
@@ -63,9 +87,9 @@ public partial class AchievementsWindow : Window, INotifyPropertyChanged
         return string.Join("   •   ", summaries);
     }
 
-    private void ApplyFilters()
+    private async Task ApplyFiltersAsync()
     {
-        if (StatusFilter is null || CategoryFilter is null || RarityFilter is null || SortFilter is null) return;
+        if (!isInitialized || StatusFilter is null || CategoryFilter is null || RarityFilter is null || SortFilter is null) return;
         IEnumerable<AchievementProgress> query = all;
         query = StatusFilter.SelectedIndex switch
         {
@@ -87,12 +111,64 @@ public partial class AchievementsWindow : Window, INotifyPropertyChanged
             _ => query.OrderBy(item => item.Definition.Id)
         };
 
+        filtered = query.ToArray();
+        renderedCount = 0;
         VisibleAchievements.Clear();
-        foreach (var item in query) VisibleAchievements.Add(AchievementCardView.Create(item));
-        EmptyState.Visibility = VisibleAchievements.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        EmptyState.Visibility = filtered.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        AchievementsScroll.ScrollToTop();
+        await LoadNextBatchAsync();
     }
 
-    private void Filter_Changed(object sender, SelectionChangedEventArgs e) => ApplyFilters();
+    private async void Filter_Changed(object sender, SelectionChangedEventArgs e) => await ApplyFiltersAsync();
+
+    private async void AchievementsScroll_ScrollChanged(object sender, ScrollChangedEventArgs e)
+    {
+        if (!isInitialized || isAddingBatch || renderedCount >= filtered.Count) return;
+        if (e.VerticalOffset >= e.ExtentHeight - e.ViewportHeight - 420)
+            await LoadNextBatchAsync();
+    }
+
+    private async Task LoadNextBatchAsync()
+    {
+        if (isAddingBatch || renderedCount >= filtered.Count) return;
+        isAddingBatch = true;
+        try
+        {
+            var end = Math.Min(renderedCount + CardBatchSize, filtered.Count);
+            while (renderedCount < end)
+            {
+                var progress = filtered[renderedCount++];
+                if (!cardCache.TryGetValue(progress.Definition.Id, out var card))
+                {
+                    card = AchievementCardView.Create(progress);
+                    cardCache[progress.Definition.Id] = card;
+                }
+                VisibleAchievements.Add(card);
+
+                if (renderedCount % 6 == 0)
+                    await Dispatcher.Yield(DispatcherPriority.Background);
+            }
+        }
+        finally
+        {
+            isAddingBatch = false;
+        }
+
+        // On very tall displays one batch may not create a scrollbar. Fill only
+        // enough additional rows to make every remaining card reachable.
+        await Dispatcher.Yield(DispatcherPriority.Render);
+        if (renderedCount < filtered.Count && AchievementsScroll.ScrollableHeight <= 0.5)
+            await LoadNextBatchAsync();
+    }
+
+    private void ShowLoading(string title, string detail)
+    {
+        LoadingTitle.Text = title;
+        LoadingDetail.Text = detail;
+        LoadingState.Visibility = Visibility.Visible;
+    }
+
+    private void HideLoading() => LoadingState.Visibility = Visibility.Collapsed;
 
     private async void Recalculate_Click(object sender, RoutedEventArgs e)
     {
@@ -157,9 +233,9 @@ public sealed record AchievementCardView(
             progress.IsUnlocked ? $"✓ DESBLOQUEADA  {progress.UnlockedAt?.LocalDateTime:dd/MM/yyyy}" : progress.CurrentValue > 0 ? "EM PROGRESSO" : "BLOQUEADA",
             definition.ChainCode is null ? string.Empty : $"CADEIA  •  {definition.ChainCode.Replace('_', ' ')}",
             definition.ChainCode is null ? Visibility.Collapsed : Visibility.Visible,
-            new SolidColorBrush(accent),
-            new SolidColorBrush(Color.FromArgb(60, accent.R, accent.G, accent.B)),
-            new SolidColorBrush(Color.FromArgb(240, 7, 25, 50)),
+            FrozenBrush(accent),
+            FrozenBrush(Color.FromArgb(60, accent.R, accent.G, accent.B)),
+            FrozenBrush(Color.FromArgb(240, 7, 25, 50)),
             accent);
     }
 
@@ -181,6 +257,13 @@ public sealed record AchievementCardView(
         AchievementRarity.SupremeLegendary => Color.FromRgb(255, 224, 92),
         _ => Color.FromRgb(147, 180, 210)
     };
+
+    private static SolidColorBrush FrozenBrush(Color color)
+    {
+        var brush = new SolidColorBrush(color);
+        brush.Freeze();
+        return brush;
+    }
 
     private static readonly CultureInfo Portuguese = CultureInfo.GetCultureInfo("pt-BR");
 }

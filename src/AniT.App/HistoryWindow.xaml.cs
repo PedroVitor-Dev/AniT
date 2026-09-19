@@ -42,6 +42,7 @@ public partial class HistoryWindow : Window, INotifyPropertyChanged
     public HistoryWindow()
     {
         InitializeComponent();
+        GlobalSearchController.Attach(this, GlobalSearchBox, GlobalSearchHint, SearchContainer);
         isInitialized = true;
         ResponsiveWindow.FitToWorkArea(this, 1380, 860);
         DataContext = this;
@@ -257,10 +258,11 @@ public partial class HistoryWindow : Window, INotifyPropertyChanged
             $"{startedAt:HH:mm} – {item.ActivityAt:HH:mm}",
             FormatDuration(item.WatchedSeconds),
             item.ProgressPercent,
-            RatingIcon(rating),
+            RatingImagePath(rating),
             RatingLabel(rating),
             RatingBackground(rating),
             RatingBorder(rating),
+            string.IsNullOrWhiteSpace(item.ReviewNotes) ? "Adicionar comentário" : "Ver comentário",
             string.IsNullOrWhiteSpace(item.ReviewNotes) ? "Adicionar comentário…" : item.ReviewNotes!);
     }
 
@@ -303,7 +305,7 @@ public partial class HistoryWindow : Window, INotifyPropertyChanged
     private void HistoryRow_Click(object sender, MouseButtonEventArgs e)
     {
         if (e.OriginalSource is DependencyObject source && FindVisualAncestor<ButtonBase>(source) is not null) return;
-        if (sender is Border { Tag: Guid animeId }) new AnimeDetailsWindow(animeId) { Owner = this }.ShowDialog();
+        if (sender is Border { Tag: Guid animeId }) AppNavigation.OpenAnimeDetails(this, animeId);
     }
 
     private async void EditComment_Click(object sender, RoutedEventArgs e)
@@ -341,22 +343,22 @@ public partial class HistoryWindow : Window, INotifyPropertyChanged
         if (width < 1320)
         {
             SidebarColumn.Width = new GridLength(184); RightRailColumn.Width = new GridLength(0); RightRail.Visibility = Visibility.Collapsed;
-            HistoryContentHost.Margin = new Thickness(18, 0, 18, 36); SearchContainer.MaxWidth = 350; LibraryTopButton.Visibility = Visibility.Collapsed; CollectionsTopButton.Visibility = Visibility.Collapsed;
+            HistoryContentHost.Margin = new Thickness(18, 0, 18, 36); SearchContainer.MaxWidth = 350; LibraryTopButton.Visibility = Visibility.Collapsed;
         }
         else if (width < 1700)
         {
             SidebarColumn.Width = new GridLength(220); RightRailColumn.Width = new GridLength(280); RightRail.Visibility = Visibility.Visible;
-            HistoryContentHost.Margin = new Thickness(24, 0, 24, 42); SearchContainer.MaxWidth = 500; LibraryTopButton.Visibility = Visibility.Visible; CollectionsTopButton.Visibility = Visibility.Collapsed;
+            HistoryContentHost.Margin = new Thickness(24, 0, 24, 42); SearchContainer.MaxWidth = 500; LibraryTopButton.Visibility = Visibility.Visible;
         }
         else if (width < 2300)
         {
             SidebarColumn.Width = new GridLength(232); RightRailColumn.Width = new GridLength(320); RightRail.Visibility = Visibility.Visible;
-            HistoryContentHost.Margin = new Thickness(30, 0, 30, 46); SearchContainer.MaxWidth = 580; LibraryTopButton.Visibility = Visibility.Visible; CollectionsTopButton.Visibility = Visibility.Visible;
+            HistoryContentHost.Margin = new Thickness(30, 0, 30, 46); SearchContainer.MaxWidth = 580; LibraryTopButton.Visibility = Visibility.Visible;
         }
         else
         {
             SidebarColumn.Width = new GridLength(250); RightRailColumn.Width = new GridLength(360); RightRail.Visibility = Visibility.Visible;
-            HistoryContentHost.Margin = new Thickness(42, 0, 42, 52); SearchContainer.MaxWidth = 660; LibraryTopButton.Visibility = Visibility.Visible; CollectionsTopButton.Visibility = Visibility.Visible;
+            HistoryContentHost.Margin = new Thickness(42, 0, 42, 52); SearchContainer.MaxWidth = 660; LibraryTopButton.Visibility = Visibility.Visible;
         }
     }
 
@@ -383,8 +385,16 @@ public partial class HistoryWindow : Window, INotifyPropertyChanged
 
     private static bool IsUsableCover(string? path) => !string.IsNullOrWhiteSpace(path) && File.Exists(path);
     private static double NormalizeRating(double? rating) => rating is > 5 ? rating.Value / 2 : rating ?? 0;
-    private static string RatingIcon(double rating) => rating switch { <= 0 => "☆", <= 2 => "☁", <= 3 => "●", <= 4 => "♥", _ => "★" };
-    private static string RatingLabel(double rating) => rating switch { <= 0 => "Sem nota", <= 1 => "Não curti", <= 2 => "Fraquinho", <= 3 => "Legal", <= 4 => "Muito bom!", _ => "Incrível" };
+    private static string RatingImagePath(double rating) => rating switch
+    {
+        <= 0 => "Assets/normal-sf.png",
+        <= 1 => "Assets/angry-sf.png",
+        <= 2 => "Assets/sad-sf.png",
+        <= 3 => "Assets/boring-sf.png",
+        <= 4 => "Assets/happy2-sf.png",
+        _ => "Assets/happy-sf.png"
+    };
+    private static string RatingLabel(double rating) => rating switch { <= 0 => "Sem avaliação", <= 1 => "Horrível", <= 2 => "Ruim", <= 3 => "OK", <= 4 => "Boa", _ => "Excelente" };
     private static string RatingBackground(double rating) => rating switch { <= 0 => "#172C4C", <= 2 => "#233C68", <= 3 => "#173D69", <= 4 => "#4B245C", _ => "#4D431D" };
     private static string RatingBorder(double rating) => rating switch { <= 0 => "#496786", <= 2 => "#5C8BC8", <= 3 => "#35A8E8", <= 4 => "#D45AC8", _ => "#F1C64B" };
     private static string FormatDuration(double seconds)
@@ -396,5 +406,5 @@ public partial class HistoryWindow : Window, INotifyPropertyChanged
 
 internal enum HistoryPeriod { Today, Week, Month, All }
 internal sealed record HistoryActivityRecord(DateTime ActivityAt, Guid AnimeId, Guid EpisodeId, string AnimeTitle, int EpisodeNumber, string EpisodeTitle, string CoverPath, double ProgressPercent, double WatchedSeconds, double DurationSeconds, double? Rating, string? ReviewNotes, global::AniT.Core.WatchStatus Status);
-public sealed record HistoryActivityItem(Guid AnimeId, Guid EpisodeId, string AnimeTitle, string EpisodeLabel, string EpisodeTitle, string CoverPath, string SessionTimeLabel, string DurationLabel, double ProgressPercent, string RatingIcon, string RatingLabel, string RatingBackground, string RatingBorder, string ReviewText);
+public sealed record HistoryActivityItem(Guid AnimeId, Guid EpisodeId, string AnimeTitle, string EpisodeLabel, string EpisodeTitle, string CoverPath, string SessionTimeLabel, string DurationLabel, double ProgressPercent, string RatingImagePath, string RatingLabel, string RatingBackground, string RatingBorder, string CommentButtonLabel, string ReviewText);
 public sealed record HistoryDayGroup(string Title, string Summary, string Accent, IReadOnlyList<HistoryActivityItem> Activities);

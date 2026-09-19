@@ -51,6 +51,8 @@
     <Resource Include="..\..\assets\perfil\1.png" Link="Assets\Profile\1.png" />
     <Resource Include="..\..\assets\perfil\2.png" Link="Assets\Profile\2.png" />
     <Resource Include="..\..\assets\badges\**\*" Link="Assets\Badges\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Resource Include="..\..\assets\loading.png" Link="Assets\Loading\loading.png" />
+    <Resource Include="..\..\assets\loading_....png" Link="Assets\Loading\loading-text.png" />
     <Resource Include="..\..\assets\baki-pi\normal-sf.png" Link="Assets\normal-sf.png" />
     <Resource Include="..\..\assets\baki-pi\angry-sf.png" Link="Assets\angry-sf.png" />
     <Resource Include="..\..\assets\baki-pi\sad-sf.png" Link="Assets\sad-sf.png" />

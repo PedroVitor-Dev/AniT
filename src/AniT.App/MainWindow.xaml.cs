@@ -63,7 +63,6 @@ public partial class MainWindow : Window
 
     private void OpenLibrary_Click(object sender, RoutedEventArgs e)
     {
-        var library = new LibraryWindow { Owner = this };
-        library.ShowDialog();
+        AppNavigation.OpenLibrary(this);
     }
 }

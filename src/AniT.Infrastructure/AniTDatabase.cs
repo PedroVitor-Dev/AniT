@@ -33,6 +33,7 @@ public static class AniTDatabase
     private static void EnsureLegacyColumns(AniTDbContext context)
     {
         EnsureColumn(context, "Anime", "EnglishTitle", "TEXT NULL");
+        EnsureColumn(context, "Anime", "Genres", "TEXT NULL");
         EnsureColumn(context, "Anime", "CriticScore", "REAL NULL");
         EnsureColumn(context, "Anime", "ReviewNotes", "TEXT NULL");
         EnsureColumn(context, "Episodes", "ReviewNotes", "TEXT NULL");

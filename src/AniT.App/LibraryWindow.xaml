@@ -199,7 +199,7 @@
                             CornerRadius="11"
                             Width="240"
                             Height="40"
-                            ToolTip="Pesquise pelo título principal ou em inglês">
+                            ToolTip="Pesquise por animes, episódios ou gêneros">
                         <Grid>
                             <TextBlock Text="⌕"
                                        Foreground="#74BFFF"
@@ -208,15 +208,15 @@
                                        Margin="13,0,0,1"
                                        IsHitTestVisible="False"/>
                             <TextBlock x:Name="SearchPlaceholder"
-                                       Text="Pesquisar títulos"
+                                       Text="Buscar animes, episódios, gêneros..."
                                        Foreground="#7694B9"
                                        FontSize="12"
                                        VerticalAlignment="Center"
                                        Margin="37,0,34,0"
                                        IsHitTestVisible="False"/>
                             <TextBox x:Name="LibrarySearchBox"
-                                     AutomationProperties.Name="Pesquisar títulos na biblioteca"
-                                     AutomationProperties.HelpText="Filtra pelo título principal ou pelo título em inglês"
+                                     AutomationProperties.Name="Pesquisar animes, episódios e gêneros"
+                                     AutomationProperties.HelpText="Busca títulos, aliases, episódios e gêneros da biblioteca"
                                      Background="Transparent"
                                      BorderThickness="0"
                                      Foreground="#EAF6FF"
@@ -252,7 +252,7 @@
                             Click="RefreshLibrary_Click"/>
                     <Button x:Name="AddFolderButton"
                             Style="{StaticResource QuietButton}"
-                            Content="＋  Adicionar pasta"
+                            Content="✎  Editar estante"
                             Height="40"
                             Margin="10,0,0,0"
                             Click="AddFolder_Click"/>
@@ -294,9 +294,9 @@
                         </ScrollViewer>
                         <StackPanel x:Name="EmptyState" Width="430" HorizontalAlignment="Center" VerticalAlignment="Center" TextBlock.TextAlignment="Center">
                             <Image Source="Assets/normal-sf.png" Width="105" Opacity="0.82"/>
-                            <TextBlock x:Name="EmptyTitleText" Text="Nenhuma pasta adicionada ainda" Foreground="White" FontSize="22" FontWeight="SemiBold" Margin="0,12,0,0"/>
-                            <TextBlock x:Name="EmptyDetailText" Text="Adicione uma pasta. O AniT encontra os vídeos sem exigir que você renomeie ou reorganize nada." Foreground="#9DB2D0" FontSize="14" TextWrapping="Wrap" LineHeight="22" Margin="0,10,0,0"/>
-                            <Button x:Name="EmptyActionButton" Style="{StaticResource BrandButton}" Content="＋  Adicionar pasta" Width="170" Margin="0,18,0,0" Click="AddFolder_Click"/>
+                            <TextBlock x:Name="EmptyTitleText" Text="Configure a pasta da sua estante" Foreground="White" FontSize="22" FontWeight="SemiBold" Margin="0,12,0,0"/>
+                            <TextBlock x:Name="EmptyDetailText" Text="Escolha um único diretório principal. O AniT encontra os vídeos sem exigir que você renomeie ou reorganize nada." Foreground="#9DB2D0" FontSize="14" TextWrapping="Wrap" LineHeight="22" Margin="0,10,0,0"/>
+                            <Button x:Name="EmptyActionButton" Style="{StaticResource BrandButton}" Content="Configurar estante" Width="170" Margin="0,18,0,0" Click="AddFolder_Click"/>
                         </StackPanel>
                     </Grid>
                 </TabItem>
@@ -308,17 +308,19 @@
                             <TextBlock Text="Pastas monitoradas" Foreground="White" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             <Button DockPanel.Dock="Right"
                                     Style="{StaticResource BrandButton}"
-                                    Content="＋ Adicionar pasta"
+                                    Content="✎ Editar pasta"
                                     Width="150"
                                     Height="36"
                                     Margin="18,0,0,0"
                                     Click="AddFolder_Click"/>
                         </DockPanel>
                         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"><ItemsControl ItemsSource="{Binding LibraryRoots}"><ItemsControl.ItemTemplate><DataTemplate>
-                            <Border Style="{StaticResource ManagementCard}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <Border Style="{StaticResource ManagementCard}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                 <StackPanel><TextBlock Text="{Binding DisplayName}" Foreground="White" FontSize="15" FontWeight="SemiBold"/><TextBlock Text="{Binding Path}" Foreground="#7896BA" FontSize="11" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding StatusText}" Foreground="#63C8FF" FontSize="11" Margin="0,7,0,0"/></StackPanel>
-                                <CheckBox Grid.Column="1" Content="Subpastas" IsChecked="{Binding IncludeSubfolders}" Foreground="#AFC8E7" VerticalAlignment="Center" Margin="16,0" Tag="{Binding Id}" Click="RootSubfolders_Click"/>
-                                <CheckBox Grid.Column="2" Content="Ativa" IsChecked="{Binding IsEnabled}" Foreground="#AFC8E7" VerticalAlignment="Center" Tag="{Binding Id}" Click="RootEnabled_Click"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="18,0,0,0">
+                                    <Border Background="#153B60" BorderBrush="#2D73A6" BorderThickness="1" CornerRadius="10" Padding="9,4" Margin="0,0,10,0"><TextBlock Text="DIRETÓRIO FIXADO" Foreground="#7FD9FF" FontSize="9" FontWeight="Bold"/></Border>
+                                    <Button Style="{StaticResource QuietButton}" Content="Editar" Height="34" Click="AddFolder_Click"/>
+                                </StackPanel>
                             </Grid></Border>
                         </DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer>
                     </Grid>

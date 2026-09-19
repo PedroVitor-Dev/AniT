@@ -55,6 +55,16 @@ public sealed class AchievementPersistenceTests
             Assert.Contains(first, item => item.Definition.Id == 1 && item.IsUnlocked);
             Assert.Contains(second, item => item.Definition.Id == 1 && item.IsUnlocked);
 
+            using (var snapshotContext = AniTDatabase.Create(databasePath))
+            {
+                var libraryMilestone = await snapshotContext.UserAchievements.SingleAsync(item => item.AchievementId == 41);
+                libraryMilestone.CurrentValue = 4;
+                await snapshotContext.SaveChangesAsync();
+            }
+
+            var snapshot = await service.GetProgressAsync();
+            Assert.Equal(4, snapshot.Single(item => item.Definition.Id == 41).CurrentValue);
+
             using var reopened = AniTDatabase.Create(databasePath);
             Assert.Equal(100, await reopened.UserAchievements.CountAsync());
             Assert.Equal(1, await reopened.AchievementHistory.CountAsync(item => item.AchievementId == 1));

@@ -19,6 +19,7 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
     private List<ProfileActivity> activities = [];
     private Guid? latestEpisodeId;
     private ProfileSettings settings = ProfileSettingsStore.Load();
+    private string automaticAvatarPath = "Assets/Profile/1.png";
     private bool isLoading;
 
     public ObservableCollection<ProfileHighlight> Highlights { get; } = [];
@@ -31,6 +32,8 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
     public string DisplayName { get; private set; } = "Pet-S";
     public string Bio { get; private set; } = string.Empty;
     public string AvatarPath { get; private set; } = "Assets/Profile/1.png";
+    public double AvatarSize { get; private set; } = 142;
+    public string BannerPath { get; private set; } = "Assets/History/2.png";
     public string LevelLabel { get; private set; } = "Nv. 1";
     public string MemberSinceLabel { get; private set; } = string.Empty;
     public string DaysWatchedLabel { get; private set; } = "0";
@@ -51,6 +54,7 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
     public ProfileWindow()
     {
         InitializeComponent();
+        GlobalSearchController.Attach(this, SearchBox, SearchHint, SearchContainer);
         ResponsiveWindow.FitToWorkArea(this, 1380, 860);
         DataContext = this;
     }
@@ -82,6 +86,8 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
             settings = ProfileSettingsStore.Load();
             DisplayName = settings.DisplayName;
             Bio = settings.Bio;
+            AvatarSize = settings.AvatarSize;
+            BannerPath = IsUsableCover(settings.BannerPath) ? settings.BannerPath! : "Assets/History/2.png";
 
             activities = anime.SelectMany(item => item.Seasons.SelectMany(season => season.Episodes.Select(episode => new { Anime = item, Episode = episode })))
                 .Select(item => new ProfileActivity(item.Anime.Id, item.Episode.Id, item.Anime.Title, item.Episode.Number,
@@ -98,7 +104,8 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
             var watchingAnime = anime.Count(item => item.Seasons.SelectMany(season => season.Episodes).Any(episode => episode.Status == global::AniT.Core.WatchStatus.Watching));
             var latest = activities.FirstOrDefault();
             latestEpisodeId = latest?.EpisodeId;
-            AvatarPath = latest?.CoverPath ?? anime.Select(item => item.CoverPath).FirstOrDefault(IsUsableCover) ?? "Assets/Profile/1.png";
+            automaticAvatarPath = latest?.CoverPath ?? anime.Select(item => item.CoverPath).FirstOrDefault(IsUsableCover) ?? "Assets/Profile/1.png";
+            AvatarPath = IsUsableCover(settings.AvatarPath) ? settings.AvatarPath! : automaticAvatarPath;
             DaysWatchedLabel = watchedDates.Count.ToString("N0", Portuguese);
             EpisodesWatchedLabel = activities.Count.ToString("N0", Portuguese);
             HoursWatchedLabel = FormatDuration(activities.Sum(item => item.WatchedSeconds));
@@ -229,14 +236,36 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
 
     private async void EditProfile_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new ProfileEditWindow(settings) { Owner = this };
+        var dialog = new ProfileEditWindow(settings, AvatarPath) { Owner = this };
         if (dialog.ShowDialog() != true || dialog.SavedSettings is not { } saved) return;
-        ProfileSettingsStore.Save(saved);
+
+        var avatarChanged = !string.Equals(settings.AvatarPath, saved.AvatarPath, StringComparison.OrdinalIgnoreCase)
+                            || Math.Abs(settings.AvatarSize - saved.AvatarSize) > 0.1;
+        try
+        {
+            saved = saved with { AvatarPath = ProfileSettingsStore.PersistAvatar(saved.AvatarPath) };
+            ProfileSettingsStore.Save(saved);
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show($"Não foi possível salvar a foto do perfil.\n\n{exception.Message}", "AniT", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         settings = saved;
-        DisplayName = saved.DisplayName; Bio = saved.Bio;
-        Raise(nameof(DisplayName), nameof(Bio));
+        DisplayName = saved.DisplayName;
+        Bio = saved.Bio;
+        AvatarSize = saved.AvatarSize;
+        AvatarPath = IsUsableCover(saved.AvatarPath) ? saved.AvatarPath! : automaticAvatarPath;
+        BannerPath = IsUsableCover(saved.BannerPath) ? saved.BannerPath! : "Assets/History/2.png";
+        Raise(nameof(DisplayName), nameof(Bio), nameof(AvatarPath), nameof(AvatarSize), nameof(BannerPath));
         await App.Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
             global::AniT.Core.Achievements.AchievementEventType.ProfileUpdated));
+        if (avatarChanged)
+        {
+            await App.Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
+                global::AniT.Core.Achievements.AchievementEventType.AvatarChanged));
+        }
     }
 
     private async void ExportBackup_Click(object sender, RoutedEventArgs e)
@@ -256,7 +285,7 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
         catch (Exception exception) { MessageBox.Show($"Não foi possível exportar o backup.\n\n{exception.Message}", "AniT", MessageBoxButton.OK, MessageBoxImage.Warning); }
     }
 
-    private void AnimeCard_Click(object sender, RoutedEventArgs e) { if (sender is Button { Tag: Guid id }) new AnimeDetailsWindow(id) { Owner = this }.ShowDialog(); }
+    private void AnimeCard_Click(object sender, RoutedEventArgs e) { if (sender is Button { Tag: Guid id }) AppNavigation.OpenAnimeDetails(this, id); }
     private void Home_Click(object sender, RoutedEventArgs e) => AppNavigation.Home(this);
     private void Library_Click(object sender, RoutedEventArgs e) => AppNavigation.OpenLibrary(this);
     private void Explore_Click(object sender, RoutedEventArgs e) => AppNavigation.Explore(this);
@@ -271,9 +300,9 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
     private void UpdateResponsiveLayout(double width)
     {
         if (SidebarColumn is null || RightRailColumn is null || ProfileContentHost is null) return;
-        if (width < 1320) { SidebarColumn.Width = new GridLength(184); RightRailColumn.Width = new GridLength(0); RightRail.Visibility = Visibility.Collapsed; ProfileContentHost.Margin = new Thickness(18, 14, 18, 36); SearchContainer.MaxWidth = 350; LibraryTopButton.Visibility = Visibility.Collapsed; CollectionsTopButton.Visibility = Visibility.Collapsed; HeroPanel.Height = 350; }
-        else if (width < 1700) { SidebarColumn.Width = new GridLength(220); RightRailColumn.Width = new GridLength(300); RightRail.Visibility = Visibility.Visible; ProfileContentHost.Margin = new Thickness(24, 16, 24, 42); SearchContainer.MaxWidth = 500; LibraryTopButton.Visibility = Visibility.Visible; CollectionsTopButton.Visibility = Visibility.Collapsed; HeroPanel.Height = 330; }
-        else { SidebarColumn.Width = new GridLength(232); RightRailColumn.Width = new GridLength(340); RightRail.Visibility = Visibility.Visible; ProfileContentHost.Margin = new Thickness(30, 18, 30, 48); SearchContainer.MaxWidth = 580; LibraryTopButton.Visibility = Visibility.Visible; CollectionsTopButton.Visibility = Visibility.Visible; HeroPanel.Height = 330; }
+        if (width < 1320) { SidebarColumn.Width = new GridLength(184); RightRailColumn.Width = new GridLength(0); RightRail.Visibility = Visibility.Collapsed; ProfileContentHost.Margin = new Thickness(18, 14, 18, 36); SearchContainer.MaxWidth = 350; LibraryTopButton.Visibility = Visibility.Collapsed; HeroPanel.Height = 400; }
+        else if (width < 1700) { SidebarColumn.Width = new GridLength(220); RightRailColumn.Width = new GridLength(300); RightRail.Visibility = Visibility.Visible; ProfileContentHost.Margin = new Thickness(24, 16, 24, 42); SearchContainer.MaxWidth = 500; LibraryTopButton.Visibility = Visibility.Visible; HeroPanel.Height = 380; }
+        else { SidebarColumn.Width = new GridLength(232); RightRailColumn.Width = new GridLength(340); RightRail.Visibility = Visibility.Visible; ProfileContentHost.Margin = new Thickness(30, 18, 30, 48); SearchContainer.MaxWidth = 580; LibraryTopButton.Visibility = Visibility.Visible; HeroPanel.Height = 370; }
     }
 
     private static bool IsUsableCover(string? path) => !string.IsNullOrWhiteSpace(path) && File.Exists(path);
@@ -283,20 +312,55 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
     private static string FormatDuration(double seconds) { var span = TimeSpan.FromSeconds(Math.Max(0, seconds)); return span.TotalHours >= 1 ? $"{(int)span.TotalHours}h {span.Minutes:00}m" : $"{Math.Max(0, span.Minutes)}m"; }
     private static string RelativeTime(DateTime value) { var delta = DateTime.Now - value; if (value.Date == DateTime.Today) return delta.TotalHours < 1 ? "agora" : $"há {(int)delta.TotalHours}h"; if (value.Date == DateTime.Today.AddDays(-1)) return "ontem"; return value.ToString("dd/MM"); }
     private void Raise(params string[] names) { foreach (var name in names) PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name)); }
-    private void RaiseAll() => Raise(nameof(DisplayName), nameof(Bio), nameof(AvatarPath), nameof(LevelLabel), nameof(MemberSinceLabel), nameof(DaysWatchedLabel), nameof(EpisodesWatchedLabel), nameof(HoursWatchedLabel), nameof(CompletedAnimeLabel), nameof(AverageRatingLabel), nameof(RatingsCountLabel), nameof(CurrentMonthLabel), nameof(FavoriteCountLabel), nameof(CompletedCountLabel), nameof(WatchingCountLabel), nameof(AchievementsUnlockedLabel), nameof(AchievementPointsLabel), nameof(AchievementProgressPercent));
+    private void RaiseAll() => Raise(nameof(DisplayName), nameof(Bio), nameof(AvatarPath), nameof(AvatarSize), nameof(BannerPath), nameof(LevelLabel), nameof(MemberSinceLabel), nameof(DaysWatchedLabel), nameof(EpisodesWatchedLabel), nameof(HoursWatchedLabel), nameof(CompletedAnimeLabel), nameof(AverageRatingLabel), nameof(RatingsCountLabel), nameof(CurrentMonthLabel), nameof(FavoriteCountLabel), nameof(CompletedCountLabel), nameof(WatchingCountLabel), nameof(AchievementsUnlockedLabel), nameof(AchievementPointsLabel), nameof(AchievementProgressPercent));
 }
 
-public sealed record ProfileSettings(string DisplayName, string Bio, DateTimeOffset MemberSince);
+public sealed record ProfileSettings(
+    string DisplayName,
+    string Bio,
+    DateTimeOffset MemberSince,
+    string? AvatarPath = null,
+    double AvatarSize = 142,
+    string? BannerPath = null);
 
 internal static class ProfileSettingsStore
 {
     private static readonly string FilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AniT", "Data", "profile.json");
+    private static readonly string AvatarDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AniT", "Data", "Profile");
+
     public static ProfileSettings Load()
     {
-        try { if (File.Exists(FilePath)) return JsonSerializer.Deserialize<ProfileSettings>(File.ReadAllText(FilePath)) ?? Default(); }
+        try
+        {
+            if (File.Exists(FilePath))
+            {
+                var loaded = JsonSerializer.Deserialize<ProfileSettings>(File.ReadAllText(FilePath)) ?? Default();
+                var avatarSize = loaded.AvatarSize is >= 104 and <= 190 ? loaded.AvatarSize : 142;
+                return loaded with { AvatarSize = avatarSize };
+            }
+        }
         catch { }
         return Default();
     }
+
+    public static string? PersistAvatar(string? sourcePath)
+    {
+        if (string.IsNullOrWhiteSpace(sourcePath)) return null;
+        if (!File.Exists(sourcePath)) throw new FileNotFoundException("A imagem escolhida não está mais disponível.", sourcePath);
+
+        Directory.CreateDirectory(AvatarDirectory);
+        var sourceFullPath = Path.GetFullPath(sourcePath);
+        var avatarDirectoryFullPath = Path.GetFullPath(AvatarDirectory).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        if (sourceFullPath.StartsWith(avatarDirectoryFullPath, StringComparison.OrdinalIgnoreCase)) return sourceFullPath;
+
+        var extension = Path.GetExtension(sourceFullPath).ToLowerInvariant();
+        if (extension is not (".png" or ".jpg" or ".jpeg" or ".bmp"))
+            throw new InvalidDataException("Escolha uma imagem PNG, JPG, JPEG ou BMP.");
+        var destination = Path.Combine(AvatarDirectory, $"avatar-{Guid.NewGuid():N}{extension}");
+        File.Copy(sourceFullPath, destination, overwrite: false);
+        return destination;
+    }
+
     public static void Save(ProfileSettings settings) { Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!); File.WriteAllText(FilePath, JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true })); }
     private static ProfileSettings Default() => new("Pet-S", "Animes tornam os dias comuns em momentos especiais. ♡", DateTimeOffset.Now);
 }

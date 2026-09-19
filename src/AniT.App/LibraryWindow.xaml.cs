@@ -27,6 +27,7 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
     public LibraryWindow()
     {
         InitializeComponent();
+        GlobalSearchController.Attach(this, LibrarySearchBox, SearchPlaceholder, SearchBanner);
         ResponsiveWindow.FitToWorkArea(this, 1180, 760);
         DataContext = this;
     }
@@ -100,7 +101,7 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
             .ToListAsync();
 
         var animeNames = anime.ToDictionary(item => item.Id, item => item.Title);
-        var roots = await context.LibraryRoots.AsNoTracking().OrderBy(root => root.DisplayName).ToListAsync();
+        var roots = await context.LibraryRoots.AsNoTracking().Where(root => root.IsEnabled).OrderBy(root => root.DisplayName).ToListAsync();
         var reviewItems = await context.LibraryReviewItems.AsNoTracking()
             .Where(item => item.Status == global::AniT.Core.LibraryReviewStatus.Pending)
             .OrderByDescending(item => item.Confidence)
@@ -152,10 +153,10 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
         }
 
         libraryEmptyTitle = roots.Count == 0
-            ? "Nenhuma pasta adicionada ainda"
+            ? "Configure a pasta da sua estante"
             : reviewItems.Count > 0 ? "Há arquivos aguardando revisão" : "Nenhum título identificado";
         libraryEmptyDetail = roots.Count == 0
-            ? "Adicione uma pasta. O AniT encontra os vídeos sem exigir que você renomeie ou reorganize nada."
+            ? "Escolha um único diretório principal. O AniT encontra os vídeos sem exigir que você renomeie ou reorganize nada."
             : reviewItems.Count > 0
                 ? "Abra a aba Revisão para confirmar os arquivos ambíguos com segurança."
                 : "Atualize a Biblioteca depois de adicionar vídeos às pastas monitoradas.";
@@ -357,7 +358,7 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
     private async Task<LibraryRefreshSummary> ScanLibraryRootsAsync(CancellationToken cancellationToken)
     {
         await using var context = App.OpenFreshDatabase();
-        var roots = await context.LibraryRoots.AsNoTracking().OrderBy(root => root.DisplayName).ToListAsync(cancellationToken);
+        var roots = await context.LibraryRoots.AsNoTracking().Where(root => root.IsEnabled).OrderBy(root => root.DisplayName).ToListAsync(cancellationToken);
         if (roots.Count == 0) throw new InvalidOperationException("Nenhuma pasta está configurada na estante.");
 
         var summary = new LibraryRefreshSummary();
@@ -404,7 +405,8 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
                     item.EnglishTitle,
                     item.CoverPath,
                     item.Synopsis,
-                    item.CriticScore))
+                    item.CriticScore,
+                    item.Genres))
                 .ToListAsync(cancellationToken);
         }
 
@@ -434,7 +436,8 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
                     cancellationToken,
                     item.Synopsis,
                     item.CriticScore,
-                    forceRefresh: true);
+                    forceRefresh: true,
+                    savedGenres: item.Genres);
                 updated++;
             }
             catch (OperationCanceledException)
@@ -471,46 +474,12 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
     private void AnimeCard_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not System.Windows.Controls.Button { DataContext: AnimeLibraryItem anime }) return;
-        var details = new AnimeDetailsWindow(anime.Id) { Owner = this };
-        details.ShowDialog();
+        AppNavigation.OpenAnimeDetails(this, anime.Id);
     }
 
     private async void AddFolder_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new Microsoft.Win32.OpenFolderDialog { Title = "Adicionar uma pasta à Biblioteca" };
-        if (dialog.ShowDialog() is not true) return;
-        await using var context = App.OpenFreshDatabase();
-        var path = Path.GetFullPath(dialog.FolderName);
-        if (await context.LibraryRoots.AnyAsync(root => root.Path.ToLower() == path.ToLower()))
-        {
-            MessageBox.Show("Essa pasta já faz parte da Biblioteca.", "AniT", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
-        var root = new global::AniT.Core.LibraryRoot
-        {
-            Path = path,
-            DisplayName = Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)),
-            IncludeSubfolders = true
-        };
-        context.LibraryRoots.Add(root);
-        await context.SaveChangesAsync();
-        isRefreshing = true;
-        ShowRefreshOverlay("Escaneando nova pasta", root.DisplayName, 0);
-        try
-        {
-            var progress = new Progress<global::AniT.Infrastructure.LibraryScanProgress>(scan =>
-                ShowRefreshOverlay("Escaneando nova pasta", $"{scan.FilesProcessed} de {scan.TotalFiles} · {scan.NeedsReview} para revisão", scan.TotalFiles == 0 ? 100 : scan.FilesProcessed * 100d / scan.TotalFiles));
-            await new global::AniT.Infrastructure.LibraryScanner(context).ScanAsync(root, progress);
-            await App.Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
-                global::AniT.Core.Achievements.AchievementEventType.LibraryChanged));
-            await LoadAsync();
-        }
-        finally
-        {
-            RefreshOverlay.Visibility = Visibility.Collapsed;
-            isRefreshing = false;
-        }
+        if (new SetupShelfWindow { Owner = this }.ShowDialog() is true) await LoadAsync();
     }
 
     private async void RootSubfolders_Click(object sender, RoutedEventArgs e)
@@ -554,7 +523,8 @@ internal sealed record AnimeMetadataItem(
     string? EnglishTitle,
     string? CoverPath,
     string? Synopsis,
-    double? CriticScore);
+    double? CriticScore,
+    string? Genres);
 
 public sealed class AnimeLibraryItem(
     Guid id,

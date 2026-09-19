@@ -59,6 +59,7 @@ public partial class App : Application
 
         var dashboard = new DashboardWindow();
         MainWindow = dashboard;
+        dashboard.ContentRendered += (_, _) => AppNavigation.PrewarmLoadingSurface(dashboard);
         dashboard.Show();
         _ = InitializeAchievementsAsync();
         if (!Database.LibraryRoots.Any())
@@ -160,7 +161,8 @@ public partial class App : Application
         CancellationToken cancellationToken = default,
         string? savedSynopsis = null,
         double? savedCriticScore = null,
-        bool forceRefresh = false)
+        bool forceRefresh = false,
+        string? savedGenres = null)
     {
         var metadata = await animeCoverProvider.EnsureMetadataAsync(
             animeId,
@@ -170,7 +172,8 @@ public partial class App : Application
             cancellationToken,
             savedSynopsis,
             savedCriticScore,
-            forceRefresh);
+            forceRefresh,
+            savedGenres);
         var englishChanged = !string.IsNullOrWhiteSpace(metadata.EnglishTitle)
             && !string.Equals(metadata.EnglishTitle, englishTitle, StringComparison.Ordinal);
         var coverChanged = metadata.CoverPath is not null
@@ -179,7 +182,9 @@ public partial class App : Application
             && !string.Equals(metadata.Synopsis, savedSynopsis, StringComparison.Ordinal);
         var criticScoreChanged = metadata.CriticScore is not null
             && metadata.CriticScore != savedCriticScore;
-        if (!englishChanged && !coverChanged && !synopsisChanged && !criticScoreChanged) return metadata;
+        var genresChanged = !string.IsNullOrWhiteSpace(metadata.Genres)
+            && !string.Equals(metadata.Genres, savedGenres, StringComparison.Ordinal);
+        if (!englishChanged && !coverChanged && !synopsisChanged && !criticScoreChanged && !genresChanged) return metadata;
 
         await using var context = OpenFreshDatabase();
         var anime = await context.Anime.FirstOrDefaultAsync(item => item.Id == animeId, cancellationToken);
@@ -188,9 +193,14 @@ public partial class App : Application
         if (coverChanged) anime.CoverPath = metadata.CoverPath;
         if (synopsisChanged) anime.Synopsis = metadata.Synopsis;
         if (criticScoreChanged) anime.CriticScore = metadata.CriticScore;
+        if (genresChanged) anime.Genres = metadata.Genres;
         await context.SaveChangesAsync(cancellationToken);
         return metadata;
     }
+
+    public static string? GetCachedAnimeBannerPath(Guid animeId) => animeCoverProvider.GetCachedBannerPath(animeId);
+
+    public static bool ShouldRefreshAnimeBanner(Guid animeId) => animeCoverProvider.ShouldRefreshBanner(animeId);
 
     private static string ResolveBundledPlayerPath()
     {

@@ -1,12 +1,14 @@
 <Window x:Class="AniT.App.AchievementsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:AniT.App"
         Title="Conquistas · AniT" Width="1500" Height="920" MinWidth="1080" MinHeight="700"
         Background="#020B1D" WindowStartupLocation="CenterOwner" WindowState="Maximized"
         Loaded="Window_Loaded" UseLayoutRounding="True" SnapsToDevicePixels="True">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Styles/HomeTheme.xaml"/></ResourceDictionary.MergedDictionaries>
+            <local:AchievementIconConverter x:Key="AchievementIconConverter"/>
             <Style x:Key="FilterCombo" TargetType="ComboBox">
                 <Setter Property="Height" Value="44"/>
                 <Setter Property="MinWidth" Value="172"/>
@@ -100,7 +102,7 @@
                             <Grid.RowDefinitions><RowDefinition Height="154"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                             <Border CornerRadius="17" Background="#0B1E39" BorderBrush="#315F87" BorderThickness="1">
                                 <Grid>
-                                    <Image Source="{Binding IconPath}" Stretch="Uniform" Margin="8" Visibility="{Binding IconVisibility}"/>
+                                    <Image Source="{Binding IconPath, Converter={StaticResource AchievementIconConverter}}" Stretch="Uniform" Margin="8" Visibility="{Binding IconVisibility}"/>
                                     <TextBlock Text="?" Foreground="#7992AD" FontSize="74" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding LockedVisibility}"/>
                                     <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="9" Padding="8,4" CornerRadius="10" Background="#D9071830">
                                         <TextBlock Text="{Binding IdLabel}" Foreground="#A9CBE8" FontSize="10" FontWeight="Bold"/>
@@ -157,16 +159,26 @@
                 <Button Content="↻  Recalcular" Style="{StaticResource HomeOutlineButton}" Click="Recalculate_Click" Margin="10,5,5,5"/>
             </WrapPanel>
         </Border>
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="24,18,24,42">
-            <StackPanel MaxWidth="1660" HorizontalAlignment="Center">
-                <Border x:Name="ChainPanel" CornerRadius="18" Background="#D709213F" BorderBrush="#2B72A8" BorderThickness="1" Padding="17" Margin="8,0,8,14">
-                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="CADEIAS DE PROGRESSÃO" Foreground="#72D8FF" FontSize="11" FontWeight="Bold"/><TextBlock Text="{Binding ChainSummary}" Foreground="White" FontSize="15" FontWeight="SemiBold" Margin="0,5,0,0" TextWrapping="Wrap"/></StackPanel><TextBlock Grid.Column="1" Text="Marcos individuais permanecem registrados" Foreground="#8FB2D1" FontSize="10" VerticalAlignment="Center" Margin="18,0,0,0"/></Grid>
-                </Border>
-                <TextBlock x:Name="EmptyState" Text="Nenhuma conquista corresponde aos filtros escolhidos." Foreground="#88A8C8" FontSize="15" HorizontalAlignment="Center" Margin="0,60" Visibility="Collapsed"/>
-                <ItemsControl ItemsSource="{Binding VisibleAchievements}" ItemTemplate="{StaticResource AchievementCardTemplate}">
-                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel HorizontalAlignment="Center"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                </ItemsControl>
-            </StackPanel>
-        </ScrollViewer>
+        <Grid Grid.Row="2">
+            <ScrollViewer x:Name="AchievementsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                          Padding="24,18,24,42" ScrollChanged="AchievementsScroll_ScrollChanged">
+                <StackPanel MaxWidth="1660" HorizontalAlignment="Center">
+                    <Border x:Name="ChainPanel" CornerRadius="18" Background="#D709213F" BorderBrush="#2B72A8" BorderThickness="1" Padding="17" Margin="8,0,8,14">
+                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="CADEIAS DE PROGRESSÃO" Foreground="#72D8FF" FontSize="11" FontWeight="Bold"/><TextBlock Text="{Binding ChainSummary}" Foreground="White" FontSize="15" FontWeight="SemiBold" Margin="0,5,0,0" TextWrapping="Wrap"/></StackPanel><TextBlock Grid.Column="1" Text="Marcos individuais permanecem registrados" Foreground="#8FB2D1" FontSize="10" VerticalAlignment="Center" Margin="18,0,0,0"/></Grid>
+                    </Border>
+                    <TextBlock x:Name="EmptyState" Text="Nenhuma conquista corresponde aos filtros escolhidos." Foreground="#88A8C8" FontSize="15" HorizontalAlignment="Center" Margin="0,60" Visibility="Collapsed"/>
+                    <ItemsControl ItemsSource="{Binding VisibleAchievements}" ItemTemplate="{StaticResource AchievementCardTemplate}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel HorizontalAlignment="Center"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+            <Border x:Name="LoadingState" Background="#F2071933" Visibility="Visible">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="✦" Foreground="#59D7FF" FontSize="34" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="LoadingTitle" Text="Carregando conquistas…" Foreground="White" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,12,0,0"/>
+                    <TextBlock x:Name="LoadingDetail" Text="Preparando suas jornadas e AniPoints." Foreground="#91B8D8" FontSize="13" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </Window>

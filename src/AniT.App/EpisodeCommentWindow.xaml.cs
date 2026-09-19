@@ -8,11 +8,13 @@ namespace AniT.App;
 public partial class EpisodeCommentWindow : Window
 {
     private readonly Guid animeId;
+    private readonly Guid? requestedEpisodeId;
     public ObservableCollection<CommentEpisodeItem> Episodes { get; } = [];
 
-    public EpisodeCommentWindow(Guid animeId)
+    public EpisodeCommentWindow(Guid animeId, Guid? requestedEpisodeId = null)
     {
         this.animeId = animeId;
+        this.requestedEpisodeId = requestedEpisodeId;
         InitializeComponent();
         DataContext = this;
     }
@@ -35,7 +37,8 @@ public partial class EpisodeCommentWindow : Window
                 $"Episódio {episode.Number:00} · {episode.Title ?? $"Episódio {episode.Number}"}",
                 episode.ReviewNotes));
         }
-        EpisodeSelector.SelectedItem = Episodes.FirstOrDefault(item => !string.IsNullOrWhiteSpace(item.Comment))
+        EpisodeSelector.SelectedItem = Episodes.FirstOrDefault(item => item.Id == requestedEpisodeId)
+            ?? Episodes.FirstOrDefault(item => !string.IsNullOrWhiteSpace(item.Comment))
             ?? Episodes.FirstOrDefault();
     }
 
@@ -62,7 +65,7 @@ public partial class EpisodeCommentWindow : Window
                 global::AniT.Core.Achievements.AchievementEventType.ReviewCreated,
                 episode.Id));
         }
-        StatusText.Text = episode.ReviewNotes is null ? "Comentário removido." : "✓ Comentário salvo localmente.";
+        StatusText.Text = episode.ReviewNotes is null ? "Nota removida." : "✓ Nota do episódio salva localmente.";
         DialogResult = true;
     }
 

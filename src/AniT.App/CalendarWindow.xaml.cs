@@ -35,6 +35,7 @@ public partial class CalendarWindow : Window, INotifyPropertyChanged
     public CalendarWindow()
     {
         InitializeComponent();
+        GlobalSearchController.Attach(this, SearchBox, SearchHint, SearchContainer);
         ResponsiveWindow.FitToWorkArea(this, 1380, 860);
         DataContext = this;
     }
@@ -173,8 +174,8 @@ public partial class CalendarWindow : Window, INotifyPropertyChanged
         SelectedDaySubtitle = selected.Count == 0
             ? "Nenhum anime assistido neste dia"
             : $"{selected.Count} anime{(selected.Count == 1 ? string.Empty : "s")} assistido{(selected.Count == 1 ? string.Empty : "s")} neste dia";
-        EmptyDayText.Visibility = selected.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        DayNoteTextBox.Text = notes.GetValueOrDefault(NoteKey(selectedDate), string.Empty);
+        RefreshSelectedNote(notes.GetValueOrDefault(NoteKey(selectedDate), string.Empty), selected.Count == 0);
+        DayNoteTextBox.Clear();
         NoteStatusText.Text = string.Empty;
     }
 
@@ -256,14 +257,49 @@ public partial class CalendarWindow : Window, INotifyPropertyChanged
     {
         var key = NoteKey(selectedDate);
         var value = DayNoteTextBox.Text.Trim();
-        if (string.IsNullOrWhiteSpace(value)) notes.Remove(key); else notes[key] = value;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            NoteStatusText.Text = "Escreva uma nota antes de salvar.";
+            return;
+        }
+
+        notes[key] = value;
         CalendarNoteStore.Save(notes);
-        NoteStatusText.Text = string.IsNullOrWhiteSpace(value) ? "Nota removida." : "✓ Nota salva localmente.";
+        DayNoteTextBox.Clear();
+        RefreshSelectedNote(value, SelectedActivities.Count == 0);
+        NoteStatusText.Text = "✓ Nota salva e fixada neste dia.";
+    }
+
+    private void EditDayNote_Click(object sender, RoutedEventArgs e)
+    {
+        if (!notes.TryGetValue(NoteKey(selectedDate), out var value)) return;
+        DayNoteTextBox.Text = value;
+        DayNoteTextBox.Focus();
+        DayNoteTextBox.CaretIndex = DayNoteTextBox.Text.Length;
+        NoteStatusText.Text = "Edite o texto e clique em Salvar.";
+    }
+
+    private void RemoveDayNote_Click(object sender, RoutedEventArgs e)
+    {
+        notes.Remove(NoteKey(selectedDate));
+        CalendarNoteStore.Save(notes);
+        DayNoteTextBox.Clear();
+        RefreshSelectedNote(string.Empty, SelectedActivities.Count == 0);
+        NoteStatusText.Text = "Nota removida.";
+    }
+
+    private void RefreshSelectedNote(string? value, bool hasNoActivities)
+    {
+        var hasNote = !string.IsNullOrWhiteSpace(value);
+        PinnedDayNoteCard.Visibility = hasNote ? Visibility.Visible : Visibility.Collapsed;
+        PinnedDayNoteText.Text = hasNote ? value : string.Empty;
+        EmptyDayText.Visibility = hasNoActivities && !hasNote ? Visibility.Visible : Visibility.Collapsed;
+        NoteEditorTitle.Text = hasNote ? "Atualizar nota do dia" : "Escrever nota do dia";
     }
 
     private void ActivityDetails_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button { Tag: Guid id }) new AnimeDetailsWindow(id) { Owner = this }.ShowDialog();
+        if (sender is Button { Tag: Guid id }) AppNavigation.OpenAnimeDetails(this, id);
     }
 
     private async void Continue_Click(object sender, RoutedEventArgs e)
@@ -297,22 +333,22 @@ public partial class CalendarWindow : Window, INotifyPropertyChanged
         if (width < 1180)
         {
             SidebarColumn.Width = new GridLength(184); RightRailColumn.Width = new GridLength(0); RightRail.Visibility = Visibility.Collapsed;
-            CalendarContentHost.Margin = new Thickness(18, 0, 18, 36); SearchContainer.MaxWidth = 350; LibraryTopButton.Visibility = Visibility.Collapsed; CollectionsTopButton.Visibility = Visibility.Collapsed;
+            CalendarContentHost.Margin = new Thickness(18, 0, 18, 36); SearchContainer.MaxWidth = 350; LibraryTopButton.Visibility = Visibility.Collapsed;
         }
         else if (width < 1600)
         {
             SidebarColumn.Width = new GridLength(220); RightRailColumn.Width = new GridLength(270); RightRail.Visibility = Visibility.Visible;
-            CalendarContentHost.Margin = new Thickness(24, 0, 24, 42); SearchContainer.MaxWidth = 500; LibraryTopButton.Visibility = Visibility.Visible; CollectionsTopButton.Visibility = Visibility.Collapsed;
+            CalendarContentHost.Margin = new Thickness(24, 0, 24, 42); SearchContainer.MaxWidth = 500; LibraryTopButton.Visibility = Visibility.Visible;
         }
         else if (width < 2300)
         {
             SidebarColumn.Width = new GridLength(232); RightRailColumn.Width = new GridLength(310); RightRail.Visibility = Visibility.Visible;
-            CalendarContentHost.Margin = new Thickness(30, 0, 30, 46); SearchContainer.MaxWidth = 580; LibraryTopButton.Visibility = Visibility.Visible; CollectionsTopButton.Visibility = Visibility.Visible;
+            CalendarContentHost.Margin = new Thickness(30, 0, 30, 46); SearchContainer.MaxWidth = 580; LibraryTopButton.Visibility = Visibility.Visible;
         }
         else
         {
             SidebarColumn.Width = new GridLength(250); RightRailColumn.Width = new GridLength(360); RightRail.Visibility = Visibility.Visible;
-            CalendarContentHost.Margin = new Thickness(42, 0, 42, 52); SearchContainer.MaxWidth = 660; LibraryTopButton.Visibility = Visibility.Visible; CollectionsTopButton.Visibility = Visibility.Visible;
+            CalendarContentHost.Margin = new Thickness(42, 0, 42, 52); SearchContainer.MaxWidth = 660; LibraryTopButton.Visibility = Visibility.Visible;
         }
     }
 
@@ -345,4 +381,5 @@ internal static class CalendarNoteStore
         Directory.CreateDirectory(Path.GetDirectoryName(NotesPath)!);
         File.WriteAllText(NotesPath, JsonSerializer.Serialize(notes, new JsonSerializerOptions { WriteIndented = true }));
     }
+
 }

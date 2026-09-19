@@ -43,7 +43,9 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
     public DashboardWindow()
     {
         InitializeComponent();
+        GlobalSearchController.Attach(this, SearchBox, SearchHint, SearchContainer);
         ResponsiveWindow.FitToWorkArea(this, 1380, 860);
+        heroRotationTimer.Interval = TimeSpan.FromSeconds(global::AniT.Infrastructure.AniTSystemSettingsStore.Load().HomeBannerIntervalSeconds);
         heroRotationTimer.Tick += HeroRotationTimer_Tick;
         Closed += (_, _) => heroRotationTimer.Stop();
         DataContext = this;
@@ -287,12 +289,12 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
 
     private void HeroDetails_Click(object sender, RoutedEventArgs e)
     {
-        if (heroAnimeId is Guid animeId) new AnimeDetailsWindow(animeId) { Owner = this }.ShowDialog();
+        if (heroAnimeId is Guid animeId) AppNavigation.OpenAnimeDetails(this, animeId);
     }
 
     private void AnimeCard_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button { Tag: Guid animeId }) new AnimeDetailsWindow(animeId) { Owner = this }.ShowDialog();
+        if (sender is Button { Tag: Guid animeId }) AppNavigation.OpenAnimeDetails(this, animeId);
     }
 
     private async Task PlayEpisodeAsync(Guid? episodeId)
@@ -342,7 +344,6 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
             RightRailColumn.Width = new GridLength(270);
             MainContentHost.Margin = new Thickness(18, 16, 18, 34);
             SearchContainer.MaxWidth = 350;
-            CollectionsTopButton.Visibility = Visibility.Collapsed;
             MyListTopButton.Visibility = Visibility.Collapsed;
             HeroQuotePanel.Visibility = Visibility.Collapsed;
             HeroArtwork.Width = 230;
@@ -355,7 +356,6 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
             RightRailColumn.Width = new GridLength(310);
             MainContentHost.Margin = new Thickness(24, 20, 24, 40);
             SearchContainer.MaxWidth = 500;
-            CollectionsTopButton.Visibility = Visibility.Collapsed;
             MyListTopButton.Visibility = Visibility.Visible;
             HeroQuotePanel.Visibility = Visibility.Visible;
             HeroArtwork.Width = 280;
@@ -368,7 +368,6 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
             RightRailColumn.Width = new GridLength(340);
             MainContentHost.Margin = new Thickness(30, 22, 30, 44);
             SearchContainer.MaxWidth = 580;
-            CollectionsTopButton.Visibility = Visibility.Visible;
             MyListTopButton.Visibility = Visibility.Visible;
             HeroQuotePanel.Visibility = Visibility.Visible;
             HeroArtwork.Width = 310;
@@ -381,7 +380,6 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
             RightRailColumn.Width = new GridLength(380);
             MainContentHost.Margin = new Thickness(42, 28, 42, 52);
             SearchContainer.MaxWidth = 660;
-            CollectionsTopButton.Visibility = Visibility.Visible;
             MyListTopButton.Visibility = Visibility.Visible;
             HeroQuotePanel.Visibility = Visibility.Visible;
             HeroArtwork.Width = 330;

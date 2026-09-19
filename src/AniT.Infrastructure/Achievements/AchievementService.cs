@@ -11,8 +11,34 @@ public sealed class AchievementService(Func<AniTDbContext> contextFactory) : IAc
 
     public event EventHandler<IReadOnlyList<AchievementUnlock>>? AchievementsUnlocked;
 
-    public Task<IReadOnlyList<AchievementProgress>> GetProgressAsync(CancellationToken cancellationToken = default) =>
-        RecalculateAsync(cancellationToken);
+    public async Task<IReadOnlyList<AchievementProgress>> GetProgressAsync(CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<AchievementProgress>? snapshot = null;
+
+        await gate.WaitAsync(cancellationToken);
+        try
+        {
+            await using var context = contextFactory();
+            var states = await context.UserAchievements
+                .AsNoTracking()
+                .OrderBy(item => item.AchievementId)
+                .ToListAsync(cancellationToken);
+
+            // RecordAsync keeps this snapshot current. A full metrics scan is only
+            // needed when the catalog has not been initialized (or has changed).
+            if (states.Count == AchievementCatalog.All.Count &&
+                states.Select(item => item.AchievementId).SequenceEqual(AchievementCatalog.All.Select(item => item.Id)))
+            {
+                snapshot = ToProgress(states);
+            }
+        }
+        finally
+        {
+            gate.Release();
+        }
+
+        return snapshot ?? await RecalculateAsync(cancellationToken);
+    }
 
     public async Task<IReadOnlyList<AchievementProgress>> RecalculateAsync(CancellationToken cancellationToken = default)
     {
@@ -50,15 +76,7 @@ public sealed class AchievementService(Func<AniTDbContext> contextFactory) : IAc
             await transaction.CommitAsync(cancellationToken);
 
             unlocked = evaluation.Unlocks;
-            progress = evaluation.States
-                .Select(state => new AchievementProgress(
-                    AchievementCatalog.ById(state.AchievementId),
-                    state.CurrentValue,
-                    state.IsUnlocked,
-                    state.UnlockedAt,
-                    state.PopupShown))
-                .OrderBy(item => item.Definition.Id)
-                .ToArray();
+            progress = ToProgress(evaluation.States);
         }
         finally
         {
@@ -254,6 +272,17 @@ public sealed class AchievementService(Func<AniTDbContext> contextFactory) : IAc
         var duration = Math.Max(position, episode.PlaybackProgress?.DurationSeconds ?? 0);
         return (long)(duration > 0 ? duration : TimeSpan.FromMinutes(24).TotalSeconds);
     }
+
+    private static IReadOnlyList<AchievementProgress> ToProgress(IEnumerable<UserAchievement> states) =>
+        states
+            .Select(state => new AchievementProgress(
+                AchievementCatalog.ById(state.AchievementId),
+                state.CurrentValue,
+                state.IsUnlocked,
+                state.UnlockedAt,
+                state.PopupShown))
+            .OrderBy(item => item.Definition.Id)
+            .ToArray();
 
     private static double ToTenPoint(double rating) => rating <= 5 ? rating * 2 : rating;
 
