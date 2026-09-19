@@ -1,0 +1,19 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Effects are intentionally limited to emphasized or interactive surfaces. -->
+    <DropShadowEffect x:Key="AniT.Effect.SurfaceShadow"
+                      Color="#020711"
+                      BlurRadius="16"
+                      ShadowDepth="3"
+                      Opacity="0.34"/>
+    <DropShadowEffect x:Key="AniT.Effect.AccentGlow"
+                      Color="{StaticResource AniT.Color.AccentCyan}"
+                      BlurRadius="18"
+                      ShadowDepth="0"
+                      Opacity="0.34"/>
+    <DropShadowEffect x:Key="AniT.Effect.LegendaryGlow"
+                      Color="{StaticResource AniT.Color.Legendary}"
+                      BlurRadius="20"
+                      ShadowDepth="0"
+                      Opacity="0.38"/>
+</ResourceDictionary>

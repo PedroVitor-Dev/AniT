@@ -12,6 +12,7 @@ Este documento comunica direção, não datas garantidas. Prioridades podem muda
 - [x] Progresso de reprodução e conclusão por episódio.
 - [x] Avaliação e comentário por episódio.
 - [x] Organizador com prévia, sidecars e prevenção de sobrescrita.
+- [x] Busca instantânea por título principal e título em inglês.
 - [ ] Eliminar testes placeholder e ampliar cobertura de interface/integração.
 - [ ] Auditoria de acessibilidade, navegação por teclado e contraste.
 - [ ] Logs estruturados e diagnóstico exportável com dados sensíveis removidos.
@@ -19,7 +20,7 @@ Este documento comunica direção, não datas garantidas. Prioridades podem muda
 
 ## Próximo — experiência de biblioteca
 
-- [ ] Busca real por título, episódio e alias.
+- [ ] Expandir a busca para episódios, aliases e filtros combinados.
 - [ ] Filtros por status, nota, pasta e disponibilidade.
 - [ ] Favoritos persistentes e coleções personalizadas.
 - [ ] Calendário local de episódios e lançamentos.

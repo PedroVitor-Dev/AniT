@@ -1,0 +1,130 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Style x:Key="AniT.Button.Base" TargetType="Button">
+        <Setter Property="MinHeight" Value="42"/>
+        <Setter Property="Padding" Value="20,9"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AniT.Brush.Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/>
+        <Setter Property="FontFamily" Value="{StaticResource AniT.Font.Family}"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <ScaleTransform x:Name="ButtonScale" ScaleX="1" ScaleY="1"/>
+                        </Grid.RenderTransform>
+
+                        <Border x:Name="ButtonSurface"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="12"
+                                Padding="{TemplateBinding Padding}">
+                            <Grid>
+                                <Border x:Name="HoverOverlay" Background="White" CornerRadius="10" Opacity="0"/>
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                  RecognizesAccessKey="True"/>
+                            </Grid>
+                        </Border>
+
+                        <Border x:Name="FocusRing"
+                                Margin="-3"
+                                BorderBrush="{DynamicResource AniT.Brush.AccentCyan}"
+                                BorderThickness="2"
+                                CornerRadius="15"
+                                Opacity="0"
+                                IsHitTestVisible="False"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="HoverOverlay" Property="Opacity" Value="0.08"/>
+                            <Setter TargetName="ButtonSurface" Property="BorderBrush" Value="{DynamicResource AniT.Brush.BorderStrong}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="HoverOverlay" Property="Opacity" Value="0.03"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="FocusRing" Property="Opacity" Value="1"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="ButtonSurface" Property="Opacity" Value="0.42"/>
+                            <Setter Property="Cursor" Value="Arrow"/>
+                        </Trigger>
+                        <EventTrigger RoutedEvent="MouseEnter">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" To="1.02" Duration="{StaticResource AniT.Motion.Fast}"/>
+                                    <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" To="1.02" Duration="{StaticResource AniT.Motion.Fast}"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                        <EventTrigger RoutedEvent="MouseLeave">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="{StaticResource AniT.Motion.Normal}"/>
+                                    <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="{StaticResource AniT.Motion.Normal}"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                        <EventTrigger RoutedEvent="PreviewMouseDown">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" To="0.98" Duration="0:0:0.06"/>
+                                    <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" To="0.98" Duration="0:0:0.06"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                        <EventTrigger RoutedEvent="PreviewMouseUp">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" To="1.02" Duration="0:0:0.08"/>
+                                    <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" To="1.02" Duration="0:0:0.08"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="AniT.Button.Primary" TargetType="Button" BasedOn="{StaticResource AniT.Button.Base}">
+        <Setter Property="Background" Value="{DynamicResource AniT.Brush.AccentBlue}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AniT.Brush.AccentCyan}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <Style x:Key="AniT.Button.Secondary" TargetType="Button" BasedOn="{StaticResource AniT.Button.Base}">
+        <Setter Property="Background" Value="{DynamicResource AniT.Brush.SurfaceAlt}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AniT.Brush.BorderStrong}"/>
+    </Style>
+
+    <Style x:Key="AniT.Button.Ghost" TargetType="Button" BasedOn="{StaticResource AniT.Button.Base}">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextSecondary}"/>
+    </Style>
+
+    <Style x:Key="AniT.Button.Danger" TargetType="Button" BasedOn="{StaticResource AniT.Button.Base}">
+        <Setter Property="Background" Value="{DynamicResource AniT.Brush.Danger}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AniT.Brush.Danger}"/>
+    </Style>
+
+    <Style x:Key="AniT.Button.Icon" TargetType="Button" BasedOn="{StaticResource AniT.Button.Ghost}">
+        <Setter Property="Width" Value="42"/>
+        <Setter Property="MinWidth" Value="42"/>
+        <Setter Property="Height" Value="42"/>
+        <Setter Property="MinHeight" Value="42"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="FontSize" Value="17"/>
+    </Style>
+</ResourceDictionary>

@@ -3,15 +3,18 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace AniT.App;
 
 public partial class AnimeDetailsWindow : Window
 {
     private readonly Guid animeId;
-    private Guid? selectedReviewEpisodeId;
-    private bool isLoadingReview;
-    private double selectedRating;
+    private readonly Guid? requestedEpisodeId;
+    private bool requestedEpisodeFocused;
+    private bool isLoadingPage;
+    private bool loadFailureShown;
     public ObservableCollection<EpisodeItem> Episodes { get; } = [];
     public string AnimeTitle { get; private set; } = string.Empty;
     public string EnglishTitleDisplay { get; private set; } = string.Empty;
@@ -21,23 +24,63 @@ public partial class AnimeDetailsWindow : Window
     public string PlayNextLabel { get; private set; } = "▶  Assistir próximo episódio";
     public bool CanPlayNext { get; private set; } = true;
     public string? CoverPath { get; private set; }
+    public string? SynopsisArtworkPath { get; private set; }
     public string Synopsis { get; private set; } = "A sinopse ainda não está disponível.";
     public string CriticScoreLabel { get; private set; } = "—";
+    public string CriticFiveLabel { get; private set; } = "—";
+    public string WatchStateLabel { get; private set; } = "Na sua biblioteca";
+    public string LocalAverageLabel { get; private set; } = "—";
+    public string RatedEpisodeCountLabel { get; private set; } = "Nenhum episódio avaliado";
+    public string LocalReviewSummary { get; private set; } = "Você ainda não escreveu comentários sobre esta obra.";
 
-    public AnimeDetailsWindow(Guid animeId)
+    public AnimeDetailsWindow(Guid animeId, Guid? requestedEpisodeId = null)
     {
         this.animeId = animeId;
+        this.requestedEpisodeId = requestedEpisodeId;
         InitializeComponent();
+        GlobalSearchController.Attach(this, SearchBox, SearchHint, SearchContainer);
         ResponsiveWindow.FitToWorkArea(this, 1140, 800);
         DataContext = this;
     }
 
-    private async void Window_Loaded(object sender, RoutedEventArgs e) => await LoadAsync();
-    private async void Window_Activated(object? sender, EventArgs e) => await LoadAsync();
+    private async void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        UpdateResponsiveLayout(ActualWidth);
+        await LoadSafelyAsync();
+    }
+    private async void Window_Activated(object? sender, EventArgs e) => await LoadSafelyAsync();
+
+    private async Task LoadSafelyAsync()
+    {
+        if (isLoadingPage) return;
+
+        isLoadingPage = true;
+        try
+        {
+            await LoadAsync();
+            loadFailureShown = false;
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Debug.WriteLine($"Falha ao carregar a pagina do anime: {exception}");
+            if (!loadFailureShown)
+            {
+                loadFailureShown = true;
+                MessageBox.Show(
+                    "Nao foi possivel carregar a pagina deste anime. Tente novamente.",
+                    "AniT",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+        finally
+        {
+            isLoadingPage = false;
+        }
+    }
 
     private async Task LoadAsync()
     {
-        var preferredReviewEpisodeId = selectedReviewEpisodeId;
         await using var context = App.OpenFreshDatabase();
         var anime = await context.Anime
             .Include(item => item.Seasons)
@@ -54,10 +97,12 @@ public partial class AnimeDetailsWindow : Window
         EnglishTitleDisplay = FormatEnglishTitle(anime.EnglishTitle);
         Initial = anime.Title[..1].ToUpperInvariant();
         CoverPath = File.Exists(anime.CoverPath) ? anime.CoverPath : null;
-        Synopsis = string.IsNullOrWhiteSpace(anime.Synopsis)
-            ? "A sinopse ainda não está disponível. Use Atualizar Títulos na Biblioteca para tentar novamente."
-            : anime.Synopsis;
+        SynopsisArtworkPath = App.GetCachedAnimeBannerPath(anime.Id) ?? CoverPath;
+        Synopsis = global::AniT.Infrastructure.AnimeCoverProvider.IsLikelyPortugueseSynopsis(anime.Synopsis)
+            ? anime.Synopsis!
+            : "Buscando a sinopse em português…";
         CriticScoreLabel = anime.CriticScore is { } criticScore ? $"{criticScore:0}/100" : "—";
+        CriticFiveLabel = anime.CriticScore is { } publicScore ? $"{publicScore / 20d:0.0}" : "—";
         var allEpisodes = anime.Seasons.SelectMany(season => season.Episodes).OrderBy(episode => episode.Season!.Number).ThenBy(episode => episode.Number).ToList();
         var watchSummary = global::AniT.Core.AnimeWatchSummary.Create(allEpisodes);
         var watched = watchSummary.CompletedEpisodes;
@@ -71,6 +116,11 @@ public partial class AnimeDetailsWindow : Window
                     : $"{watched} de {allEpisodes.Count} episódios assistidos";
         EpisodeCountLabel = $"{allEpisodes.Count} episódios";
         CanPlayNext = !watchSummary.IsCompleted;
+        WatchStateLabel = watchSummary.IsCompleted
+            ? "Concluído"
+            : watching > 0
+                ? "Em andamento"
+                : "Na sua biblioteca";
         PlayNextLabel = watchSummary.IsCompleted
             ? "✓  Anime concluído"
             : watching > 0
@@ -92,22 +142,30 @@ public partial class AnimeDetailsWindow : Window
                 episode.MediaFiles.Count,
                 episode.MediaFiles.Count(file => file.Availability == global::AniT.Core.MediaFileAvailability.Available)));
         }
+        var normalizedRatings = allEpisodes
+            .Where(episode => episode.Rating is > 0)
+            .Select(episode => NormalizeSavedRating(episode.Rating))
+            .ToList();
+        LocalAverageLabel = normalizedRatings.Count == 0 ? "—" : normalizedRatings.Average().ToString("0.0");
+        RatedEpisodeCountLabel = normalizedRatings.Count == 0
+            ? "Nenhum episódio avaliado"
+            : $"{normalizedRatings.Count} episódio{(normalizedRatings.Count == 1 ? string.Empty : "s")} avaliado{(normalizedRatings.Count == 1 ? string.Empty : "s")}";
+        LocalReviewSummary = allEpisodes
+            .Where(episode => !string.IsNullOrWhiteSpace(episode.ReviewNotes))
+            .OrderByDescending(episode => episode.WatchedAt)
+            .Select(episode => episode.ReviewNotes!)
+            .FirstOrDefault()
+            ?? "Você ainda não escreveu comentários sobre esta obra.";
         DataContext = null;
         DataContext = this;
-
-        var reviewEpisode = Episodes.FirstOrDefault(item => item.Id == preferredReviewEpisodeId)
-            ?? Episodes.LastOrDefault(item => item.Status is global::AniT.Core.WatchStatus.Watching or global::AniT.Core.WatchStatus.Completed)
-            ?? Episodes.FirstOrDefault();
-        if (reviewEpisode is not null)
-        {
-            EpisodeReviewSelector.SelectedItem = reviewEpisode;
-            LoadEpisodeReview(reviewEpisode);
-        }
+        FocusRequestedEpisode();
 
         if (CoverPath is null
             || string.IsNullOrWhiteSpace(anime.EnglishTitle)
-            || string.IsNullOrWhiteSpace(anime.Synopsis)
-            || anime.CriticScore is null)
+            || !global::AniT.Infrastructure.AnimeCoverProvider.IsLikelyPortugueseSynopsis(anime.Synopsis)
+            || anime.CriticScore is null
+            || string.IsNullOrWhiteSpace(anime.Genres)
+            || App.ShouldRefreshAnimeBanner(anime.Id))
         {
             try
             {
@@ -117,13 +175,16 @@ public partial class AnimeDetailsWindow : Window
                     anime.EnglishTitle,
                     anime.CoverPath,
                     savedSynopsis: anime.Synopsis,
-                    savedCriticScore: anime.CriticScore);
+                    savedCriticScore: anime.CriticScore,
+                    savedGenres: anime.Genres);
                 CoverPath = metadata.CoverPath;
+                SynopsisArtworkPath = metadata.BannerPath ?? CoverPath;
                 EnglishTitleDisplay = FormatEnglishTitle(metadata.EnglishTitle);
-                Synopsis = string.IsNullOrWhiteSpace(metadata.Synopsis)
-                    ? Synopsis
-                    : metadata.Synopsis;
+                Synopsis = global::AniT.Infrastructure.AnimeCoverProvider.IsLikelyPortugueseSynopsis(metadata.Synopsis)
+                    ? metadata.Synopsis!
+                    : "A sinopse em português ainda não está disponível. Tente atualizar os títulos da biblioteca novamente.";
                 CriticScoreLabel = metadata.CriticScore is { } score ? $"{score:0}/100" : "—";
+                CriticFiveLabel = metadata.CriticScore is { } updatedScore ? $"{updatedScore / 20d:0.0}" : "—";
                 DataContext = null;
                 DataContext = this;
             }
@@ -136,71 +197,18 @@ public partial class AnimeDetailsWindow : Window
 
     private static string FormatEnglishTitle(string? title) => string.IsNullOrWhiteSpace(title) ? string.Empty : $"({title})";
 
-    private async void RatingCard_Checked(object sender, RoutedEventArgs e)
+    private void FocusRequestedEpisode()
     {
-        if (RatingValueText is null || ReviewStatusText is null) return;
-        if (sender is not RadioButton ratingCard
-            || !double.TryParse(ratingCard.Tag?.ToString(), out var rating)) return;
-        selectedRating = rating;
-        RatingValueText.Text = selectedRating.ToString("0");
-        if (!isLoadingReview) await SaveSelectedRatingAsync();
-    }
-
-    private async void ClearRating_Click(object sender, RoutedEventArgs e)
-    {
-        ApplyRatingSelection(0);
-        if (!isLoadingReview) await SaveSelectedRatingAsync();
-    }
-
-    private void EpisodeReviewSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (EpisodeReviewSelector.SelectedItem is EpisodeItem episode) LoadEpisodeReview(episode);
-    }
-
-    private void ReviewEpisode_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not Button { Tag: Guid episodeId }) return;
-        var episode = Episodes.FirstOrDefault(item => item.Id == episodeId);
-        if (episode is null) return;
-
-        EpisodeReviewSelector.SelectedItem = episode;
-        LoadEpisodeReview(episode);
-        AnimeTabControl.SelectedItem = ReviewTab;
-    }
-
-    private void LoadEpisodeReview(EpisodeItem episode)
-    {
-        isLoadingReview = true;
-        try
+        if (requestedEpisodeFocused || requestedEpisodeId is not Guid episodeId) return;
+        requestedEpisodeFocused = true;
+        AnimeTabControl.SelectedItem = EpisodesTab;
+        _ = Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
         {
-            selectedReviewEpisodeId = episode.Id;
-            ApplyRatingSelection(NormalizeSavedRating(episode.Rating));
-            ReviewTextBox.Text = episode.ReviewNotes ?? string.Empty;
-            ReviewEpisodeTitleText.Text = $"Episódio {episode.Number} · {episode.Title}";
-            ReviewEpisodeNumberText.Text = $"Episódio {episode.Number}";
-            ReviewEpisodeProgress.Value = Math.Clamp(episode.ProgressPercent, 0, 100);
-            ReviewEpisodeProgressText.Text = episode.Status == global::AniT.Core.WatchStatus.Completed
-                ? "Concluído"
-                : episode.ProgressPercent > 0
-                    ? $"{episode.ProgressPercent:0}% assistido"
-                    : "Não iniciado";
-            ReviewStatusText.Text = string.Empty;
-        }
-        finally
-        {
-            isLoadingReview = false;
-        }
-    }
-
-    private void ApplyRatingSelection(double rating)
-    {
-        selectedRating = rating;
-        RatingOne.IsChecked = rating == 1;
-        RatingTwo.IsChecked = rating == 2;
-        RatingThree.IsChecked = rating == 3;
-        RatingFour.IsChecked = rating == 4;
-        RatingFive.IsChecked = rating == 5;
-        RatingValueText.Text = rating <= 0 ? "—" : rating.ToString("0");
+            EpisodeList.UpdateLayout();
+            var episode = Episodes.FirstOrDefault(item => item.Id == episodeId);
+            if (episode is not null && EpisodeList.ItemContainerGenerator.ContainerFromItem(episode) is FrameworkElement container)
+                container.BringIntoView();
+        });
     }
 
     private static double NormalizeSavedRating(double? rating)
@@ -210,44 +218,27 @@ public partial class AnimeDetailsWindow : Window
         return Math.Clamp(Math.Round(fivePointRating, MidpointRounding.AwayFromZero), 1, 5);
     }
 
-    private async Task SaveSelectedRatingAsync()
+    private async void EpisodeRating_Click(object sender, RoutedEventArgs e)
     {
-        if (selectedReviewEpisodeId is not Guid episodeId)
-        {
-            ReviewStatusText.Text = "Escolha um episódio para avaliar.";
-            return;
-        }
+        if (sender is not System.Windows.Controls.Primitives.ToggleButton { DataContext: EpisodeItem episodeItem } ratingButton
+            || !double.TryParse(ratingButton.Tag?.ToString(), out var rating)) return;
 
         await using var context = App.OpenFreshDatabase();
-        var episode = await context.Episodes.FirstOrDefaultAsync(item => item.Id == episodeId);
+        var episode = await context.Episodes.FirstOrDefaultAsync(item => item.Id == episodeItem.Id);
         if (episode is null) return;
 
-        episode.Rating = selectedRating <= 0 ? null : selectedRating;
+        var requestedRating = Math.Clamp(rating, 1, 5);
+        var previousRating = NormalizeSavedRating(episode.Rating);
+        episode.Rating = previousRating == requestedRating
+            ? null
+            : requestedRating;
         await context.SaveChangesAsync();
-
-        var item = Episodes.FirstOrDefault(candidate => candidate.Id == episodeId);
-        if (item is not null) item.Rating = episode.Rating;
-        ReviewStatusText.Text = episode.Rating is null ? "Nota removida" : "✓ Nota salva automaticamente";
-    }
-
-    private async void SaveComment_Click(object sender, RoutedEventArgs e)
-    {
-        if (selectedReviewEpisodeId is not Guid episodeId)
-        {
-            ReviewStatusText.Text = "Escolha um episódio para comentar.";
-            return;
-        }
-
-        await using var context = App.OpenFreshDatabase();
-        var episode = await context.Episodes.FirstOrDefaultAsync(item => item.Id == episodeId);
-        if (episode is null) return;
-
-        episode.ReviewNotes = string.IsNullOrWhiteSpace(ReviewTextBox.Text) ? null : ReviewTextBox.Text.Trim();
-        await context.SaveChangesAsync();
-
-        var item = Episodes.FirstOrDefault(candidate => candidate.Id == episodeId);
-        if (item is not null) item.ReviewNotes = episode.ReviewNotes;
-        ReviewStatusText.Text = episode.ReviewNotes is null ? "Comentário removido" : "✓ Comentário salvo localmente";
+        await App.Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
+            global::AniT.Core.Achievements.AchievementEventType.RatingChanged,
+            episode.Id,
+            (long)(episode.Rating ?? 0),
+            (long)previousRating));
+        await LoadSafelyAsync();
     }
 
     private async void ToggleWatched_Click(object sender, RoutedEventArgs e)
@@ -256,7 +247,8 @@ public partial class AnimeDetailsWindow : Window
         await using var context = App.OpenFreshDatabase();
         var episode = await context.Episodes.FindAsync(episodeId);
         if (episode is null) return;
-        if (episode.Status == global::AniT.Core.WatchStatus.Completed)
+        var markedCompleted = episode.Status != global::AniT.Core.WatchStatus.Completed;
+        if (!markedCompleted)
         {
             episode.Status = global::AniT.Core.WatchStatus.NotStarted;
             episode.WatchedAt = null;
@@ -267,19 +259,23 @@ public partial class AnimeDetailsWindow : Window
             episode.WatchedAt = DateTimeOffset.UtcNow;
         }
         await context.SaveChangesAsync();
-        await LoadAsync();
+        if (markedCompleted)
+        {
+            await App.Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
+                global::AniT.Core.Achievements.AchievementEventType.EpisodeCompleted,
+                episode.Id));
+        }
+        else
+        {
+            await App.Achievements.RecalculateAsync();
+        }
+        await LoadSafelyAsync();
     }
 
-    private void EpisodeFiles_Click(object sender, RoutedEventArgs e)
+    private async void EpisodePlay_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not Button { Tag: Guid episodeId }) return;
-        new MediaVersionsWindow(episodeId) { Owner = this }.ShowDialog();
-    }
-
-    private async void EpisodeRow_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
-    {
-        if (e.OriginalSource is Button) return;
         if (sender is not FrameworkElement { DataContext: EpisodeItem episode }) return;
+        e.Handled = true;
         try
         {
             await App.PlayEpisodeAsync(episode.Id);
@@ -288,6 +284,14 @@ public partial class AnimeDetailsWindow : Window
         {
             MessageBox.Show(exception.Message, "Não foi possível iniciar o player", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
+    }
+
+    private async void EpisodeNote_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: EpisodeItem episode }) return;
+        e.Handled = true;
+        var editor = new EpisodeCommentWindow(animeId, episode.Id) { Owner = this };
+        if (editor.ShowDialog() == true) await LoadSafelyAsync();
     }
 
     private async void PlayNext_Click(object sender, RoutedEventArgs e)
@@ -312,6 +316,103 @@ public partial class AnimeDetailsWindow : Window
         catch (Exception exception)
         {
             MessageBox.Show(exception.Message, "Não foi possível iniciar o player", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void Back_Click(object sender, RoutedEventArgs e) => AppNavigation.Back(this);
+
+    private void Library_Click(object sender, RoutedEventArgs e) => AppNavigation.OpenLibrary(this);
+    private void Explore_Click(object sender, RoutedEventArgs e) => AppNavigation.Explore(this);
+    private void Calendar_Click(object sender, RoutedEventArgs e) => AppNavigation.Calendar(this);
+    private void History_Click(object sender, RoutedEventArgs e) => AppNavigation.History(this);
+    private void Profile_Click(object sender, RoutedEventArgs e) => AppNavigation.Profile(this);
+
+    private void OpenEpisodeRatings_Click(object sender, RoutedEventArgs e) => AnimeTabControl.SelectedItem = EpisodesTab;
+
+    private async void EditComment_Click(object sender, RoutedEventArgs e)
+    {
+        var editor = new EpisodeCommentWindow(animeId) { Owner = this };
+        if (editor.ShowDialog() == true) await LoadSafelyAsync();
+    }
+
+    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (SearchHint is not null) SearchHint.Visibility = string.IsNullOrEmpty(SearchBox.Text) ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void SearchBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key == System.Windows.Input.Key.Enter) Library_Click(sender, e);
+    }
+
+    private void RoundedPanel_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (sender is not Border border || border.ActualWidth <= 0 || border.ActualHeight <= 0) return;
+        var radius = double.TryParse(border.Tag?.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var parsedRadius)
+            ? parsedRadius
+            : 16;
+        border.Clip = new RectangleGeometry(new Rect(0, 0, border.ActualWidth, border.ActualHeight), radius, radius);
+    }
+
+    private void Window_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateResponsiveLayout(e.NewSize.Width);
+
+    private void UpdateResponsiveLayout(double width)
+    {
+        if (SidebarColumn is null || DetailsContentHost is null || RightRailColumn is null) return;
+        var episodeTemplate = (DataTemplate)FindResource(width >= 1800 ? "EpisodeCardLargeTemplate" : "EpisodeCardTemplate");
+        SynopsisEpisodeList.ItemTemplate = episodeTemplate;
+        EpisodeList.ItemTemplate = episodeTemplate;
+        if (width < 1180)
+        {
+            SidebarColumn.Width = new GridLength(184);
+            RightRailColumn.Width = new GridLength(0);
+            DetailsRightRail.Visibility = Visibility.Collapsed;
+            DetailsContentHost.Margin = new Thickness(18, 14, 18, 36);
+            SearchContainer.MaxWidth = 350;
+            LibraryTopButton.Visibility = Visibility.Collapsed;
+            HeroBanner.Height = 286;
+            HeroTitleText.FontSize = 34;
+            HeroCopy.MaxWidth = 560;
+            HeroArtwork.Width = 300;
+        }
+        else if (width < 1600)
+        {
+            SidebarColumn.Width = new GridLength(220);
+            RightRailColumn.Width = new GridLength(320);
+            DetailsRightRail.Visibility = Visibility.Visible;
+            DetailsContentHost.Margin = new Thickness(24, 16, 24, 44);
+            SearchContainer.MaxWidth = 500;
+            LibraryTopButton.Visibility = Visibility.Visible;
+            HeroBanner.Height = 322;
+            HeroTitleText.FontSize = 42;
+            HeroCopy.MaxWidth = 720;
+            HeroArtwork.Width = 410;
+        }
+        else if (width < 2300)
+        {
+            SidebarColumn.Width = new GridLength(232);
+            RightRailColumn.Width = new GridLength(350);
+            DetailsRightRail.Visibility = Visibility.Visible;
+            DetailsContentHost.Margin = new Thickness(30, 20, 30, 50);
+            SearchContainer.MaxWidth = 580;
+            LibraryTopButton.Visibility = Visibility.Visible;
+            HeroBanner.Height = 350;
+            HeroTitleText.FontSize = 46;
+            HeroCopy.MaxWidth = 860;
+            HeroArtwork.Width = 460;
+        }
+        else
+        {
+            SidebarColumn.Width = new GridLength(250);
+            RightRailColumn.Width = new GridLength(390);
+            DetailsRightRail.Visibility = Visibility.Visible;
+            DetailsContentHost.Margin = new Thickness(42, 24, 42, 58);
+            SearchContainer.MaxWidth = 660;
+            LibraryTopButton.Visibility = Visibility.Visible;
+            HeroBanner.Height = 380;
+            HeroTitleText.FontSize = 50;
+            HeroCopy.MaxWidth = 1100;
+            HeroArtwork.Width = 520;
         }
     }
 }
@@ -358,4 +459,22 @@ public sealed class EpisodeItem(
 
     public string ProgressLabel => Status == global::AniT.Core.WatchStatus.Completed ? "Concluído" : ProgressPercent > 0 ? $"{ProgressPercent:0}% assistido" : "Não iniciado";
     public string WatchedActionLabel => Status == global::AniT.Core.WatchStatus.Completed ? "Remover assistido" : "Marcar visto";
+    public bool HasEpisodeNote => !string.IsNullOrWhiteSpace(ReviewNotes);
+    public string EpisodeNoteActionLabel => HasEpisodeNote ? "✎ Editar nota" : "＋ Nota do episódio";
+    public string EpisodeNoteToolTip => HasEpisodeNote ? ReviewNotes! : "Adicionar uma nota opcional somente para este episódio";
+    public double NormalizedRating => Rating is > 5 ? Rating.Value / 2 : Rating ?? 0;
+    public bool IsRatingOne => Math.Round(NormalizedRating, MidpointRounding.AwayFromZero) == 1;
+    public bool IsRatingTwo => Math.Round(NormalizedRating, MidpointRounding.AwayFromZero) == 2;
+    public bool IsRatingThree => Math.Round(NormalizedRating, MidpointRounding.AwayFromZero) == 3;
+    public bool IsRatingFour => Math.Round(NormalizedRating, MidpointRounding.AwayFromZero) == 4;
+    public bool IsRatingFive => Math.Round(NormalizedRating, MidpointRounding.AwayFromZero) == 5;
+    public string RatingLabel
+    {
+        get
+        {
+            if (Rating is not > 0) return "Sem nota";
+            var normalized = Rating > 5 ? Rating.Value / 2 : Rating.Value;
+            return $"★ {normalized:0.0}";
+        }
+    }
 }

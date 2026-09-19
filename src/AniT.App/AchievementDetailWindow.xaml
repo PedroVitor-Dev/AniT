@@ -1,0 +1,30 @@
+<Window x:Class="AniT.App.AchievementDetailWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Detalhes da conquista · AniT" Width="720" Height="520" MinWidth="620" MinHeight="460"
+        Background="#020B1D" WindowStartupLocation="CenterOwner" ResizeMode="CanResizeWithGrip"
+        UseLayoutRounding="True">
+    <Window.Resources><ResourceDictionary><ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Styles/HomeTheme.xaml"/></ResourceDictionary.MergedDictionaries></ResourceDictionary></Window.Resources>
+    <Grid Margin="24">
+        <Border CornerRadius="28" BorderBrush="{Binding AccentBrush}" BorderThickness="2" Background="#F0071932" Padding="24">
+            <Border.Effect><DropShadowEffect Color="{Binding GlowColor}" BlurRadius="30" ShadowDepth="0" Opacity="0.38"/></Border.Effect>
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="240"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                <Border Width="220" Height="220" CornerRadius="28" Background="#0B213E" BorderBrush="#2F6E9F" BorderThickness="1.5" VerticalAlignment="Top">
+                    <Grid><Image Source="{Binding IconPath}" Stretch="Uniform" Margin="10" Visibility="{Binding IconVisibility}"/><TextBlock Text="?" FontSize="110" FontWeight="Black" Foreground="#7189A3" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding LockedVisibility}"/></Grid>
+                </Border>
+                <StackPanel Grid.Column="1" Margin="24,0,0,0">
+                    <TextBlock Text="{Binding IdLabel}" Foreground="#7CCFFF" FontSize="12" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding DisplayName}" Foreground="White" FontSize="28" FontWeight="Black" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                    <Border HorizontalAlignment="Left" CornerRadius="12" Padding="11,5" Background="{Binding RarityBackground}" Margin="0,10,0,0"><TextBlock Text="{Binding RarityLabel}" Foreground="{Binding AccentBrush}" FontWeight="Bold" FontSize="11"/></Border>
+                    <TextBlock Text="{Binding DisplayDescription}" Foreground="#B7CEE4" FontSize="14" TextWrapping="Wrap" LineHeight="21" Margin="0,17,0,0"/>
+                    <TextBlock Text="{Binding ProgressLabel}" Foreground="White" FontSize="15" FontWeight="SemiBold" Margin="0,20,0,6"/>
+                    <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}" Maximum="100" Height="11" Style="{StaticResource HomeProgress}"/>
+                    <TextBlock Text="{Binding StatusLabel}" Foreground="{Binding AccentBrush}" FontSize="12" FontWeight="Bold" Margin="0,10,0,0"/>
+                    <TextBlock Text="{Binding BakiPiLine}" Foreground="#8DB6D9" FontStyle="Italic" FontSize="12" TextWrapping="Wrap" Margin="0,18,0,0"/>
+                    <Button Content="Fechar" Style="{StaticResource HomePrimaryButton}" HorizontalAlignment="Right" Margin="0,20,0,0" Click="Close_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

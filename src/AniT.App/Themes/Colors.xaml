@@ -1,0 +1,57 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Core palette. Keep all semantic colors here so future theme variants can
+         replace brushes without changing individual views. -->
+    <Color x:Key="AniT.Color.Background">#020B1D</Color>
+    <Color x:Key="AniT.Color.Surface">#071B38</Color>
+    <Color x:Key="AniT.Color.SurfaceAlt">#0B2348</Color>
+    <Color x:Key="AniT.Color.SurfaceHover">#153E6B</Color>
+    <Color x:Key="AniT.Color.SurfaceSelected">#1E5C9F</Color>
+
+    <Color x:Key="AniT.Color.AccentCyan">#42C8FF</Color>
+    <Color x:Key="AniT.Color.AccentBlue">#2FA7FF</Color>
+    <Color x:Key="AniT.Color.AccentBlueStrong">#1177E8</Color>
+    <Color x:Key="AniT.Color.AccentPurple">#8B5CF6</Color>
+
+    <Color x:Key="AniT.Color.Success">#36D399</Color>
+    <Color x:Key="AniT.Color.Warning">#F5C451</Color>
+    <Color x:Key="AniT.Color.Danger">#FF6577</Color>
+    <Color x:Key="AniT.Color.Rare">#42C8FF</Color>
+    <Color x:Key="AniT.Color.Epic">#A855F7</Color>
+    <Color x:Key="AniT.Color.Legendary">#F5C451</Color>
+
+    <Color x:Key="AniT.Color.TextPrimary">#F7FAFF</Color>
+    <Color x:Key="AniT.Color.TextSecondary">#C8DDF3</Color>
+    <Color x:Key="AniT.Color.TextMuted">#91AED2</Color>
+    <Color x:Key="AniT.Color.Border">#245B91</Color>
+    <Color x:Key="AniT.Color.BorderStrong">#45C7FF</Color>
+
+    <SolidColorBrush x:Key="AniT.Brush.Background" Color="{StaticResource AniT.Color.Background}"/>
+    <SolidColorBrush x:Key="AniT.Brush.Surface" Color="{StaticResource AniT.Color.Surface}"/>
+    <SolidColorBrush x:Key="AniT.Brush.SurfaceAlt" Color="{StaticResource AniT.Color.SurfaceAlt}"/>
+    <SolidColorBrush x:Key="AniT.Brush.SurfaceHover" Color="{StaticResource AniT.Color.SurfaceHover}"/>
+    <SolidColorBrush x:Key="AniT.Brush.SurfaceSelected" Color="{StaticResource AniT.Color.SurfaceSelected}"/>
+
+    <SolidColorBrush x:Key="AniT.Brush.AccentCyan" Color="{StaticResource AniT.Color.AccentCyan}"/>
+    <SolidColorBrush x:Key="AniT.Brush.AccentBlue" Color="{StaticResource AniT.Color.AccentBlue}"/>
+    <SolidColorBrush x:Key="AniT.Brush.AccentBlueStrong" Color="{StaticResource AniT.Color.AccentBlueStrong}"/>
+    <SolidColorBrush x:Key="AniT.Brush.AccentPurple" Color="{StaticResource AniT.Color.AccentPurple}"/>
+
+    <SolidColorBrush x:Key="AniT.Brush.Success" Color="{StaticResource AniT.Color.Success}"/>
+    <SolidColorBrush x:Key="AniT.Brush.Warning" Color="{StaticResource AniT.Color.Warning}"/>
+    <SolidColorBrush x:Key="AniT.Brush.Danger" Color="{StaticResource AniT.Color.Danger}"/>
+    <SolidColorBrush x:Key="AniT.Brush.Rare" Color="{StaticResource AniT.Color.Rare}"/>
+    <SolidColorBrush x:Key="AniT.Brush.Epic" Color="{StaticResource AniT.Color.Epic}"/>
+    <SolidColorBrush x:Key="AniT.Brush.Legendary" Color="{StaticResource AniT.Color.Legendary}"/>
+
+    <SolidColorBrush x:Key="AniT.Brush.TextPrimary" Color="{StaticResource AniT.Color.TextPrimary}"/>
+    <SolidColorBrush x:Key="AniT.Brush.TextSecondary" Color="{StaticResource AniT.Color.TextSecondary}"/>
+    <SolidColorBrush x:Key="AniT.Brush.TextMuted" Color="{StaticResource AniT.Color.TextMuted}"/>
+    <SolidColorBrush x:Key="AniT.Brush.Border" Color="{StaticResource AniT.Color.Border}"/>
+    <SolidColorBrush x:Key="AniT.Brush.BorderStrong" Color="{StaticResource AniT.Color.BorderStrong}"/>
+
+    <!-- Compatibility aliases used by the current screens while they migrate. -->
+    <Color x:Key="BrandBlue">#2FA7FF</Color>
+    <Color x:Key="BrandBlueStrong">#1177E8</Color>
+    <SolidColorBrush x:Key="BrandBrush" Color="{StaticResource BrandBlue}"/>
+</ResourceDictionary>

@@ -14,6 +14,7 @@ public partial class App : Application
 {
     public static global::AniT.Infrastructure.AniTDbContext Database { get; private set; } = null!;
     public static global::AniT.Player.MpcHcPlayer? MediaPlayer { get; private set; }
+    public static global::AniT.Core.Achievements.IAchievementService Achievements { get; private set; } = null!;
     private static global::AniT.Infrastructure.AnimeCoverProvider animeCoverProvider = null!;
     private static Guid? activeEpisodeId;
     private static DateTimeOffset lastProgressWrite;
@@ -38,6 +39,8 @@ public partial class App : Application
         var dataDirectory = global::System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AniT", "Data");
         databasePath = global::System.IO.Path.Combine(dataDirectory, "anit.db");
         Database = global::AniT.Infrastructure.AniTDatabase.Create(databasePath);
+        Achievements = new global::AniT.Infrastructure.Achievements.AchievementService(OpenFreshDatabase);
+        AchievementNotificationQueue.Initialize(Achievements);
         var coversDirectory = global::System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AniT", "Covers");
         animeCoverProvider = new global::AniT.Infrastructure.AnimeCoverProvider(coversDirectory);
         var playerPath = ResolveBundledPlayerPath();
@@ -56,10 +59,31 @@ public partial class App : Application
 
         var dashboard = new DashboardWindow();
         MainWindow = dashboard;
+        dashboard.ContentRendered += (_, _) => AppNavigation.PrewarmLoadingSurface(dashboard);
         dashboard.Show();
+        _ = InitializeAchievementsAsync();
         if (!Database.LibraryRoots.Any())
         {
             _ = new SetupShelfWindow { Owner = dashboard }.ShowDialog();
+        }
+    }
+
+    private static async Task InitializeAchievementsAsync()
+    {
+        try
+        {
+            await Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
+                global::AniT.Core.Achievements.AchievementEventType.ApplicationStarted,
+                OccurredAt: DateTimeOffset.Now));
+            var pending = (await Achievements.GetProgressAsync())
+                .Where(item => item.IsUnlocked && !item.PopupShown)
+                .Select(item => new global::AniT.Core.Achievements.AchievementUnlock(item.Definition, item.UnlockedAt ?? DateTimeOffset.UtcNow, item.Points))
+                .ToArray();
+            AchievementNotificationQueue.Enqueue(pending);
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Debug.WriteLine($"AniT could not initialize achievements: {exception}");
         }
     }
 
@@ -118,7 +142,11 @@ public partial class App : Application
         await MediaPlayer.PlayAsync(mediaFile, resumeAt);
         activePlaybackStartPosition = resumeAt ?? TimeSpan.Zero;
         activePlaybackStartedAt = DateTimeOffset.UtcNow;
+        lastProgressWrite = activePlaybackStartedAt;
         await MarkEpisodeAsWatchingAsync(episodeId);
+        await Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
+            global::AniT.Core.Achievements.AchievementEventType.EpisodeStarted,
+            episodeId));
         playbackMonitorCancellation?.Cancel();
         playbackMonitorCancellation = new CancellationTokenSource();
         var session = Interlocked.Increment(ref playbackSession);
@@ -133,7 +161,8 @@ public partial class App : Application
         CancellationToken cancellationToken = default,
         string? savedSynopsis = null,
         double? savedCriticScore = null,
-        bool forceRefresh = false)
+        bool forceRefresh = false,
+        string? savedGenres = null)
     {
         var metadata = await animeCoverProvider.EnsureMetadataAsync(
             animeId,
@@ -143,7 +172,8 @@ public partial class App : Application
             cancellationToken,
             savedSynopsis,
             savedCriticScore,
-            forceRefresh);
+            forceRefresh,
+            savedGenres);
         var englishChanged = !string.IsNullOrWhiteSpace(metadata.EnglishTitle)
             && !string.Equals(metadata.EnglishTitle, englishTitle, StringComparison.Ordinal);
         var coverChanged = metadata.CoverPath is not null
@@ -152,7 +182,9 @@ public partial class App : Application
             && !string.Equals(metadata.Synopsis, savedSynopsis, StringComparison.Ordinal);
         var criticScoreChanged = metadata.CriticScore is not null
             && metadata.CriticScore != savedCriticScore;
-        if (!englishChanged && !coverChanged && !synopsisChanged && !criticScoreChanged) return metadata;
+        var genresChanged = !string.IsNullOrWhiteSpace(metadata.Genres)
+            && !string.Equals(metadata.Genres, savedGenres, StringComparison.Ordinal);
+        if (!englishChanged && !coverChanged && !synopsisChanged && !criticScoreChanged && !genresChanged) return metadata;
 
         await using var context = OpenFreshDatabase();
         var anime = await context.Anime.FirstOrDefaultAsync(item => item.Id == animeId, cancellationToken);
@@ -161,9 +193,14 @@ public partial class App : Application
         if (coverChanged) anime.CoverPath = metadata.CoverPath;
         if (synopsisChanged) anime.Synopsis = metadata.Synopsis;
         if (criticScoreChanged) anime.CriticScore = metadata.CriticScore;
+        if (genresChanged) anime.Genres = metadata.Genres;
         await context.SaveChangesAsync(cancellationToken);
         return metadata;
     }
+
+    public static string? GetCachedAnimeBannerPath(Guid animeId) => animeCoverProvider.GetCachedBannerPath(animeId);
+
+    public static bool ShouldRefreshAnimeBanner(Guid animeId) => animeCoverProvider.ShouldRefreshBanner(animeId);
 
     private static string ResolveBundledPlayerPath()
     {
@@ -177,8 +214,10 @@ public partial class App : Application
         await playbackPersistenceLock.WaitAsync();
         try
         {
-            if (activeEpisodeId is not { } episodeId || (!force && DateTimeOffset.UtcNow - lastProgressWrite < TimeSpan.FromSeconds(5))) return;
-            lastProgressWrite = DateTimeOffset.UtcNow;
+            var checkpointAt = DateTimeOffset.Now;
+            var previousWrite = lastProgressWrite;
+            if (activeEpisodeId is not { } episodeId || (!force && checkpointAt.ToUniversalTime() - previousWrite < TimeSpan.FromSeconds(5))) return;
+            lastProgressWrite = checkpointAt.ToUniversalTime();
             await using var context = OpenFreshDatabase();
             var episode = await context.Episodes.FirstOrDefaultAsync(item => item.Id == episodeId);
             if (episode is null) return;
@@ -198,11 +237,19 @@ public partial class App : Application
                 savedProgress = new global::AniT.Core.PlaybackProgress { EpisodeId = episodeId };
                 context.PlaybackProgresses.Add(savedProgress);
             }
+            var previousPositionSeconds = Math.Max(0, savedProgress.PositionSeconds);
             savedProgress.PositionSeconds = Math.Max(0, position.TotalSeconds);
             savedProgress.DurationSeconds = progress.Duration?.TotalSeconds ?? savedProgress.DurationSeconds;
             savedProgress.LastPlayedAt = DateTimeOffset.UtcNow;
             if (episode.Status == global::AniT.Core.WatchStatus.NotStarted) episode.Status = global::AniT.Core.WatchStatus.Watching;
             await context.SaveChangesAsync();
+            var positionDelta = Math.Max(0, savedProgress.PositionSeconds - previousPositionSeconds);
+            var elapsedCap = previousWrite == default
+                ? 15d
+                : Math.Max(0, (checkpointAt.ToUniversalTime() - previousWrite).TotalSeconds + 2);
+            var watchedSeconds = (long)Math.Floor(Math.Min(positionDelta, elapsedCap));
+            if (watchedSeconds > 0)
+                await Achievements.RecordWatchCheckpointAsync(watchedSeconds, checkpointAt);
             WritePlaybackLog($"[DB] Episódio {episodeId}: salvo em {savedProgress.PositionSeconds.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)}s.");
         }
         catch (Exception exception)
@@ -296,6 +343,9 @@ public partial class App : Application
             if (episode.PlaybackProgress is { DurationSeconds: > 0 } progress) progress.PositionSeconds = progress.DurationSeconds;
             await context.SaveChangesAsync();
             playbackMonitorCancellation?.Cancel();
+            await Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
+                global::AniT.Core.Achievements.AchievementEventType.EpisodeCompleted,
+                episodeId));
         }
         catch (Exception exception)
         {

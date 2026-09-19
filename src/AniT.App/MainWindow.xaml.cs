@@ -47,6 +47,8 @@ public partial class MainWindow : Window
         {
             var scanner = new global::AniT.Infrastructure.LibraryScanner(App.Database);
             var result = await scanner.ScanAsync(root);
+            await App.Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
+                global::AniT.Core.Achievements.AchievementEventType.LibraryChanged));
             StatusText.Text = result.EpisodesAdded > 0
                 ? $"{result.EpisodesAdded} episódio(s) adicionado(s) à sua biblioteca."
                 : result.FilesFound == 0
@@ -61,7 +63,6 @@ public partial class MainWindow : Window
 
     private void OpenLibrary_Click(object sender, RoutedEventArgs e)
     {
-        var library = new LibraryWindow { Owner = this };
-        library.ShowDialog();
+        AppNavigation.OpenLibrary(this);
     }
 }

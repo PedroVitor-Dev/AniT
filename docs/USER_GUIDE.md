@@ -41,6 +41,8 @@ Abra **Biblioteca** no menu principal.
 
 Exibe os animes identificados, quantidade de episódios, nome alternativo, status e progresso. O botão **Página do Anime** abre os detalhes da obra.
 
+Use o campo de pesquisa no canto superior para filtrar pelo título principal ou pelo título em inglês. A busca é instantânea, ignora maiúsculas, acentos e pontuação e aceita várias palavras em qualquer ordem. Pressione `Ctrl+F` para focar, `Esc` ou `×` para limpar.
+
 ### Pastas
 
 Gerencia as raízes monitoradas. Cada pasta pode:

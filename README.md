@@ -36,11 +36,12 @@ O projeto é **local-first**: sua biblioteca, avaliações e histórico ficam no
 
 | Recurso | Como ajuda |
 | --- | --- |
-| **Biblioteca inteligente** | Escaneia `.mkv`, `.mp4`, `.avi`, `.mov`, `.webm`, `.m4v` e `.wmv`, inclusive em subpastas. |
+| **Biblioteca inteligente** | Escaneia vídeos em subpastas e oferece pesquisa instantânea por título principal ou em inglês. |
 | **Reconhecimento seguro** | Interpreta nomes comuns de episódios e envia casos ambíguos para revisão em vez de adivinhar silenciosamente. |
 | **Capas e metadados** | Consulta título em inglês, capa, sinopse e nota pública no AniList, mantendo cache local e fallback visual. |
 | **Progresso local** | Salva posição, status e conclusão por episódio em SQLite. |
 | **Página do anime** | Reúne episódios, sinopse, nota pública e avaliações pessoais por episódio. |
+| **Conquistas e AniPoints** | Transforma uso real em 100 marcos persistentes, cadeias de progressão e conquistas secretas do Baki-Pi. |
 | **Arquivos resilientes** | Reconhece arquivos movidos, diferencia versões e duplicatas físicas e preserva dados quando um disco fica offline. |
 | **Organização opcional** | Gera uma prévia antes de mover vídeos e legendas sidecar; conflitos não são sobrescritos. |
 | **Player integrado** | Usa uma distribuição portátil homologada do MPC-HC para reprodução e retomada. |
@@ -134,6 +135,7 @@ O AniT não envia sua biblioteca para um servidor próprio. Consultas de metadad
 | [Central de documentação](docs/README.md) | Índice de todos os guias |
 | [Manual de utilização](docs/USER_GUIDE.md) | Instalação, biblioteca, player e avaliações |
 | [Arquitetura](docs/ARCHITECTURE.md) | Camadas, dados e fluxos internos |
+| [Sistema de conquistas](docs/ACHIEVEMENTS.md) | 100 conquistas, AniPoints, regras, eventos e persistência |
 | [Ambiente de desenvolvimento](docs/DEVELOPMENT.md) | Setup, comandos, padrões e testes |
 | [Roadmap](docs/ROADMAP.md) | Direção do produto e prioridades |
 | [Solução de problemas](docs/TROUBLESHOOTING.md) | Diagnóstico e recuperação |
