@@ -8,10 +8,21 @@ using System.Text.RegularExpressions;
 
 namespace AniT.Infrastructure;
 
-public sealed record AnimeMetadataResult(string? EnglishTitle, string? CoverPath, string? Synopsis, double? CriticScore, string? Genres, string? BannerPath = null);
+public sealed record AnimeMetadataResult(
+    string? EnglishTitle,
+    string? CoverPath,
+    string? Synopsis,
+    double? CriticScore,
+    string? Genres,
+    string? BannerPath = null,
+    string? OriginalTitle = null,
+    IReadOnlyList<string>? Aliases = null,
+    int? ReleaseYear = null,
+    string? Studio = null);
 
 public sealed partial class AnimeCoverProvider
 {
+    private const long MaximumArtworkDownloadBytes = 30L * 1024 * 1024;
     private const string AniListEndpoint = "https://graphql.anilist.co";
     private const string TranslationEndpoint = "https://api.mymemory.translated.net/get";
     private const string MetadataQuery = """
@@ -30,6 +41,12 @@ public sealed partial class AnimeCoverProvider
             description(asHtml: false)
             averageScore
             genres
+            seasonYear
+            studios(isMain: true) {
+              nodes {
+                name
+              }
+            }
           }
         }
         """;
@@ -56,8 +73,14 @@ public sealed partial class AnimeCoverProvider
         string? savedSynopsis = null,
         double? savedCriticScore = null,
         bool forceRefresh = false,
-        string? savedGenres = null)
+        string? savedGenres = null,
+        int? savedReleaseYear = null,
+        string? savedStudio = null,
+        bool refreshCatalogDetails = false,
+        bool refreshArtwork = true)
     {
+        var imageSettings = AniTSystemSettingsStore.Load();
+        var artworkLocked = imageSettings.LockedArtwork?.ContainsKey(animeId.ToString("D")) == true;
         var existingCoverPath = IsUsableCover(savedCoverPath) ? savedCoverPath : null;
         Directory.CreateDirectory(coversDirectory);
         var cachedPath = Path.Combine(coversDirectory, $"{animeId:N}.jpg");
@@ -66,7 +89,10 @@ public sealed partial class AnimeCoverProvider
         existingCoverPath ??= IsUsableCover(cachedPath) ? cachedPath : null;
         var existingBannerPath = IsUsableCover(cachedBannerPath) ? cachedBannerPath : null;
         var bannerResolved = existingBannerPath is not null || File.Exists(missingBannerMarker);
+        var artworkRefreshDue = refreshArtwork && !artworkLocked && IsRefreshDue(existingCoverPath ?? existingBannerPath, imageSettings.ArtworkRefreshDays);
         if (!forceRefresh
+            && !artworkRefreshDue
+            && !refreshCatalogDetails
             && !string.IsNullOrWhiteSpace(englishTitle)
             && existingCoverPath is not null
             && IsLikelyPortugueseSynopsis(savedSynopsis)
@@ -74,7 +100,7 @@ public sealed partial class AnimeCoverProvider
             && !string.IsNullOrWhiteSpace(savedGenres)
             && bannerResolved)
         {
-            return new AnimeMetadataResult(englishTitle, existingCoverPath, savedSynopsis, savedCriticScore, savedGenres, existingBannerPath);
+            return new AnimeMetadataResult(englishTitle, existingCoverPath, savedSynopsis, savedCriticScore, savedGenres, existingBannerPath, ReleaseYear: savedReleaseYear, Studio: savedStudio);
         }
 
         var animeLock = animeLocks.GetOrAdd(animeId, _ => new SemaphoreSlim(1, 1));
@@ -84,7 +110,10 @@ public sealed partial class AnimeCoverProvider
             existingCoverPath = IsUsableCover(savedCoverPath) ? savedCoverPath : IsUsableCover(cachedPath) ? cachedPath : null;
             existingBannerPath = IsUsableCover(cachedBannerPath) ? cachedBannerPath : null;
             bannerResolved = existingBannerPath is not null || File.Exists(missingBannerMarker);
+            artworkRefreshDue = !artworkLocked && IsRefreshDue(existingCoverPath ?? existingBannerPath, imageSettings.ArtworkRefreshDays);
             if (!forceRefresh
+                && !artworkRefreshDue
+                && !refreshCatalogDetails
                 && !string.IsNullOrWhiteSpace(englishTitle)
                 && existingCoverPath is not null
                 && IsLikelyPortugueseSynopsis(savedSynopsis)
@@ -92,10 +121,12 @@ public sealed partial class AnimeCoverProvider
                 && !string.IsNullOrWhiteSpace(savedGenres)
                 && bannerResolved)
             {
-                return new AnimeMetadataResult(englishTitle, existingCoverPath, savedSynopsis, savedCriticScore, savedGenres, existingBannerPath);
+                return new AnimeMetadataResult(englishTitle, existingCoverPath, savedSynopsis, savedCriticScore, savedGenres, existingBannerPath, ReleaseYear: savedReleaseYear, Studio: savedStudio);
             }
 
             var needsRemoteMetadata = forceRefresh
+                || artworkRefreshDue
+                || refreshCatalogDetails
                 || string.IsNullOrWhiteSpace(englishTitle)
                 || existingCoverPath is null
                 || string.IsNullOrWhiteSpace(savedSynopsis)
@@ -126,6 +157,12 @@ public sealed partial class AnimeCoverProvider
             }
 
             var resolvedEnglishTitle = metadata?.EnglishTitle ?? englishTitle;
+            var resolvedOriginalTitle = metadata?.NativeTitle ?? metadata?.RomajiTitle;
+            var resolvedAliases = new[] { metadata?.RomajiTitle, metadata?.EnglishTitle, metadata?.NativeTitle }
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value!.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
             var resolvedCoverUrl = metadata?.CoverUrl;
             var synopsisCandidate = !forceRefresh && !string.IsNullOrWhiteSpace(savedSynopsis)
                 ? savedSynopsis
@@ -135,9 +172,11 @@ public sealed partial class AnimeCoverProvider
                 ?? (IsLikelyPortugueseSynopsis(savedSynopsis) ? savedSynopsis : synopsisCandidate);
             var resolvedCriticScore = savedCriticScore ?? metadata?.CriticScore;
             var resolvedGenres = string.IsNullOrWhiteSpace(savedGenres) ? metadata?.Genres : savedGenres;
+            var resolvedReleaseYear = savedReleaseYear ?? metadata?.ReleaseYear;
+            var resolvedStudio = string.IsNullOrWhiteSpace(savedStudio) ? metadata?.Studio : savedStudio;
 
             var resolvedBannerPath = existingBannerPath;
-            if (forceRefresh || !bannerResolved)
+            if (refreshArtwork && (forceRefresh || artworkRefreshDue || !bannerResolved))
             {
                 if (metadata is not null && Uri.TryCreate(metadata.BannerUrl, UriKind.Absolute, out _))
                 {
@@ -157,19 +196,27 @@ public sealed partial class AnimeCoverProvider
             }
 
             var resolvedCoverPath = existingCoverPath;
-            if (resolvedCoverUrl is not null && (forceRefresh || resolvedCoverPath is null))
+            if (refreshArtwork && imageSettings.ArtworkSourcePriority == ArtworkSourcePriority.CustomFirst && (forceRefresh || artworkRefreshDue || resolvedCoverPath is null))
+            {
+                var customFirstPath = forceRefresh || artworkRefreshDue
+                    ? Path.Combine(coversDirectory, $"{animeId:N}-custom-{DateTimeOffset.UtcNow:yyyyMMddHHmmssfff}.jpg")
+                    : cachedPath;
+                resolvedCoverPath = await TryCustomImageSourceAsync(japaneseTitle, useForBanner: false, customFirstPath, cancellationToken) ?? resolvedCoverPath;
+            }
+
+            if (refreshArtwork && resolvedCoverUrl is not null && imageSettings.ArtworkSourcePriority != ArtworkSourcePriority.CustomFirst && (forceRefresh || artworkRefreshDue || resolvedCoverPath is null))
             {
                 // WPF keeps image files open while they are visible. A forced refresh must not
                 // overwrite that locked file; download a new version and switch the DB reference.
-                var downloadPath = forceRefresh
+                var downloadPath = forceRefresh || artworkRefreshDue
                     ? Path.Combine(coversDirectory, $"{animeId:N}-{DateTimeOffset.UtcNow:yyyyMMddHHmmssfff}.jpg")
                     : cachedPath;
                 resolvedCoverPath = await DownloadCoverAsync(resolvedCoverUrl, downloadPath, cancellationToken) ?? existingCoverPath;
             }
 
-            if (forceRefresh || resolvedCoverPath is null)
+            if (refreshArtwork && (forceRefresh || artworkRefreshDue || resolvedCoverPath is null))
             {
-                var customCoverPath = forceRefresh
+                var customCoverPath = forceRefresh || artworkRefreshDue
                     ? Path.Combine(coversDirectory, $"{animeId:N}-custom-{DateTimeOffset.UtcNow:yyyyMMddHHmmssfff}.jpg")
                     : cachedPath;
                 resolvedCoverPath ??= await TryCustomImageSourceAsync(
@@ -179,7 +226,7 @@ public sealed partial class AnimeCoverProvider
                     cancellationToken);
             }
 
-            return new AnimeMetadataResult(resolvedEnglishTitle, resolvedCoverPath, resolvedSynopsis, resolvedCriticScore, resolvedGenres, resolvedBannerPath);
+            return new AnimeMetadataResult(resolvedEnglishTitle, resolvedCoverPath, resolvedSynopsis, resolvedCriticScore, resolvedGenres, resolvedBannerPath, resolvedOriginalTitle, resolvedAliases, resolvedReleaseYear, resolvedStudio);
         }
         catch (OperationCanceledException)
         {
@@ -187,7 +234,7 @@ public sealed partial class AnimeCoverProvider
         }
         catch (Exception exception) when (exception is HttpRequestException or IOException or JsonException)
         {
-            return new AnimeMetadataResult(englishTitle, existingCoverPath, savedSynopsis, savedCriticScore, savedGenres, existingBannerPath);
+            return new AnimeMetadataResult(englishTitle, existingCoverPath, savedSynopsis, savedCriticScore, savedGenres, existingBannerPath, ReleaseYear: savedReleaseYear, Studio: savedStudio);
         }
         finally
         {
@@ -215,8 +262,122 @@ public sealed partial class AnimeCoverProvider
 
     public bool ShouldRefreshBanner(Guid animeId)
     {
+        var settings = AniTSystemSettingsStore.Load();
+        if (settings.LockedArtwork?.ContainsKey(animeId.ToString("D")) == true) return false;
         var unavailableMarker = Path.Combine(coversDirectory, $"{animeId:N}-banner.unavailable");
-        return GetCachedBannerPath(animeId) is null && !File.Exists(unavailableMarker);
+        var bannerPath = GetCachedBannerPath(animeId);
+        var coverPath = Path.Combine(coversDirectory, $"{animeId:N}.jpg");
+        return bannerPath is null && !File.Exists(unavailableMarker)
+               || IsRefreshDue(bannerPath, settings.ArtworkRefreshDays)
+               || IsRefreshDue(coverPath, settings.ArtworkRefreshDays);
+    }
+
+    public async Task<IReadOnlyList<string>> EnsureArtworkGalleryAsync(
+        Guid animeId,
+        string title,
+        string? coverPath,
+        string? bannerPath,
+        CancellationToken cancellationToken = default)
+    {
+        const int galleryLimit = 5;
+        var settings = AniTSystemSettingsStore.Load();
+        string? lockedArtwork = null;
+        settings.LockedArtwork?.TryGetValue(animeId.ToString("D"), out lockedArtwork);
+        var galleryDirectory = Path.Combine(coversDirectory, "Gallery", animeId.ToString("N"));
+        Directory.CreateDirectory(galleryDirectory);
+
+        if (string.IsNullOrWhiteSpace(lockedArtwork) && settings.ArtworkRefreshDays > 0)
+        {
+            foreach (var stale in Directory.EnumerateFiles(galleryDirectory).Where(path => IsRefreshDue(path, settings.ArtworkRefreshDays)))
+            {
+                try { File.Delete(stale); } catch (IOException) { }
+            }
+        }
+
+        var paths = new List<string>(galleryLimit);
+        AddUsablePath(paths, lockedArtwork);
+        if (settings.PreferLocalArtwork)
+        {
+            AddUsablePath(paths, bannerPath);
+            AddUsablePath(paths, coverPath);
+        }
+        foreach (var cached in Directory.EnumerateFiles(galleryDirectory)
+                     .Where(IsUsableCover)
+                     .OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
+        {
+            AddUsablePath(paths, cached);
+            if (paths.Count == galleryLimit) return paths;
+        }
+        if (!settings.PreferLocalArtwork)
+        {
+            AddUsablePath(paths, bannerPath);
+            AddUsablePath(paths, coverPath);
+        }
+
+        var animeLock = animeLocks.GetOrAdd(animeId, _ => new SemaphoreSlim(1, 1));
+        await animeLock.WaitAsync(cancellationToken);
+        try
+        {
+            foreach (var cached in Directory.EnumerateFiles(galleryDirectory)
+                         .Where(IsUsableCover)
+                         .OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
+            {
+                AddUsablePath(paths, cached);
+                if (paths.Count == galleryLimit) return paths;
+            }
+
+            var search = await customImageProvider.SearchAsync(
+                title,
+                ProfileBannerSource.All,
+                settings.ImageSources,
+                selectedCustomSourceId: null,
+                cancellationToken);
+            var galleryIndex = Directory.EnumerateFiles(galleryDirectory).Count() + 1;
+            foreach (var candidate in search.Items)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (paths.Count == galleryLimit) break;
+                try
+                {
+                    var sharedCachePath = await customImageProvider.CacheSelectedAsync(candidate, cancellationToken);
+                    var extension = Path.GetExtension(sharedCachePath);
+                    if (string.IsNullOrWhiteSpace(extension)) extension = ".jpg";
+                    var galleryPath = Path.Combine(galleryDirectory, $"art-{galleryIndex:00}{extension}");
+                    galleryIndex++;
+                    if (!File.Exists(galleryPath)) File.Copy(sharedCachePath, galleryPath, overwrite: false);
+                    AddUsablePath(paths, galleryPath);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception exception) when (exception is HttpRequestException or IOException or InvalidDataException)
+                {
+                    // One unavailable candidate must not prevent the remaining cached gallery.
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is HttpRequestException or IOException or JsonException)
+        {
+            // Offline mode keeps the official cover/banner and every previously cached fan art.
+        }
+        finally
+        {
+            animeLock.Release();
+        }
+
+        return paths.Take(galleryLimit).ToArray();
+    }
+
+    private static void AddUsablePath(List<string> paths, string? candidate)
+    {
+        if (!IsUsableCover(candidate)
+            || paths.Contains(candidate!, StringComparer.OrdinalIgnoreCase)) return;
+        paths.Add(candidate!);
     }
 
     private async Task<string?> TryCustomImageSourceAsync(
@@ -225,8 +386,10 @@ public sealed partial class AnimeCoverProvider
         string destinationPath,
         CancellationToken cancellationToken)
     {
-        var sources = AniTSystemSettingsStore.Load().ImageSources
+        var settings = AniTSystemSettingsStore.Load();
+        var sources = settings.ImageSources
             .Where(source => source.IsEnabled)
+            .Where(source => !settings.OnlySfwArtwork || source.IsSfw)
             .Where(source => useForBanner ? source.UseForProfileBanners : source.UseForAnimeCovers)
             .ToArray();
         foreach (var source in sources)
@@ -251,6 +414,13 @@ public sealed partial class AnimeCoverProvider
         }
 
         return null;
+    }
+
+    private static bool IsRefreshDue(string? path, int refreshDays)
+    {
+        if (refreshDays <= 0 || !IsUsableCover(path)) return false;
+        try { return File.GetLastWriteTimeUtc(path!) <= DateTime.UtcNow.AddDays(-refreshDays); }
+        catch (IOException) { return false; }
     }
 
     private async Task<AniListMetadata?> FindMetadataAsync(string title, CancellationToken cancellationToken)
@@ -279,8 +449,15 @@ public sealed partial class AnimeCoverProvider
                 continue;
             }
 
+            string? romaji = null;
             string? english = null;
-            if (media.TryGetProperty("title", out var titles)) TryReadText(titles, "english", out english);
+            string? native = null;
+            if (media.TryGetProperty("title", out var titles))
+            {
+                TryReadText(titles, "romaji", out romaji);
+                TryReadText(titles, "english", out english);
+                TryReadText(titles, "native", out native);
+            }
 
             string? coverUrl = null;
             if (media.TryGetProperty("coverImage", out var cover))
@@ -310,13 +487,29 @@ public sealed partial class AnimeCoverProvider
                     .Distinct(StringComparer.OrdinalIgnoreCase));
             }
 
+            int? releaseYear = null;
+            if (media.TryGetProperty("seasonYear", out var yearValue) && yearValue.ValueKind == JsonValueKind.Number)
+            {
+                releaseYear = yearValue.GetInt32();
+            }
+
+            string? studio = null;
+            if (media.TryGetProperty("studios", out var studios)
+                && studios.TryGetProperty("nodes", out var studioNodes)
+                && studioNodes.ValueKind == JsonValueKind.Array)
+            {
+                studio = studioNodes.EnumerateArray()
+                    .Select(node => TryReadText(node, "name", out var name) ? name : null)
+                    .FirstOrDefault(name => !string.IsNullOrWhiteSpace(name));
+            }
+
             if (!string.IsNullOrWhiteSpace(english)
                 || Uri.TryCreate(coverUrl, UriKind.Absolute, out _)
                 || !string.IsNullOrWhiteSpace(synopsis)
                 || criticScore is not null
                 || !string.IsNullOrWhiteSpace(genres))
             {
-                return new AniListMetadata(english, coverUrl, bannerUrl, synopsis, criticScore, genres);
+                return new AniListMetadata(english, romaji, native, coverUrl, bannerUrl, synopsis, criticScore, genres, releaseYear, studio);
             }
         }
 
@@ -325,18 +518,31 @@ public sealed partial class AnimeCoverProvider
 
     private async Task<string?> DownloadCoverAsync(string coverUrl, string cachedPath, CancellationToken cancellationToken)
     {
+        if (!Uri.TryCreate(coverUrl, UriKind.Absolute, out var artworkUri)
+            || artworkUri.Scheme != Uri.UriSchemeHttps
+            || !AniTNetworkSecurity.IsPotentiallyPublicUri(artworkUri)) return null;
         using var response = await httpClient.GetAsync(coverUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         if (!response.IsSuccessStatusCode || response.Content.Headers.ContentType?.MediaType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) != true)
         {
             return null;
         }
+        if (response.Content.Headers.ContentLength is > MaximumArtworkDownloadBytes) return null;
 
         var temporaryPath = cachedPath + ".download";
         try
         {
+            await using (var input = await response.Content.ReadAsStreamAsync(cancellationToken))
             await using (var destination = new FileStream(temporaryPath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                await response.Content.CopyToAsync(destination, cancellationToken);
+                var buffer = new byte[81920];
+                long totalBytes = 0;
+                int read;
+                while ((read = await input.ReadAsync(buffer, cancellationToken)) > 0)
+                {
+                    totalBytes += read;
+                    if (totalBytes > MaximumArtworkDownloadBytes) return null;
+                    await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                }
             }
 
             if (new FileInfo(temporaryPath).Length == 0) return null;
@@ -489,12 +695,12 @@ public sealed partial class AnimeCoverProvider
 
     private static HttpClient CreateSharedClient()
     {
-        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("AniT/0.1");
+        var client = new HttpClient(new AniTOnlineRequestHandler()) { Timeout = Timeout.InfiniteTimeSpan };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("AniT/1.0");
         return client;
     }
 
-    private sealed record AniListMetadata(string? EnglishTitle, string? CoverUrl, string? BannerUrl, string? Synopsis, double? CriticScore, string? Genres);
+    private sealed record AniListMetadata(string? EnglishTitle, string? RomajiTitle, string? NativeTitle, string? CoverUrl, string? BannerUrl, string? Synopsis, double? CriticScore, string? Genres, int? ReleaseYear, string? Studio);
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex WhitespaceRegex();

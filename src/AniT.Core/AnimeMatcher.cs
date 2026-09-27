@@ -5,7 +5,9 @@ public enum AnimeMatchReason
     ExactCanonicalTitle,
     ExactAlias,
     ExactEnglishTitle,
+    ExactOriginalTitle,
     ExactFolderTitle,
+    EmbeddedKnownTitle,
     FuzzyCanonicalTitle,
     FuzzyAlias,
     FolderSupportsCandidate,
@@ -17,7 +19,8 @@ public sealed record AnimeMatchEntry(
     Guid AnimeId,
     string CanonicalTitle,
     string? EnglishTitle,
-    IReadOnlyCollection<string> Aliases);
+    IReadOnlyCollection<string> Aliases,
+    string? OriginalTitle = null);
 
 public sealed record AnimeMatchCandidate(
     Guid AnimeId,
@@ -82,6 +85,7 @@ public sealed class AnimeMatcher
     {
         var canonical = AnimeTitleNormalizer.Normalize(entry.CanonicalTitle);
         var english = AnimeTitleNormalizer.Normalize(entry.EnglishTitle);
+        var original = AnimeTitleNormalizer.Normalize(entry.OriginalTitle);
         var aliases = entry.Aliases.Select(AnimeTitleNormalizer.Normalize).Where(value => value.Length > 0).Distinct().ToArray();
         var reasons = new List<AnimeMatchReason>();
         double score;
@@ -96,30 +100,41 @@ public sealed class AnimeMatcher
             score = 0.985;
             reasons.Add(AnimeMatchReason.ExactEnglishTitle);
         }
+        else if (title.Length > 0 && original.Length > 0 && title == original)
+        {
+            score = 0.982;
+            reasons.Add(AnimeMatchReason.ExactOriginalTitle);
+        }
         else if (title.Length > 0 && aliases.Contains(title))
         {
             score = 0.98;
             reasons.Add(AnimeMatchReason.ExactAlias);
         }
-        else if (folder.Length > 0 && (folder == canonical || folder == english || aliases.Contains(folder)))
+        else if (folder.Length > 0 && (folder == canonical || folder == english || folder == original || aliases.Contains(folder)))
         {
             score = 0.96;
             reasons.Add(AnimeMatchReason.ExactFolderTitle);
+        }
+        else if (FindEmbeddedTitle(title, canonical, english, original, aliases) is { } embedded)
+        {
+            score = embedded.IsSuffix ? 0.975 : 0.94;
+            reasons.Add(AnimeMatchReason.EmbeddedKnownTitle);
         }
         else
         {
             var canonicalSimilarity = Similarity(title, canonical);
             var englishSimilarity = Similarity(title, english);
+            var originalSimilarity = Similarity(title, original);
             var aliasSimilarity = aliases.Select(alias => Similarity(title, alias)).DefaultIfEmpty(0).Max();
-            var bestTitleSimilarity = Math.Max(canonicalSimilarity, Math.Max(englishSimilarity, aliasSimilarity));
+            var bestTitleSimilarity = Math.Max(Math.Max(canonicalSimilarity, englishSimilarity), Math.Max(originalSimilarity, aliasSimilarity));
             score = 0.45 + bestTitleSimilarity * 0.45;
             reasons.Add(aliasSimilarity > Math.Max(canonicalSimilarity, englishSimilarity)
                 ? AnimeMatchReason.FuzzyAlias
                 : AnimeMatchReason.FuzzyCanonicalTitle);
 
             var folderSimilarity = Math.Max(
-                Similarity(folder, canonical),
-                Math.Max(Similarity(folder, english), aliases.Select(alias => Similarity(folder, alias)).DefaultIfEmpty(0).Max()));
+                Math.Max(Similarity(folder, canonical), Similarity(folder, english)),
+                Math.Max(Similarity(folder, original), aliases.Select(alias => Similarity(folder, alias)).DefaultIfEmpty(0).Max()));
             if (folderSimilarity >= 0.9)
             {
                 score = Math.Min(0.95, score + 0.08);
@@ -129,6 +144,67 @@ public sealed class AnimeMatcher
 
         return new AnimeMatchCandidate(entry.AnimeId, entry.CanonicalTitle, Math.Round(score, 4), reasons);
     }
+
+    private static EmbeddedTitleMatch? FindEmbeddedTitle(
+        string candidate,
+        string canonical,
+        string english,
+        string original,
+        IReadOnlyCollection<string> aliases)
+    {
+        if (candidate.Length == 0) return null;
+        var candidateTokens = Tokens(candidate);
+        if (candidateTokens.Length == 0) return null;
+
+        return new[] { canonical, english, original }
+            .Concat(aliases)
+            .Where(value => value.Length > 0 && value != candidate)
+            .Distinct(StringComparer.Ordinal)
+            .Select(value => new { Value = value, Tokens = Tokens(value) })
+            .Where(item => item.Tokens.Length > 0
+                && (item.Tokens.Length > 1 || item.Value.Length >= 5 || EndsWith(candidateTokens, item.Tokens))
+                && ContainsContiguous(candidateTokens, item.Tokens))
+            .Select(item => new EmbeddedTitleMatch(
+                EndsWith(candidateTokens, item.Tokens),
+                item.Tokens.Length,
+                item.Value.Length))
+            .OrderByDescending(item => item.IsSuffix)
+            .ThenByDescending(item => item.TokenCount)
+            .ThenByDescending(item => item.CharacterCount)
+            .FirstOrDefault();
+    }
+
+    private static string[] Tokens(string value) => value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+    private static bool ContainsContiguous(IReadOnlyList<string> candidate, IReadOnlyList<string> expected)
+    {
+        if (expected.Count > candidate.Count) return false;
+        for (var start = 0; start <= candidate.Count - expected.Count; start++)
+        {
+            var matches = true;
+            for (var index = 0; index < expected.Count; index++)
+            {
+                if (candidate[start + index] == expected[index]) continue;
+                matches = false;
+                break;
+            }
+            if (matches) return true;
+        }
+        return false;
+    }
+
+    private static bool EndsWith(IReadOnlyList<string> candidate, IReadOnlyList<string> expected)
+    {
+        if (expected.Count > candidate.Count) return false;
+        var offset = candidate.Count - expected.Count;
+        for (var index = 0; index < expected.Count; index++)
+        {
+            if (candidate[offset + index] != expected[index]) return false;
+        }
+        return true;
+    }
+
+    private sealed record EmbeddedTitleMatch(bool IsSuffix, int TokenCount, int CharacterCount);
 
     internal static double Similarity(string left, string right)
     {

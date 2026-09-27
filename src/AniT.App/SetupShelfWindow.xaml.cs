@@ -176,7 +176,9 @@ public partial class SetupShelfWindow : Window
             }
 
             await context.SaveChangesAsync();
-            var result = await new global::AniT.Infrastructure.LibraryScanner(context).ScanAsync(root);
+            var result = await new global::AniT.Infrastructure.LibraryScanner(
+                context,
+                settings: global::AniT.Infrastructure.AniTSystemSettingsStore.Load()).ScanAsync(root);
             await App.Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
                 global::AniT.Core.Achievements.AchievementEventType.LibraryChanged));
 

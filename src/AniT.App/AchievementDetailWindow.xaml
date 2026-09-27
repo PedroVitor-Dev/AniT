@@ -11,7 +11,7 @@
             <Grid>
                 <Grid.ColumnDefinitions><ColumnDefinition Width="240"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                 <Border Width="220" Height="220" CornerRadius="28" Background="#0B213E" BorderBrush="#2F6E9F" BorderThickness="1.5" VerticalAlignment="Top">
-                    <Grid><Image Source="{Binding IconPath}" Stretch="Uniform" Margin="10" Visibility="{Binding IconVisibility}"/><TextBlock Text="?" FontSize="110" FontWeight="Black" Foreground="#7189A3" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding LockedVisibility}"/></Grid>
+                    <Grid><Image Source="{Binding IconPath, Converter={StaticResource AchievementIconConverter}, ConverterParameter=360}" Stretch="Uniform" Margin="10" Visibility="{Binding IconVisibility}"/><TextBlock Text="?" FontSize="110" FontWeight="Black" Foreground="#7189A3" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding LockedVisibility}"/></Grid>
                 </Border>
                 <StackPanel Grid.Column="1" Margin="24,0,0,0">
                     <TextBlock Text="{Binding IdLabel}" Foreground="#7CCFFF" FontSize="12" FontWeight="Bold"/>

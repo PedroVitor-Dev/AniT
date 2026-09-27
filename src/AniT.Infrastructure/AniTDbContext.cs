@@ -24,6 +24,9 @@ public sealed class AniTDbContext(DbContextOptions<AniTDbContext> options) : DbC
             entity.Property(item => item.Title).HasMaxLength(300).IsRequired();
             entity.Property(item => item.EnglishTitle).HasMaxLength(300);
             entity.Property(item => item.Genres).HasMaxLength(1000);
+            entity.Property(item => item.Studio).HasMaxLength(300);
+            entity.Property(item => item.CustomTags).HasMaxLength(4000);
+            entity.Property(item => item.UserCollections).HasMaxLength(4000);
             entity.HasIndex(item => item.Title);
         });
 

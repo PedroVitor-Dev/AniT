@@ -13,6 +13,10 @@ public sealed class Anime
     public string? OriginalTitle { get; set; }
     public string? Synopsis { get; set; }
     public string? Genres { get; set; }
+    public int? ReleaseYear { get; set; }
+    public string? Studio { get; set; }
+    public string? CustomTags { get; set; }
+    public string? UserCollections { get; set; }
     public string? CoverPath { get; set; }
     public double? CriticScore { get; set; }
     public bool IsFavorite { get; set; }

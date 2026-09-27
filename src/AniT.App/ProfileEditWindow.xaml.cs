@@ -7,6 +7,7 @@ namespace AniT.App;
 
 public partial class ProfileEditWindow : Window
 {
+    private readonly ProfileSettings originalSettings;
     private readonly DateTimeOffset memberSince;
     private readonly string fallbackAvatarPath;
     private string? selectedAvatarPath;
@@ -17,6 +18,7 @@ public partial class ProfileEditWindow : Window
     public ProfileEditWindow(ProfileSettings settings, string fallbackAvatarPath)
     {
         InitializeComponent();
+        originalSettings = settings;
         MaxHeight = Math.Max(MinHeight, SystemParameters.WorkArea.Height - 24);
         Height = Math.Min(Height, MaxHeight);
         memberSince = settings.MemberSince;
@@ -91,20 +93,13 @@ public partial class ProfileEditWindow : Window
 
         try
         {
-            var uri = File.Exists(path)
-                ? new Uri(path, UriKind.Absolute)
-                : new Uri("pack://application:,,,/Assets/Profile/1.png", UriKind.Absolute);
-            var image = new BitmapImage();
-            image.BeginInit();
-            image.CacheOption = BitmapCacheOption.OnLoad;
-            image.UriSource = uri;
-            image.EndInit();
-            image.Freeze();
-            AvatarPreviewBrush.ImageSource = image;
+            AvatarPreviewBrush.ImageSource = ComfortableImageSource.Load(
+                File.Exists(path) ? Path.GetFullPath(path) : "Assets/Profile/1.png",
+                360);
         }
         catch
         {
-            AvatarPreviewBrush.ImageSource = new BitmapImage(new Uri("pack://application:,,,/Assets/Profile/1.png", UriKind.Absolute));
+            AvatarPreviewBrush.ImageSource = ComfortableImageSource.Load("Assets/Profile/1.png", 360);
         }
     }
 
@@ -150,13 +145,15 @@ public partial class ProfileEditWindow : Window
             return;
         }
 
-        SavedSettings = new ProfileSettings(
-            name,
-            BioTextBox.Text.Trim(),
-            memberSince,
-            selectedAvatarPath,
-            Math.Round(AvatarSizeSlider.Value),
-            selectedBannerPath);
+        SavedSettings = originalSettings with
+        {
+            DisplayName = name,
+            Bio = BioTextBox.Text.Trim(),
+            MemberSince = memberSince,
+            AvatarPath = selectedAvatarPath,
+            AvatarSize = Math.Round(AvatarSizeSlider.Value),
+            BannerPath = selectedBannerPath
+        };
         DialogResult = true;
     }
 

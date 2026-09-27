@@ -70,6 +70,11 @@
                     <ComboBoxItem Content="Todas as fontes" Tag="All"/>
                     <ComboBoxItem Content="Wallhaven · fan arts" Tag="Wallhaven"/>
                     <ComboBoxItem Content="AniList · oficiais" Tag="AniList"/>
+                    <ComboBoxItem Content="MyAnimeList · Jikan" Tag="MyAnimeList"/>
+                    <ComboBoxItem Content="Kitsu · oficiais" Tag="Kitsu"/>
+                    <ComboBoxItem Content="Danbooru · geral" Tag="Danbooru"/>
+                    <ComboBoxItem Content="Safebooru · seguro" Tag="Safebooru"/>
+                    <ComboBoxItem Content="Gelbooru · geral" Tag="Gelbooru"/>
                 </ComboBox>
                 <Button x:Name="SearchButton" Grid.Column="2" Style="{StaticResource HomePrimaryButton}" Content="Buscar artes" Click="Search_Click"/>
             </Grid>
@@ -125,7 +130,7 @@
         <Grid Grid.Row="3" Margin="4,14,4,0">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
             <TextBlock x:Name="StatusText" Foreground="#8FB7D8" FontSize="11" VerticalAlignment="Center" TextWrapping="Wrap"/>
-            <TextBlock Grid.Column="1" Text="Wallhaven: SFW, 21:9 e mínimo 2560×1080  •  AniList: artes oficiais" Foreground="#6F94B8" FontSize="10" VerticalAlignment="Center" Margin="16,0,0,0"/>
+            <TextBlock Grid.Column="1" Text="7 fontes integradas · consultas seguras · cache offline" Foreground="#6F94B8" FontSize="10" VerticalAlignment="Center" Margin="16,0,0,0"/>
         </Grid>
     </Grid>
 </Window>

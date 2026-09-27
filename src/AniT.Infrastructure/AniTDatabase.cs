@@ -34,6 +34,10 @@ public static class AniTDatabase
     {
         EnsureColumn(context, "Anime", "EnglishTitle", "TEXT NULL");
         EnsureColumn(context, "Anime", "Genres", "TEXT NULL");
+        EnsureColumn(context, "Anime", "ReleaseYear", "INTEGER NULL");
+        EnsureColumn(context, "Anime", "Studio", "TEXT NULL");
+        EnsureColumn(context, "Anime", "CustomTags", "TEXT NULL");
+        EnsureColumn(context, "Anime", "UserCollections", "TEXT NULL");
         EnsureColumn(context, "Anime", "CriticScore", "REAL NULL");
         EnsureColumn(context, "Anime", "ReviewNotes", "TEXT NULL");
         EnsureColumn(context, "Episodes", "ReviewNotes", "TEXT NULL");

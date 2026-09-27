@@ -12,11 +12,14 @@ public sealed class GlobalSearchServiceTests
         var directory = Path.Combine(Path.GetTempPath(), "AniT.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
         var databasePath = Path.Combine(directory, "search.db");
+        var episodeOneId = Guid.NewGuid();
+        var libraryRootId = Guid.NewGuid();
 
         try
         {
             using (var context = AniTDatabase.Create(databasePath))
             {
+                context.LibraryRoots.Add(new LibraryRoot { Id = libraryRootId, Path = directory });
                 var anime = new Anime
                 {
                     Title = "Mahou Shoujo Magical Destroyers",
@@ -38,6 +41,21 @@ public sealed class GlobalSearchServiceTests
                             Number = 1,
                             Episodes =
                             {
+                                new Episode
+                                {
+                                    Id = episodeOneId,
+                                    Number = 1,
+                                    MediaFiles =
+                                    {
+                                        new MediaFile
+                                        {
+                                            LibraryRootId = libraryRootId,
+                                            RelativePath = "Magical Destroyers 01.mkv",
+                                            FileName = "Magical Destroyers 01.mkv",
+                                            Extension = ".mkv"
+                                        }
+                                    }
+                                },
                                 new Episode { Number = 10, Title = "Novo mundo" }
                             }
                         }
@@ -51,6 +69,10 @@ public sealed class GlobalSearchServiceTests
 
             Assert.Contains(await service.SearchAsync("magical destroyers"), item => item.Kind == GlobalSearchResultKind.Anime);
             Assert.Contains(await service.SearchAsync("episódio 10"), item => item.Kind == GlobalSearchResultKind.Episode);
+            Assert.Contains(await service.SearchAsync("01"), item => item.Kind == GlobalSearchResultKind.Episode && item.EpisodeId == episodeOneId);
+            Assert.Contains(await service.SearchAsync("episódio 01"), item => item.Kind == GlobalSearchResultKind.Episode && item.EpisodeId == episodeOneId);
+            Assert.Contains(await service.SearchAsync("S01E01"), item => item.Kind == GlobalSearchResultKind.Episode && item.EpisodeId == episodeOneId);
+            Assert.Contains(await service.SearchAsync("Destroyers 01"), item => item.Kind == GlobalSearchResultKind.Episode && item.EpisodeId == episodeOneId);
             Assert.Contains(await service.SearchAsync("fantasia"), item => item.Kind == GlobalSearchResultKind.Anime);
             Assert.Contains(await service.SearchAsync("fantasia"), item => item.Kind == GlobalSearchResultKind.Genre && item.GenreName == "Fantasia");
             Assert.Contains(await service.SearchAsync("acao"), item => item.Kind == GlobalSearchResultKind.Genre && item.GenreName == "Ação");

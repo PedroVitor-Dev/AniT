@@ -16,7 +16,7 @@
         <Grid>
             <Grid.ColumnDefinitions><ColumnDefinition Width="88"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
             <Border Width="78" Height="78" CornerRadius="20" Background="#142C51" BorderBrush="#45CFFF" BorderThickness="1.5">
-                <Image Source="{Binding IconPath}" Stretch="Uniform" Margin="4"/>
+                <Image Source="{Binding IconPath, Converter={StaticResource AchievementIconConverter}, ConverterParameter=140}" Stretch="Uniform" Margin="4"/>
             </Border>
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,4,0">
                 <TextBlock Text="CONQUISTA DESBLOQUEADA" Foreground="#76DFFF" FontSize="11" FontWeight="SemiBold"/>

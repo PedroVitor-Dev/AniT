@@ -69,6 +69,23 @@ public sealed class EpisodeFileNameParserTests
         Assert.Equal("PT-BR", parsed.Language);
     }
 
+    [Fact]
+    public void Ignores_resolution_and_version_suffix_after_episode_number()
+    {
+        var parsed = EpisodeFileNameParser.Parse(@"D:\Anime\Cutey Honey\Cutey Honey 01 [768p] V2.mkv", @"D:\Anime");
+
+        Assert.Equal("Cutey Honey", parsed.CandidateTitle);
+        Assert.Equal(1, parsed.EpisodeNumber);
+        Assert.Null(parsed.EpisodeTitle);
+    }
+
+    [Fact]
+    public void Formats_episode_display_name_with_two_digits()
+    {
+        Assert.Equal("Cutey Honey 01", EpisodeDisplayName.Format(" Cutey Honey ", 1));
+        Assert.Equal("Cutey Honey 12", EpisodeDisplayName.Format("Cutey Honey", 12));
+    }
+
     [Theory]
     [InlineData("Sousou no Frieren")]
     [InlineData("sousou no frieren")]
@@ -86,5 +103,30 @@ public sealed class EpisodeFileNameParserTests
         var parsed = EpisodeFileNameParser.TryParse(@"D:\Anime\Frieren\opening theme.mkv", @"D:\Anime", out _);
 
         Assert.False(parsed);
+    }
+
+    [Fact]
+    public void Configurable_rules_can_disable_trailing_numbers_without_disabling_dash_numbers()
+    {
+        var options = EpisodeParsingOptions.Default with { RecognizeTrailingNumbers = false };
+
+        var trailing = EpisodeFileNameParser.Parse(@"D:\Anime\Frieren 07.mkv", @"D:\Anime", options);
+        var dashed = EpisodeFileNameParser.Parse(@"D:\Anime\Frieren - 07.mkv", @"D:\Anime", options);
+
+        Assert.Equal(ParsedEpisodeKind.Unknown, trailing.Kind);
+        Assert.Equal(ParsedEpisodeKind.Regular, dashed.Kind);
+        Assert.Equal(7, dashed.EpisodeNumber);
+    }
+
+    [Theory]
+    [InlineData(@"D:\Anime\Frieren OVA 02.mkv", 2)]
+    [InlineData(@"D:\Anime\Frieren Especial 03.mkv", 3)]
+    public void Recognizes_numbered_specials_when_enabled(string path, double expectedEpisode)
+    {
+        var parsed = EpisodeFileNameParser.Parse(path, @"D:\Anime", EpisodeParsingOptions.Default);
+
+        Assert.Equal(ParsedEpisodeKind.Special, parsed.Kind);
+        Assert.Equal(0, parsed.SeasonNumber);
+        Assert.Equal(expectedEpisode, parsed.EpisodeNumber);
     }
 }

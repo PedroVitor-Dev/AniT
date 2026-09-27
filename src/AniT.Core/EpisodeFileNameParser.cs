@@ -6,6 +6,18 @@ namespace AniT.Core;
 
 public enum ParsedEpisodeKind { Regular, Decimal, Special, MultiEpisode, Unknown }
 
+public sealed record EpisodeParsingOptions(
+    bool RecognizeSeasonEpisodeCodes = true,
+    bool RecognizeEpisodePrefixes = true,
+    bool RecognizeDashNumbers = true,
+    bool RecognizeBracketNumbers = true,
+    bool RecognizeTrailingNumbers = true,
+    bool UseFolderSeason = true,
+    bool RecognizeSpecials = true)
+{
+    public static EpisodeParsingOptions Default { get; } = new();
+}
+
 public sealed record EpisodeIdentity(string Title, int SeasonNumber, int EpisodeNumber, string? EpisodeTitle);
 
 public sealed record ParsedMediaFile(
@@ -60,7 +72,7 @@ public static partial class EpisodeFileNameParser
 
     private static readonly Regex[] TechnicalTagPatterns =
     [
-        ResolutionPattern(), SourcePattern(), CodecPattern(), AudioPattern(), LanguagePattern(), BitDepthPattern(), HashPattern()
+        ResolutionPattern(), SourcePattern(), CodecPattern(), AudioPattern(), LanguagePattern(), BitDepthPattern(), HashPattern(), VersionPattern()
     ];
 
     public static bool TryParse(string filePath, string libraryRoot, out EpisodeIdentity identity)
@@ -80,11 +92,13 @@ public static partial class EpisodeFileNameParser
         return true;
     }
 
-    public static ParsedMediaFile Parse(string filePath, string libraryRoot)
+    public static ParsedMediaFile Parse(string filePath, string libraryRoot) => Parse(filePath, libraryRoot, EpisodeParsingOptions.Default);
+
+    public static ParsedMediaFile Parse(string filePath, string libraryRoot, EpisodeParsingOptions options)
     {
         var originalFileName = Path.GetFileName(filePath);
         var rawName = Path.GetFileNameWithoutExtension(filePath);
-        var folderTitle = FindFolderTitle(filePath, libraryRoot, out var folderSeason);
+        var folderTitle = FindFolderTitle(filePath, libraryRoot, options.UseFolderSeason, out var folderSeason);
         var seasonNumber = folderSeason ?? 1;
         var resolution = FindValue(rawName, ResolutionPattern());
         var source = FindValue(rawName, SourcePattern());
@@ -92,12 +106,21 @@ public static partial class EpisodeFileNameParser
         var releaseGroup = ExtractReleaseGroup(rawName);
 
         var working = RemoveNoise(rawName, releaseGroup);
-        var match = SeasonEpisodePattern().Match(working);
+        var specialMatch = options.RecognizeSpecials ? SpecialPattern().Match(working) : Match.Empty;
+        var match = specialMatch.Success
+            ? specialMatch
+            : options.RecognizeSeasonEpisodeCodes ? SeasonEpisodePattern().Match(working) : Match.Empty;
         var kind = ParsedEpisodeKind.Unknown;
         double? episode = null;
         double? endingEpisode = null;
 
-        if (match.Success)
+        if (specialMatch.Success)
+        {
+            kind = ParsedEpisodeKind.Special;
+            seasonNumber = 0;
+            episode = ParseDouble(specialMatch.Groups["episode"].Value) ?? 1;
+        }
+        else if (match.Success)
         {
             seasonNumber = ParseInt(match.Groups["season"].Value, seasonNumber);
             episode = ParseDouble(match.Groups["episode"].Value);
@@ -106,7 +129,7 @@ public static partial class EpisodeFileNameParser
         }
         else
         {
-            match = CrossPattern().Match(working);
+            match = options.RecognizeSeasonEpisodeCodes ? CrossPattern().Match(working) : Match.Empty;
             if (match.Success)
             {
                 seasonNumber = ParseInt(match.Groups["season"].Value, seasonNumber);
@@ -115,27 +138,16 @@ public static partial class EpisodeFileNameParser
             }
             else
             {
-                match = EpisodePrefixPattern().Match(working);
-                if (!match.Success) match = DashEpisodePattern().Match(working);
-                if (!match.Success) match = BracketEpisodePattern().Match(rawName);
-                if (!match.Success) match = TrailingEpisodePattern().Match(working);
+                match = options.RecognizeEpisodePrefixes ? EpisodePrefixPattern().Match(working) : Match.Empty;
+                if (!match.Success && options.RecognizeDashNumbers) match = DashEpisodePattern().Match(working);
+                if (!match.Success && options.RecognizeBracketNumbers) match = BracketEpisodePattern().Match(rawName);
+                if (!match.Success && options.RecognizeTrailingNumbers) match = TrailingEpisodePattern().Match(working);
                 if (match.Success)
                 {
                     episode = ParseDouble(match.Groups["episode"].Value);
                     endingEpisode = ParseDouble(match.Groups["ending"].Value);
                     kind = endingEpisode is not null ? ParsedEpisodeKind.MultiEpisode : ClassifyNumber(episode);
                 }
-            }
-        }
-
-        if (!match.Success)
-        {
-            var special = SpecialPattern().Match(working);
-            if (special.Success)
-            {
-                match = special;
-                kind = ParsedEpisodeKind.Special;
-                seasonNumber = 0;
             }
         }
 
@@ -172,7 +184,7 @@ public static partial class EpisodeFileNameParser
         return cleanFileTitle;
     }
 
-    private static string? FindFolderTitle(string filePath, string libraryRoot, out int? seasonNumber)
+    private static string? FindFolderTitle(string filePath, string libraryRoot, bool useFolderSeason, out int? seasonNumber)
     {
         seasonNumber = null;
         var directory = Path.GetDirectoryName(filePath);
@@ -184,7 +196,7 @@ public static partial class EpisodeFileNameParser
         for (var index = folders.Length - 1; index >= 0; index--)
         {
             var folder = CleanupSeparators(folders[index]);
-            var seasonMatch = SeasonFolderPattern().Match(folder);
+            var seasonMatch = useFolderSeason ? SeasonFolderPattern().Match(folder) : Match.Empty;
             if (seasonMatch.Success)
             {
                 seasonNumber ??= ParseInt(seasonMatch.Groups["season"].Value, 1);
@@ -264,11 +276,11 @@ public static partial class EpisodeFileNameParser
     private static partial Regex BracketEpisodePattern();
     [GeneratedRegex(@"(?i)(?:^|\s)(?<episode>\d{1,4}(?:[.,]\d+)?)(?:v\d+)?$")]
     private static partial Regex TrailingEpisodePattern();
-    [GeneratedRegex(@"(?i)\b(?<special>OVA|OAD|Special|Recap|NCOP|NCED|Opening|Ending|PV|Trailer)\b")]
+    [GeneratedRegex(@"(?i)\b(?<special>OVA|OAD|Special|Especial|Recap|NCOP|NCED|Opening|Ending|PV|Trailer)(?:[ ._-]?(?<episode>\d{1,3}))?\b")]
     private static partial Regex SpecialPattern();
     [GeneratedRegex(@"(?i)^(?:season|temporada|saison|s)[ ._-]?(?<season>\d{1,2})$")]
     private static partial Regex SeasonFolderPattern();
-    [GeneratedRegex(@"(?i)\b(?:480|576|720|1080|1440|2160|4320)p\b")]
+    [GeneratedRegex(@"(?i)\b\d{3,4}p\b")]
     private static partial Regex ResolutionPattern();
     [GeneratedRegex(@"(?i)\b(?:WEB[- .]?DL|WEBRip|WEB|BluRay|BDRip|BD|HDTV|DVD)\b")]
     private static partial Regex SourcePattern();
@@ -282,6 +294,8 @@ public static partial class EpisodeFileNameParser
     private static partial Regex BitDepthPattern();
     [GeneratedRegex(@"(?i)\b[0-9A-F]{8}\b")]
     private static partial Regex HashPattern();
+    [GeneratedRegex(@"(?i)\bv\d+\b")]
+    private static partial Regex VersionPattern();
     [GeneratedRegex(@"^\s*\[(?<content>[^\]]+)\]")]
     private static partial Regex LeadingBracketPattern();
     [GeneratedRegex(@"\[(?<content>[^\]]+)\]")]

@@ -14,7 +14,7 @@ Antes de `1.0.0`, mudanças significativas podem ocorrer em versões `0.x`, mas 
 
 ## Preparação
 
-1. Crie uma branch de release a partir de `main` limpa.
+1. Crie uma branch de release a partir de `main` limpa e abra pull request; não publique diretamente na branch protegida.
 2. Atualize `CHANGELOG.md`, README, manual e roadmap.
 3. Confirme licenças dos assets e componentes distribuídos.
 4. Confirme a versão homologada do MPC-HC e inclua seus avisos/licença.
@@ -23,10 +23,13 @@ Antes de `1.0.0`, mudanças significativas podem ocorrer em versões `0.x`, mas 
 ## Validação obrigatória
 
 ```powershell
-dotnet restore AniT.slnx
+dotnet restore AniT.slnx --locked-mode
+dotnet list AniT.slnx package --vulnerable --include-transitive
 dotnet build AniT.slnx -c Release --no-restore
-dotnet test AniT.slnx -c Release --no-build
+dotnet test AniT.slnx -c Release --no-build --collect:"XPlat Code Coverage"
 ```
+
+A cobertura de linhas não pode ficar abaixo de 70%. O CI aplica esse piso, publica o relatório Cobertura e falha quando o feed NuGet reporta dependência vulnerável.
 
 Checklist manual:
 
@@ -42,12 +45,16 @@ Checklist manual:
 - 1280×720, 1920×1080 e 3440×1440;
 - escala de 100%, 125% e 150%;
 - navegação por teclado nos fluxos críticos.
+- exportação, inspeção e importação de backup em cópia descartável;
+- modo escuro, claro e automático depois de reiniciar o aplicativo;
+- atribuição e filtro de tags e coleções;
+- operação totalmente offline sem tentativa de rede.
 
 ## Empacotamento
 
-O pacote deve conter o aplicativo e, quando aplicável, o diretório `Player/MPC-HC`. Não inclua banco, capas, logs, mídia de teste ou conteúdo da pasta `work`.
+O pacote deve conter o aplicativo e, quando aplicável, o diretório `Player/MPC-HC`. Use `scripts/Get-MpcHc.ps1` para obter exatamente a versão e o hash homologados. Não inclua banco, capas, logs, mídia de teste, `TestResults` ou conteúdo da pasta `work`.
 
-Gere hashes SHA-256 dos artefatos publicados e registre o comando/ambiente usados para permitir reprodução.
+Gere hashes SHA-256 dos artefatos publicados e registre o comando/ambiente usados para permitir reprodução. Verifique assinatura digital do instalador e do executável quando houver certificado de assinatura disponível; se não houver, declare explicitamente que o primeiro pacote não é assinado.
 
 ## Publicação
 

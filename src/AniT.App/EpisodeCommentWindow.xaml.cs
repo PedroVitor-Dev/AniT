@@ -24,17 +24,20 @@ public partial class EpisodeCommentWindow : Window
         await using var context = App.OpenFreshDatabase();
         var episodes = await context.Episodes
             .Where(episode => episode.Season!.AnimeId == animeId)
+            .Include(episode => episode.Season)!.ThenInclude(season => season!.Anime)!.ThenInclude(anime => anime!.Aliases)
             .OrderBy(episode => episode.Season!.Number)
             .ThenBy(episode => episode.Number)
             .AsNoTracking()
-            .Select(episode => new { episode.Id, episode.Number, episode.Title, episode.ReviewNotes })
             .ToListAsync();
 
+        var settings = global::AniT.Infrastructure.AniTSystemSettingsStore.Load();
         foreach (var episode in episodes)
         {
+            var anime = episode.Season!.Anime!;
+            var preferredTitle = global::AniT.Infrastructure.OrganizationPreferences.PreferredTitle(anime, settings.AnimeTitlePreference);
             Episodes.Add(new CommentEpisodeItem(
                 episode.Id,
-                $"Episódio {episode.Number:00} · {episode.Title ?? $"Episódio {episode.Number}"}",
+                global::AniT.Core.EpisodeDisplayName.Format(preferredTitle, episode.Season.Number, episode.Number, settings.EpisodeNumberDisplayFormat.ToString()),
                 episode.ReviewNotes));
         }
         EpisodeSelector.SelectedItem = Episodes.FirstOrDefault(item => item.Id == requestedEpisodeId)

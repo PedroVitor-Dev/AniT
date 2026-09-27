@@ -56,4 +56,39 @@ public sealed class AnimeMatcherTests
 
         Assert.Null(result.Best);
     }
+
+    [Fact]
+    public void Title_embedded_after_noisy_prefix_is_an_automatic_match()
+    {
+        var cuteyHoneyId = Guid.NewGuid();
+        var parsed = EpisodeFileNameParser.Parse(
+            @"D:\Anime\Ambient 002 Hon 20 Cutey Honey - 02.mkv",
+            @"D:\Anime");
+
+        var result = new AnimeMatcher().Match(parsed,
+        [
+            new(cuteyHoneyId, "Cutey Honey", "Cutie Honey", [])
+        ]);
+
+        Assert.True(result.CanAutoMatch);
+        Assert.Equal(cuteyHoneyId, result.Best!.AnimeId);
+        Assert.Contains(AnimeMatchReason.EmbeddedKnownTitle, result.Best.Reasons);
+    }
+
+    [Fact]
+    public void Embedded_original_title_can_match_a_catalog_entry()
+    {
+        var animeId = Guid.NewGuid();
+        var parsed = EpisodeFileNameParser.Parse(
+            @"D:\Anime\Random Batch Mahou Shoujo - 03.mkv",
+            @"D:\Anime");
+
+        var result = new AnimeMatcher().Match(parsed,
+        [
+            new(animeId, "Magical Girl", "Magical Girl", [], "Mahou Shoujo")
+        ]);
+
+        Assert.True(result.CanAutoMatch);
+        Assert.Equal(animeId, result.Best!.AnimeId);
+    }
 }

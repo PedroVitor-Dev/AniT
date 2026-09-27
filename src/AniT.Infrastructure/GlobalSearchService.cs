@@ -19,12 +19,20 @@ public sealed class GlobalSearchService(Func<AniTDbContext> contextFactory)
         if (AnimeTitleNormalizer.Normalize(query).Length < 2) return [];
 
         var anime = await GetIndexAsync(cancellationToken);
+        var organizationSettings = AniTSystemSettingsStore.Load();
         var candidates = new List<RankedResult>();
         var normalizedQuery = AnimeTitleNormalizer.Normalize(query);
         var hasEpisodeIntent = HasEpisodeIntent(normalizedQuery);
 
         foreach (var item in anime)
         {
+            var preferredTitle = organizationSettings.AnimeTitlePreference switch
+            {
+                AnimeTitlePreference.Portuguese => item.Aliases.FirstOrDefault() ?? item.Title,
+                AnimeTitlePreference.English => item.EnglishTitle ?? item.Title,
+                AnimeTitlePreference.Japanese => item.OriginalTitle ?? item.Title,
+                _ => item.Title
+            };
             var titles = new[] { item.Title, item.EnglishTitle, item.OriginalTitle }
                 .Concat(item.Aliases)
                 .ToArray();
@@ -50,7 +58,7 @@ public sealed class GlobalSearchService(Func<AniTDbContext> contextFactory)
                         item.Id,
                         null,
                         null,
-                        item.Title,
+                        preferredTitle,
                         subtitle,
                         "ANIME",
                         "◉",
@@ -61,9 +69,13 @@ public sealed class GlobalSearchService(Func<AniTDbContext> contextFactory)
             {
                 var episodeTitleMatch = !string.IsNullOrWhiteSpace(episode.Title)
                     && AnimeSearch.Matches(query, episode.Title);
-                if (!episodeTitleMatch && (!hasEpisodeIntent || !AnimeSearch.Matches(
-                        query,
-                        titles.Append(episode.Title).Append(EpisodeSearchText(episode)).ToArray())))
+                var episodeValues = titles
+                    .Append(episode.Title)
+                    .Append(EpisodeSearchText(episode))
+                    .Concat(episode.FileNames)
+                    .ToArray();
+                var episodeMatch = hasEpisodeIntent && AnimeSearch.Matches(query, episodeValues);
+                if (!episodeTitleMatch && !episodeMatch)
                 {
                     continue;
                 }
@@ -75,8 +87,8 @@ public sealed class GlobalSearchService(Func<AniTDbContext> contextFactory)
                         item.Id,
                         episode.Id,
                         null,
-                        string.IsNullOrWhiteSpace(episode.Title) ? $"Episódio {episode.Number:00}" : episode.Title!,
-                        $"{item.Title}  •  Temporada {episode.SeasonNumber}  •  Episódio {episode.Number:00}",
+                        EpisodeDisplayName.Format(preferredTitle, episode.SeasonNumber, episode.Number, organizationSettings.EpisodeNumberDisplayFormat.ToString()),
+                        $"{preferredTitle}  •  Temporada {episode.SeasonNumber}  •  {OrganizationPreferences.EpisodeCode(episode.SeasonNumber, episode.Number, organizationSettings.EpisodeNumberDisplayFormat)}",
                         "EPISÓDIO",
                         "▶",
                         "#8CE8C5")));
@@ -129,6 +141,7 @@ public sealed class GlobalSearchService(Func<AniTDbContext> contextFactory)
                 .Include(item => item.Aliases)
                 .Include(item => item.Seasons)
                 .ThenInclude(item => item.Episodes)
+                .ThenInclude(item => item.MediaFiles)
                 .AsNoTracking()
                 .AsSplitQuery()
                 .OrderBy(item => item.Title)
@@ -145,7 +158,11 @@ public sealed class GlobalSearchService(Func<AniTDbContext> contextFactory)
                             episode.Id,
                             season.Number,
                             episode.Number,
-                            episode.Title)))
+                            episode.Title,
+                            episode.MediaFiles
+                                .Select(file => file.FileName)
+                                .Where(fileName => !string.IsNullOrWhiteSpace(fileName))
+                                .ToArray())))
                         .OrderBy(episode => episode.SeasonNumber)
                         .ThenBy(episode => episode.Number)
                         .ToArray()))
@@ -161,11 +178,41 @@ public sealed class GlobalSearchService(Func<AniTDbContext> contextFactory)
 
     private static bool HasEpisodeIntent(string normalizedQuery) =>
         normalizedQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-            .Any(term => term is "ep" or "episodio" or "episode" or "capitulo" || int.TryParse(term, out _));
+            .Any(IsEpisodeIntentTerm);
 
-    private static string EpisodeSearchText(SearchEpisode episode) =>
-        $"episódio {episode.Number} episodio {episode.Number} episode {episode.Number} ep {episode.Number} " +
-        $"temporada {episode.SeasonNumber} season {episode.SeasonNumber}";
+    private static bool IsEpisodeIntentTerm(string term)
+    {
+        if (term is "ep" or "episodio" or "episode" or "capitulo" || int.TryParse(term, out _)) return true;
+        if (term.StartsWith("ep", StringComparison.Ordinal) && int.TryParse(term.AsSpan(2), out _)) return true;
+
+        var seasonEpisodeSeparator = term.IndexOf('e', StringComparison.Ordinal);
+        if (term.StartsWith('s')
+            && seasonEpisodeSeparator > 1
+            && int.TryParse(term.AsSpan(1, seasonEpisodeSeparator - 1), out _)
+            && int.TryParse(term.AsSpan(seasonEpisodeSeparator + 1), out _))
+        {
+            return true;
+        }
+
+        var compactSeparator = term.IndexOf('x', StringComparison.Ordinal);
+        return compactSeparator > 0
+            && int.TryParse(term.AsSpan(0, compactSeparator), out _)
+            && int.TryParse(term.AsSpan(compactSeparator + 1), out _);
+    }
+
+    private static string EpisodeSearchText(SearchEpisode episode)
+    {
+        var episodeNumber = episode.Number.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var paddedEpisodeNumber = episode.Number.ToString("00", System.Globalization.CultureInfo.InvariantCulture);
+        var seasonNumber = episode.SeasonNumber.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var paddedSeasonNumber = episode.SeasonNumber.ToString("00", System.Globalization.CultureInfo.InvariantCulture);
+        return $"episódio {episodeNumber} episódio {paddedEpisodeNumber} " +
+               $"episodio {episodeNumber} episodio {paddedEpisodeNumber} " +
+               $"episode {episodeNumber} episode {paddedEpisodeNumber} " +
+               $"ep {episodeNumber} ep {paddedEpisodeNumber} e{paddedEpisodeNumber} " +
+               $"temporada {seasonNumber} season {seasonNumber} " +
+               $"s{paddedSeasonNumber}e{paddedEpisodeNumber} {seasonNumber}x{paddedEpisodeNumber}";
+    }
 
     private static int RankTitle(string normalizedQuery, IEnumerable<string?> values)
     {
@@ -187,5 +234,10 @@ public sealed class GlobalSearchService(Func<AniTDbContext> contextFactory)
         string? Genres,
         IReadOnlyList<string> Aliases,
         IReadOnlyList<SearchEpisode> Episodes);
-    private sealed record SearchEpisode(Guid Id, int SeasonNumber, int Number, string? Title);
+    private sealed record SearchEpisode(
+        Guid Id,
+        int SeasonNumber,
+        int Number,
+        string? Title,
+        IReadOnlyList<string> FileNames);
 }

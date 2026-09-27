@@ -71,6 +71,7 @@ public partial class HistoryWindow : Window, INotifyPropertyChanged
             var episodes = await context.Episodes
                 .Include(item => item.Season)!
                 .ThenInclude(season => season!.Anime)
+                .ThenInclude(anime => anime!.Aliases)
                 .Include(item => item.PlaybackProgress)
                 .AsNoTracking()
                 .ToListAsync();
@@ -90,13 +91,16 @@ public partial class HistoryWindow : Window, INotifyPropertyChanged
                     : duration > 0 ? Math.Clamp(position / duration * 100, 0, 100) : 0;
                 var watchedSeconds = position > 0 ? position : episode.Status == global::AniT.Core.WatchStatus.Completed ? 24 * 60 : 0;
 
+                var settings = global::AniT.Infrastructure.AniTSystemSettingsStore.Load();
+                var preferredTitle = global::AniT.Infrastructure.OrganizationPreferences.PreferredTitle(anime, settings.AnimeTitlePreference);
                 activities.Add(new HistoryActivityRecord(
                     activityAt.Value.LocalDateTime,
                     anime.Id,
                     episode.Id,
-                    anime.Title,
+                    preferredTitle,
+                    episode.Season.Number,
                     episode.Number,
-                    episode.Title ?? $"Episódio {episode.Number:00}",
+                    episode.Title ?? string.Empty,
                     IsUsableCover(anime.CoverPath) ? anime.CoverPath! : "Assets/History/2.png",
                     percent,
                     watchedSeconds,
@@ -252,8 +256,8 @@ public partial class HistoryWindow : Window, INotifyPropertyChanged
             item.AnimeId,
             item.EpisodeId,
             item.AnimeTitle,
-            $"Episódio {item.EpisodeNumber:00}",
-            item.EpisodeTitle,
+            EpisodeCode(item.SeasonNumber, item.EpisodeNumber),
+            string.IsNullOrWhiteSpace(item.EpisodeTitle) ? item.AnimeTitle : item.EpisodeTitle,
             item.CoverPath,
             $"{startedAt:HH:mm} – {item.ActivityAt:HH:mm}",
             FormatDuration(item.WatchedSeconds),
@@ -385,6 +389,11 @@ public partial class HistoryWindow : Window, INotifyPropertyChanged
 
     private static bool IsUsableCover(string? path) => !string.IsNullOrWhiteSpace(path) && File.Exists(path);
     private static double NormalizeRating(double? rating) => rating is > 5 ? rating.Value / 2 : rating ?? 0;
+    private static string EpisodeCode(int seasonNumber, int episodeNumber)
+    {
+        var settings = global::AniT.Infrastructure.AniTSystemSettingsStore.Load();
+        return global::AniT.Infrastructure.OrganizationPreferences.EpisodeCode(seasonNumber, episodeNumber, settings.EpisodeNumberDisplayFormat);
+    }
     private static string RatingImagePath(double rating) => rating switch
     {
         <= 0 => "Assets/normal-sf.png",
@@ -405,6 +414,6 @@ public partial class HistoryWindow : Window, INotifyPropertyChanged
 }
 
 internal enum HistoryPeriod { Today, Week, Month, All }
-internal sealed record HistoryActivityRecord(DateTime ActivityAt, Guid AnimeId, Guid EpisodeId, string AnimeTitle, int EpisodeNumber, string EpisodeTitle, string CoverPath, double ProgressPercent, double WatchedSeconds, double DurationSeconds, double? Rating, string? ReviewNotes, global::AniT.Core.WatchStatus Status);
+internal sealed record HistoryActivityRecord(DateTime ActivityAt, Guid AnimeId, Guid EpisodeId, string AnimeTitle, int SeasonNumber, int EpisodeNumber, string EpisodeTitle, string CoverPath, double ProgressPercent, double WatchedSeconds, double DurationSeconds, double? Rating, string? ReviewNotes, global::AniT.Core.WatchStatus Status);
 public sealed record HistoryActivityItem(Guid AnimeId, Guid EpisodeId, string AnimeTitle, string EpisodeLabel, string EpisodeTitle, string CoverPath, string SessionTimeLabel, string DurationLabel, double ProgressPercent, string RatingImagePath, string RatingLabel, string RatingBackground, string RatingBorder, string CommentButtonLabel, string ReviewText);
 public sealed record HistoryDayGroup(string Title, string Summary, string Accent, IReadOnlyList<HistoryActivityItem> Activities);

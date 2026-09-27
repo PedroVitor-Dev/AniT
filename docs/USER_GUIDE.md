@@ -98,6 +98,10 @@ Ao marcar todos os episódios disponíveis como assistidos, o anime passa a ser 
 
 Use **Continuar assistindo** ou abra um episódio. O AniT inicia o MPC-HC, acompanha a posição e cria checkpoints periódicos. Ao concluir o episódio, o status e a posição final são persistidos no SQLite.
 
+Se você escolher **Aplicativo padrão do Windows** em Configurações › Reprodução, o arquivo será aberto no player associado pelo sistema, mas o AniT não consegue observar sua posição. Retomada, checkpoints e conclusão automática exigem o **MPC-HC integrado**.
+
+Tags e coleções são cadastradas em Configurações › Organização, atribuídas pelo botão **Organizar** na página do anime e podem ser usadas na busca e nos filtros da Biblioteca.
+
 Se o player for fechado inesperadamente, o aplicativo tenta salvar o último ponto conhecido.
 
 ## 7. Capas e modo offline

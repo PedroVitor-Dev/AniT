@@ -1,7 +1,6 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media.Imaging;
 
 namespace AniT.App;
 
@@ -28,21 +27,15 @@ public partial class ProfileAvatarButton : UserControl
 
         try
         {
-            var image = new BitmapImage();
-            image.BeginInit();
-            image.CacheOption = BitmapCacheOption.OnLoad;
-            image.UriSource = path.StartsWith("pack:", StringComparison.OrdinalIgnoreCase)
-                ? new Uri(path, UriKind.Absolute)
-                : new Uri(Path.GetFullPath(path), UriKind.Absolute);
-            image.EndInit();
-            image.Freeze();
-            AvatarBrush.ImageSource = image;
+            AvatarBrush.ImageSource = ComfortableImageSource.Load(
+                path.StartsWith("pack:", StringComparison.OrdinalIgnoreCase) ? path : Path.GetFullPath(path),
+                128);
             displayedPath = path;
         }
         catch
         {
             displayedPath = null;
-            AvatarBrush.ImageSource = new BitmapImage(new Uri("pack://application:,,,/Assets/Profile/1.png", UriKind.Absolute));
+            AvatarBrush.ImageSource = ComfortableImageSource.Load("Assets/Profile/1.png", 128);
         }
     }
 

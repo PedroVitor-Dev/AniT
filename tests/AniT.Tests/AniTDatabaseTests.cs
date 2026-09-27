@@ -30,9 +30,9 @@ public sealed class AniTDatabaseTests
             var migratedConnection = context.Database.GetDbConnection();
             migratedConnection.Open();
             using var checkCommand = migratedConnection.CreateCommand();
-            checkCommand.CommandText = "SELECT COUNT(*) FROM pragma_table_info('Anime') WHERE name IN ('EnglishTitle', 'CriticScore', 'ReviewNotes');";
+            checkCommand.CommandText = "SELECT COUNT(*) FROM pragma_table_info('Anime') WHERE name IN ('EnglishTitle', 'CriticScore', 'ReviewNotes', 'ReleaseYear', 'Studio', 'CustomTags', 'UserCollections');";
 
-            Assert.Equal(3, Convert.ToInt32(checkCommand.ExecuteScalar()));
+            Assert.Equal(7, Convert.ToInt32(checkCommand.ExecuteScalar()));
             checkCommand.CommandText = "SELECT COUNT(*) FROM pragma_table_info('Episodes') WHERE name = 'ReviewNotes';";
             Assert.Equal(1, Convert.ToInt32(checkCommand.ExecuteScalar()));
             migratedConnection.Close();
@@ -62,7 +62,9 @@ public sealed class AniTDatabaseTests
                 {
                     Id = animeId,
                     Title = "Frieren",
-                    CriticScore = 89
+                    CriticScore = 89,
+                    ReleaseYear = 2023,
+                    Studio = "Madhouse"
                 };
                 anime.Seasons.Add(new global::AniT.Core.Season
                 {
@@ -86,6 +88,8 @@ public sealed class AniTDatabaseTests
             var savedAnime = reopenedContext.Anime.Single(item => item.Id == animeId);
             var savedEpisode = reopenedContext.Episodes.Single(item => item.Id == episodeId);
             Assert.Equal(89, savedAnime.CriticScore);
+            Assert.Equal(2023, savedAnime.ReleaseYear);
+            Assert.Equal("Madhouse", savedAnime.Studio);
             Assert.Equal(5, savedEpisode.Rating);
             Assert.Equal("Um episódio muito bonito.", savedEpisode.ReviewNotes);
         }

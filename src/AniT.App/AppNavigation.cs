@@ -13,7 +13,14 @@ namespace AniT.App;
 /// </summary>
 internal static class AppNavigation
 {
-    private const int MinimumLoadingMilliseconds = 620;
+    private static int MinimumLoadingMilliseconds
+    {
+        get
+        {
+            var settings = global::AniT.Infrastructure.AniTSystemSettingsStore.Load();
+            return settings.EnableNavigationLoading && !settings.ReduceMotion ? settings.NavigationLoadingMilliseconds : 0;
+        }
+    }
     private static readonly Stack<Window> detailHistory = new();
     private static bool isNavigating;
     private static bool loadingInUse;
@@ -28,7 +35,8 @@ internal static class AppNavigation
     public static void History(Window current) => OpenRoot(current, static () => new HistoryWindow());
     public static void Profile(Window current) => OpenRoot(current, static () => new ProfileWindow());
     public static void Achievements(Window current) => OpenRoot(current, static () => new AchievementsWindow());
-    public static void Settings(Window current) => OpenRoot(current, static () => new SystemSettingsWindow());
+    public static void Settings(Window current, SettingsSection section = SettingsSection.General) =>
+        OpenRoot(current, () => new SystemSettingsWindow(section), window => window.SelectSection(section));
 
     internal static async void PrewarmLoadingSurface(Window source)
     {
@@ -87,6 +95,14 @@ internal static class AppNavigation
         library.Activate();
     }
 
+    public static void OpenLibraryReview(Window current)
+    {
+        OpenLibrary(current);
+        if (libraryWindow is null) return;
+        libraryWindow.ShowReviewQueue();
+        libraryWindow.Activate();
+    }
+
     public static async void OpenAnimeDetails(Window requestedCurrent, Guid animeId, Guid? episodeId = null)
     {
         if (isNavigating) return;
@@ -101,15 +117,16 @@ internal static class AppNavigation
         var timer = Stopwatch.StartNew();
         var loading = ShowLoading(current);
         await RevealLoadingSurfaceAsync(loading);
-        var details = new AnimeDetailsWindow(animeId, episodeId);
-        PrepareAsPrimary(details, current);
-        details.ShowInTaskbar = false;
-        details.IsHitTestVisible = false;
-        details.Closed += (_, _) => RestorePreviousAfterDetailClosed();
-
-        detailHistory.Push(current);
+        AnimeDetailsWindow? details = null;
         try
         {
+            details = new AnimeDetailsWindow(animeId, episodeId);
+            PrepareAsPrimary(details, current);
+            details.ShowInTaskbar = false;
+            details.IsHitTestVisible = false;
+            details.Closed += (_, _) => RestorePreviousAfterDetailClosed();
+
+            detailHistory.Push(current);
             var destinationReady = WaitForContentRenderedAsync(details);
             ShowAsPrimary(details);
             RevealWhenReady(current, details, loading, timer, destinationReady, () =>
@@ -122,13 +139,13 @@ internal static class AppNavigation
                 if (detailHistory.TryPeek(out var hidden) && ReferenceEquals(hidden, current)) detailHistory.Pop();
             });
         }
-        catch
+        catch (Exception exception)
         {
             if (detailHistory.TryPeek(out var hidden) && ReferenceEquals(hidden, current)) detailHistory.Pop();
             CloseLoading(loading);
             RestoreFailedNavigation(current, details);
             isNavigating = false;
-            throw;
+            Debug.WriteLine($"Falha ao abrir os detalhes do anime: {exception}");
         }
     }
 
@@ -178,14 +195,15 @@ internal static class AppNavigation
         var timer = Stopwatch.StartNew();
         var loading = ShowLoading(current);
         await RevealLoadingSurfaceAsync(loading);
-        var next = createWindow();
-        PrepareAsPrimary(next, current);
-        configure?.Invoke(next);
-        next.ShowInTaskbar = false;
-        next.IsHitTestVisible = false;
-
+        TWindow? next = null;
         try
         {
+            next = createWindow();
+            PrepareAsPrimary(next, current);
+            configure?.Invoke(next);
+            next.ShowInTaskbar = false;
+            next.IsHitTestVisible = false;
+
             var destinationReady = WaitForContentRenderedAsync(next);
             ShowAsPrimary(next);
             RevealWhenReady(current, next, loading, timer, destinationReady, () =>
@@ -195,17 +213,19 @@ internal static class AppNavigation
                 CloseDetailHistory();
             });
         }
-        catch
+        catch (Exception exception)
         {
             CloseLoading(loading);
             RestoreFailedNavigation(current, next);
             isNavigating = false;
-            throw;
+            Debug.WriteLine($"Falha ao abrir a página {typeof(TWindow).Name}: {exception}");
         }
     }
 
     private static NavigationLoadingWindow? ShowLoading(Window current)
     {
+        var settings = global::AniT.Infrastructure.AniTSystemSettingsStore.Load();
+        if (!settings.EnableNavigationLoading || settings.ReduceMotion) return null;
         try
         {
             loadingInUse = true;
@@ -301,10 +321,10 @@ internal static class AppNavigation
 
     private static void CloseLoading(NavigationLoadingWindow? loading)
     {
+        loadingInUse = false;
         if (loading?.IsLoaded != true) return;
 
         loading.Hide();
-        loadingInUse = false;
         if (Application.Current.MainWindow is { IsLoaded: true } owner
             && !ReferenceEquals(owner, loading))
         {
@@ -401,9 +421,9 @@ internal static class AppNavigation
         window.Show();
     }
 
-    private static void RestoreFailedNavigation(Window current, Window next)
+    private static void RestoreFailedNavigation(Window current, Window? next)
     {
-        if (next.IsLoaded) next.Close();
+        if (next?.IsLoaded == true) next.Close();
         current.Opacity = 1;
         current.IsHitTestVisible = true;
         current.ShowInTaskbar = true;

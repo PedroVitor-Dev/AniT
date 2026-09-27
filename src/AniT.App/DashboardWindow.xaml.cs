@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using AniT.Infrastructure;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -20,6 +21,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
     private Guid? heroAnimeId;
     private Guid? heroEpisodeId;
     private int heroSlideIndex;
+    private AniTSystemSettings homeSettings = AniTSystemSettings.Default;
 
     public ObservableCollection<DashboardCard> ContinueCards { get; } = [];
     public ObservableCollection<DashboardCard> RecentCards { get; } = [];
@@ -45,7 +47,8 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
         InitializeComponent();
         GlobalSearchController.Attach(this, SearchBox, SearchHint, SearchContainer);
         ResponsiveWindow.FitToWorkArea(this, 1380, 860);
-        heroRotationTimer.Interval = TimeSpan.FromSeconds(global::AniT.Infrastructure.AniTSystemSettingsStore.Load().HomeBannerIntervalSeconds);
+        homeSettings = AniTSystemSettingsStore.Load();
+        heroRotationTimer.Interval = TimeSpan.FromSeconds(homeSettings.HomeBannerIntervalSeconds);
         heroRotationTimer.Tick += HeroRotationTimer_Tick;
         Closed += (_, _) => heroRotationTimer.Stop();
         DataContext = this;
@@ -55,16 +58,35 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
     {
         UpdateResponsiveLayout(ActualWidth, ActualHeight);
         await RefreshAsync();
+        var settings = global::AniT.Infrastructure.AniTSystemSettingsStore.Load();
+        if (settings.ScanLibraryOnStartup)
+        {
+            await App.RefreshConfiguredLibraryOnStartupAsync();
+            await RefreshAsync();
+        }
+        await Dispatcher.InvokeAsync(static () => { }, DispatcherPriority.Render);
+        if (settings.RefreshMetadataOnStartup)
+        {
+            await App.RefreshMissingAnimeMetadataOnStartupAsync();
+            await RefreshAsync();
+        }
     }
     private async void Window_Activated(object? sender, EventArgs e) => await RefreshAsync();
 
     public async Task RefreshAsync()
     {
+        homeSettings = AniTSystemSettingsStore.Load();
+        heroRotationTimer.Interval = TimeSpan.FromSeconds(homeSettings.HomeBannerIntervalSeconds);
+        ApplyHomeSectionLayout();
         await using var context = App.OpenFreshDatabase();
         var anime = await context.Anime
             .Include(item => item.Seasons)
             .ThenInclude(season => season.Episodes)
             .ThenInclude(episode => episode.PlaybackProgress)
+            .Include(item => item.Seasons)
+            .ThenInclude(season => season.Episodes)
+            .ThenInclude(episode => episode.MediaFiles)
+            .Include(item => item.Aliases)
             .AsNoTracking()
             .ToListAsync();
 
@@ -76,18 +98,19 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
 
         var watching = anime
             .SelectMany(item => item.Seasons.SelectMany(season => season.Episodes.Select(episode => new { Anime = item, Episode = episode })))
-            .Where(item => item.Episode.Status == global::AniT.Core.WatchStatus.Watching)
+            .Where(item => item.Episode.Status == global::AniT.Core.WatchStatus.Watching ||
+                           (!homeSettings.HideCompletedFromContinue && item.Episode.Status == global::AniT.Core.WatchStatus.Completed))
             .OrderByDescending(item => item.Episode.PlaybackProgress?.LastPlayedAt)
             .ToList();
 
-        foreach (var item in watching.Take(4))
+        foreach (var item in watching.Take(homeSettings.HomeContinueItems))
         {
             ContinueCards.Add(CreateContinueCard(item.Anime, item.Episode));
         }
 
-        var recent = anime.OrderByDescending(item => item.CreatedAt).ToList();
-        foreach (var item in recent.Take(5)) RecentCards.Add(CreateAnimeCard(item));
-        foreach (var item in recent.Where(item => item.IsFavorite).Take(4)) FavoriteCards.Add(CreateAnimeCard(item));
+        var recent = anime.OrderByDescending(global::AniT.Core.LibraryFreshness.GetLatestImportAt).ToList();
+        foreach (var item in recent.Take(homeSettings.HomeRecentItems)) RecentCards.Add(CreateAnimeCard(item));
+        foreach (var item in recent.Where(item => item.IsFavorite).Take(homeSettings.HomeFavoriteItems)) FavoriteCards.Add(CreateAnimeCard(item));
 
         var rated = anime
             .Select(item => new
@@ -98,7 +121,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
             })
             .Where(item => item.HasLocalRating || item.Anime.CriticScore is not null)
             .OrderByDescending(item => item.HasLocalRating ? item.LocalRating : item.Anime.CriticScore!.Value / 20d)
-            .Take(4);
+            .Take(homeSettings.HomeTopRatedItems);
         foreach (var item in rated)
         {
             var score = item.HasLocalRating ? item.LocalRating : item.Anime.CriticScore!.Value / 20d;
@@ -157,7 +180,8 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
                     .OrderByDescending(episode => episode.PlaybackProgress!.LastPlayedAt)
                     .FirstOrDefault()
             })
-            .Where(item => item.Episode is not null)
+            .Where(item => item.Episode is not null &&
+                           (!homeSettings.HideCompletedFromContinue || item.Episode.Status != global::AniT.Core.WatchStatus.Completed))
             .OrderByDescending(item => item.Episode!.PlaybackProgress!.LastPlayedAt)
             .Take(4);
 
@@ -179,9 +203,9 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
             heroSlides.Add(new DashboardHeroSlide(
                 item.Anime.Id,
                 episode.Id,
-                item.Anime.Title,
-                $"Episódio {episode.Number:00}  •  {action}",
-                IsUsableCover(item.Anime.CoverPath) ? item.Anime.CoverPath! : "Assets/normal-sf.png",
+                OrganizationPreferences.PreferredTitle(item.Anime, homeSettings.AnimeTitlePreference),
+                $"{OrganizationPreferences.EpisodeCode(episode.Season?.Number ?? 1, episode.Number, homeSettings.EpisodeNumberDisplayFormat)}  •  {action}",
+                IsUsableCover(item.Anime.CoverPath) ? item.Anime.CoverPath! : App.UpdatingArtworkPath,
                 progressPercent,
                 AnimeQuoteCatalog.GetFor(item.Anime.Id),
                 true));
@@ -201,7 +225,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
         }
 
         ShowHeroSlide(0);
-        if (heroSlides.Count > 1) heroRotationTimer.Start();
+        if (homeSettings.HomeBannerAutoRotate && heroSlides.Count > 1) heroRotationTimer.Start();
     }
 
     private void ShowHeroSlide(int index)
@@ -247,22 +271,58 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
         if (sender is not FrameworkElement element || !int.TryParse(element.Tag?.ToString(), out var index) || index >= heroSlides.Count) return;
         ShowHeroSlide(index);
         heroRotationTimer.Stop();
-        if (heroSlides.Count > 1) heroRotationTimer.Start();
+        if (homeSettings.HomeBannerAutoRotate && heroSlides.Count > 1) heroRotationTimer.Start();
+    }
+
+    private void ApplyHomeSectionLayout()
+    {
+        var sections = new Dictionary<string, FrameworkElement>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["continue"] = ContinueSection,
+            ["recent"] = RecentSection,
+            ["highlights"] = HighlightsSection
+        };
+        var hidden = (homeSettings.HiddenHomeSections ?? []).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var (id, section) in sections) section.Visibility = hidden.Contains(id) ? Visibility.Collapsed : Visibility.Visible;
+
+        var order = (homeSettings.HomeSectionOrder ?? AniTSystemSettings.DefaultHomeSectionOrder)
+            .Where(sections.ContainsKey)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        foreach (var id in AniTSystemSettings.DefaultHomeSectionOrder.Where(id => !order.Contains(id, StringComparer.OrdinalIgnoreCase))) order.Add(id);
+
+        var recentIndex = order.FindIndex(id => id.Equals("recent", StringComparison.OrdinalIgnoreCase));
+        var highlightsIndex = order.FindIndex(id => id.Equals("highlights", StringComparison.OrdinalIgnoreCase));
+        if (recentIndex >= 0 && highlightsIndex >= 0)
+        {
+            var favoritesFirst = homeSettings.HomeContentPriority == HomeContentPriority.FavoritesFirst;
+            if ((favoritesFirst && highlightsIndex > recentIndex) || (!favoritesFirst && recentIndex > highlightsIndex))
+            {
+                (order[recentIndex], order[highlightsIndex]) = (order[highlightsIndex], order[recentIndex]);
+            }
+        }
+
+        foreach (var section in sections.Values) HomeSectionsHost.Children.Remove(section);
+        foreach (var id in order) HomeSectionsHost.Children.Add(sections[id]);
     }
 
     private static DashboardCard CreateContinueCard(global::AniT.Core.Anime anime, global::AniT.Core.Episode episode)
     {
+        var settings = AniTSystemSettingsStore.Load();
+        var preferredTitle = OrganizationPreferences.PreferredTitle(anime, settings.AnimeTitlePreference);
         var progress = episode.PlaybackProgress;
         var percent = progress is { DurationSeconds: > 0 }
             ? Math.Clamp(progress.PositionSeconds / progress.DurationSeconds * 100, 0, 100)
             : 0;
-        return new DashboardCard(anime.Id, episode.Id, anime.Title, $"Episódio {episode.Number:00}", anime.EnglishTitle ?? "Anime local", IsUsableCover(anime.CoverPath) ? anime.CoverPath! : "Assets/normal-sf.png", percent, $"{percent:0}%", string.Empty);
+        return new DashboardCard(anime.Id, episode.Id, preferredTitle, OrganizationPreferences.EpisodeCode(episode.Season?.Number ?? 1, episode.Number, settings.EpisodeNumberDisplayFormat), anime.EnglishTitle ?? "Anime local", IsUsableCover(anime.CoverPath) ? anime.CoverPath! : App.UpdatingArtworkPath, percent, $"{percent:0}%", string.Empty, global::AniT.Core.LibraryFreshness.IsNew(anime, DateTimeOffset.UtcNow));
     }
 
     private static DashboardCard CreateAnimeCard(global::AniT.Core.Anime anime, string scoreLabel = "")
     {
+        var settings = AniTSystemSettingsStore.Load();
+        var preferredTitle = OrganizationPreferences.PreferredTitle(anime, settings.AnimeTitlePreference);
         var episodeCount = anime.Seasons.Sum(season => season.Episodes.Count);
-        return new DashboardCard(anime.Id, null, anime.Title, string.Empty, anime.EnglishTitle ?? $"{episodeCount} episódio{(episodeCount == 1 ? string.Empty : "s")}", IsUsableCover(anime.CoverPath) ? anime.CoverPath! : "Assets/normal-sf.png", 0, string.Empty, scoreLabel);
+        return new DashboardCard(anime.Id, null, preferredTitle, string.Empty, anime.EnglishTitle ?? $"{episodeCount} episódio{(episodeCount == 1 ? string.Empty : "s")}", IsUsableCover(anime.CoverPath) ? anime.CoverPath! : App.UpdatingArtworkPath, 0, string.Empty, scoreLabel, global::AniT.Core.LibraryFreshness.IsNew(anime, DateTimeOffset.UtcNow));
     }
 
     private static bool IsUsableCover(string? path) => !string.IsNullOrWhiteSpace(path) && File.Exists(path);
@@ -274,17 +334,12 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
     private void Profile_Click(object sender, RoutedEventArgs e) => AppNavigation.Profile(this);
     private void Achievements_Click(object sender, RoutedEventArgs e) => AppNavigation.Achievements(this);
 
-    private async void ConfigureShelf_Click(object sender, RoutedEventArgs e)
-    {
-        if (new SetupShelfWindow { Owner = this }.ShowDialog() is true) await RefreshAsync();
-    }
-
-    private async void HeroContinue_Click(object sender, RoutedEventArgs e) => await PlayEpisodeAsync(heroEpisodeId);
-    private async void ContinueTop_Click(object sender, RoutedEventArgs e) => await PlayEpisodeAsync(heroEpisodeId);
+    private async void HeroContinue_Click(object sender, RoutedEventArgs e) => await ContinueAsync(heroEpisodeId, heroAnimeId);
+    private async void ContinueTop_Click(object sender, RoutedEventArgs e) => await ContinueAsync(heroEpisodeId, heroAnimeId);
 
     private async void ContinueCard_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button { Tag: Guid episodeId }) await PlayEpisodeAsync(episodeId);
+        if (sender is Button { DataContext: DashboardCard card }) await ContinueAsync(card.EpisodeId, card.AnimeId);
     }
 
     private void HeroDetails_Click(object sender, RoutedEventArgs e)
@@ -308,6 +363,16 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
         {
             MessageBox.Show(exception.Message, "Não foi possível continuar", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
+    }
+
+    private async Task ContinueAsync(Guid? episodeId, Guid? animeId)
+    {
+        if (homeSettings.HomeContinueBehavior == HomeContinueBehavior.OpenAnimeDetails)
+        {
+            if (animeId is Guid id) AppNavigation.OpenAnimeDetails(this, id);
+            return;
+        }
+        await PlayEpisodeAsync(episodeId);
     }
 
     private void SearchBox_KeyDown(object sender, KeyEventArgs e)
@@ -348,6 +413,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
             HeroQuotePanel.Visibility = Visibility.Collapsed;
             HeroArtwork.Width = 230;
             HeroTitleText.FontSize = 30;
+            HeroProgressPanel.Width = 330;
             HeroBanner.Height = height < 780 ? 286 : 310;
         }
         else if (width < 1600)
@@ -360,6 +426,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
             HeroQuotePanel.Visibility = Visibility.Visible;
             HeroArtwork.Width = 280;
             HeroTitleText.FontSize = 37;
+            HeroProgressPanel.Width = 420;
             HeroBanner.Height = height < 820 ? 308 : 336;
         }
         else if (width < 2300)
@@ -372,6 +439,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
             HeroQuotePanel.Visibility = Visibility.Visible;
             HeroArtwork.Width = 310;
             HeroTitleText.FontSize = 41;
+            HeroProgressPanel.Width = 480;
             HeroBanner.Height = 352;
         }
         else
@@ -384,6 +452,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
             HeroQuotePanel.Visibility = Visibility.Visible;
             HeroArtwork.Width = 330;
             HeroTitleText.FontSize = 44;
+            HeroProgressPanel.Width = 520;
             HeroBanner.Height = 380;
         }
     }
@@ -398,7 +467,11 @@ public sealed record DashboardCard(
     string? CoverPath,
     double ProgressPercent,
     string ProgressLabel,
-    string ScoreLabel);
+    string ScoreLabel,
+    bool IsNew)
+{
+    public Visibility NewBadgeVisibility => IsNew ? Visibility.Visible : Visibility.Collapsed;
+}
 
 public sealed record DashboardCalendarItem(string DayLabel, string Title, string EpisodeLabel);
 

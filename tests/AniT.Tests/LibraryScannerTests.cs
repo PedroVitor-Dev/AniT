@@ -44,6 +44,51 @@ public sealed class LibraryScannerTests
     }
 
     [Fact]
+    public async Task ScanAsync_WhenRunAgain_AddsOnlyTheNewEpisode()
+    {
+        await WithLibraryAsync(async (context, root, libraryPath) =>
+        {
+            var animePath = Path.Combine(libraryPath, "Frieren");
+            Directory.CreateDirectory(animePath);
+            await File.WriteAllBytesAsync(Path.Combine(animePath, "Frieren - 01.mkv"), [1]);
+            var scanner = new LibraryScanner(context);
+            await scanner.ScanAsync(root);
+
+            await File.WriteAllBytesAsync(Path.Combine(animePath, "Frieren - 02.mkv"), [2]);
+            var result = await scanner.ScanAsync(root);
+
+            Assert.Equal(1, result.EpisodesAdded);
+            Assert.Equal(2, await context.Episodes.CountAsync());
+            Assert.Equal(2, await context.MediaFiles.CountAsync());
+        });
+    }
+
+    [Fact]
+    public async Task ScanAsync_MatchesAnimeTitleInsideNoisyTopLevelFileName()
+    {
+        await WithLibraryAsync(async (context, root, libraryPath) =>
+        {
+            await File.WriteAllBytesAsync(Path.Combine(libraryPath, "Cutey Honey - 01.mkv"), [1]);
+            var scanner = new LibraryScanner(context);
+            await scanner.ScanAsync(root);
+
+            await File.WriteAllBytesAsync(
+                Path.Combine(libraryPath, "Ambient 002 Hon 20 Cutey Honey - 02.mkv"),
+                [2, 3]);
+            var result = await scanner.ScanAsync(root);
+            var episodeNumbers = await context.Episodes
+                .OrderBy(item => item.Number)
+                .Select(item => item.Number)
+                .ToArrayAsync();
+
+            Assert.Equal(1, result.EpisodesAdded);
+            Assert.Equal(1, await context.Anime.CountAsync());
+            Assert.Equal([1, 2], episodeNumbers);
+            Assert.Empty(await context.LibraryReviewItems.Where(item => item.Status == LibraryReviewStatus.Pending).ToListAsync());
+        });
+    }
+
+    [Fact]
     public async Task ScanAsync_RecognizesMovedFileByFingerprintAndKeepsLogicalEpisode()
     {
         await WithLibraryAsync(async (context, root, libraryPath) =>
@@ -129,6 +174,59 @@ public sealed class LibraryScannerTests
             Assert.Equal(2, result.NeedsReview);
             Assert.Equal(2, await context.LibraryReviewItems.CountAsync());
             Assert.Empty(await context.MediaFiles.ToListAsync());
+        });
+    }
+
+    [Fact]
+    public async Task ScanAsync_UsesConfiguredExtensionsAndExclusionRules()
+    {
+        await WithLibraryAsync(async (context, root, libraryPath) =>
+        {
+            Directory.CreateDirectory(Path.Combine(libraryPath, "Extras"));
+            await File.WriteAllBytesAsync(Path.Combine(libraryPath, "Frieren - 01.ts"), [1]);
+            await File.WriteAllBytesAsync(Path.Combine(libraryPath, "sample Frieren - 02.ts"), [2]);
+            await File.WriteAllBytesAsync(Path.Combine(libraryPath, "Extras", "Frieren - 03.ts"), [3]);
+            await File.WriteAllBytesAsync(Path.Combine(libraryPath, "Frieren - 04.mkv"), [4]);
+            var settings = AniTSystemSettings.Default with
+            {
+                VideoExtensions = [".ts"],
+                IgnoredFolders = ["Extras"],
+                IgnoredFiles = ["sample*"]
+            };
+
+            var result = await new LibraryScanner(context, settings: settings).ScanAsync(root);
+
+            Assert.Equal(1, result.FilesFound);
+            Assert.Single(await context.MediaFiles.ToListAsync());
+            Assert.Equal(1, (await context.Episodes.SingleAsync()).Number);
+        });
+    }
+
+    [Fact]
+    public async Task ScanAsync_DuringBackupRelink_KeepsUnknownNamesForManualAssociation()
+    {
+        await WithLibraryAsync(async (context, root, libraryPath) =>
+        {
+            var anime = new Anime { Title = "Cutey Honey" };
+            var season = new Season { Anime = anime, AnimeId = anime.Id, Number = 1 };
+            var watchedEpisode = new Episode { Season = season, SeasonId = season.Id, Number = 1, Status = WatchStatus.Completed, Rating = 5 };
+            season.Episodes.Add(watchedEpisode);
+            anime.Seasons.Add(season);
+            context.Anime.Add(anime);
+            await context.SaveChangesAsync();
+            await File.WriteAllBytesAsync(Path.Combine(libraryPath, "Fansub Novo Titulo Alternativo - 02.mkv"), [4, 2]);
+
+            var result = await new LibraryScanner(context).ScanAsync(root, preferExistingCatalog: true);
+
+            Assert.Equal(1, result.NeedsReview);
+            Assert.Equal(1, await context.Anime.CountAsync());
+            Assert.Equal(WatchStatus.Completed, (await context.Episodes.SingleAsync()).Status);
+            var review = await context.LibraryReviewItems.SingleAsync(item => item.Status == LibraryReviewStatus.Pending);
+
+            await new LibraryReviewService(context).ResolveAsync(review.Id, anime.Id, 1, 2, learnAlias: true);
+            Assert.Equal(1, await context.Anime.CountAsync());
+            Assert.Equal(new[] { 1, 2 }, await context.Episodes.OrderBy(item => item.Number).Select(item => item.Number).ToArrayAsync());
+            Assert.Equal(WatchStatus.Completed, (await context.Episodes.SingleAsync(item => item.Number == 1)).Status);
         });
     }
 

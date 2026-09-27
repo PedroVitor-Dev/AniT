@@ -1,0 +1,65 @@
+<UserControl x:Class="AniT.App.ShelfSettingsControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Loaded="UserControl_Loaded">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Styles/HomeTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <StackPanel>
+        <Border Background="#E9071B37" BorderBrush="#2B72A8" BorderThickness="1" CornerRadius="18" Padding="24">
+            <StackPanel>
+                <DockPanel>
+                    <Border DockPanel.Dock="Left" Width="48" Height="48" CornerRadius="15" Background="#153F6B" BorderBrush="#49CFFF" BorderThickness="1">
+                        <Viewbox Margin="12"><Path Data="M4,5.5 C7,4.5 9.5,5 12,7 L12,20 C9.5,18 7,17.8 4,18.5 Z M20,5.5 C17,4.5 14.5,5 12,7 L12,20 C14.5,18 17,17.8 20,18.5 Z" Stroke="#70DFFF" StrokeThickness="1.8" Fill="Transparent" Stretch="Uniform"/></Viewbox>
+                    </Border>
+                    <StackPanel Margin="14,2,0,0">
+                        <TextBlock x:Name="ShelfTitleText" Text="Prepare sua estante" Foreground="White" FontSize="21" FontWeight="SemiBold"/>
+                        <TextBlock Text="Defina onde o AniT procura seus episódios. A troca só é aplicada quando você salvar." Foreground="#95B8D9" FontSize="12" Margin="0,5,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </DockPanel>
+
+                <Border Background="#091E3B" BorderBrush="#285F91" BorderThickness="1" CornerRadius="15" Padding="17" Margin="0,20,0,0">
+                    <StackPanel>
+                        <DockPanel><StackPanel DockPanel.Dock="Left"><TextBlock Text="PASTAS MONITORADAS" Foreground="#67BDEB" FontSize="10" FontWeight="Bold"/><TextBlock Text="Adicione quantas bibliotecas quiser e controle as subpastas separadamente." Foreground="#7F9FBE" FontSize="10" Margin="0,4,0,0"/></StackPanel><Button Style="{StaticResource HomeOutlineButton}" Content="+ Adicionar pasta" Click="AddMonitoredFolder_Click" HorizontalAlignment="Right" MinWidth="140"/></DockPanel>
+                        <ItemsControl x:Name="MonitoredFoldersList" Margin="0,12,0,0"><ItemsControl.ItemTemplate><DataTemplate><Border Background="#0B284C" BorderBrush="#2F6E9E" BorderThickness="1" CornerRadius="12" Padding="13" Margin="0,0,0,8"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><CheckBox IsChecked="{Binding IsEnabled}" Tag="{Binding Id}" Click="RootEnabled_Click" ToolTip="Ativar ou pausar esta pasta"/><StackPanel Grid.Column="1" Margin="10,0,18,0"><TextBlock Text="{Binding DisplayName}" Foreground="White" FontWeight="SemiBold"/><TextBlock Text="{Binding Path}" Foreground="#83A9CA" FontSize="10" TextTrimming="CharacterEllipsis" ToolTip="{Binding Path}"/></StackPanel><CheckBox Grid.Column="2" Content="Incluir subpastas" IsChecked="{Binding IncludeSubfolders}" Tag="{Binding Id}" Click="RootSubfolders_Click" Margin="0,0,16,0"/><Button Grid.Column="3" Style="{StaticResource HomeOutlineButton}" Content="Remover" Tag="{Binding Id}" Click="RemoveRoot_Click" Padding="12,5"/></Grid></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+                        <TextBlock x:Name="NoFoldersText" Text="Nenhuma pasta foi adicionada ainda." Foreground="#7F9FBE" FontSize="11" Margin="2,4,0,0" Visibility="Collapsed"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="#0A2345" BorderBrush="#3277AB" BorderThickness="1" CornerRadius="15" Padding="18" Margin="0,12,0,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="DIRETÓRIO PRINCIPAL" Foreground="#67BDEB" FontSize="10" FontWeight="Bold"/>
+                            <TextBlock x:Name="FolderText" Text="Nenhuma pasta selecionada" Foreground="#F2F8FF" FontSize="14" FontWeight="SemiBold" Margin="0,7,18,0" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                        <Border x:Name="LockBadge" Grid.Column="1" Background="#173C64" BorderBrush="#4A9ACB" BorderThickness="1" CornerRadius="12" Padding="11,6" VerticalAlignment="Center" Visibility="Collapsed">
+                            <StackPanel Orientation="Horizontal"><Ellipse Width="6" Height="6" Fill="#77E2FF" Margin="0,0,7,0" VerticalAlignment="Center"/><TextBlock Text="FIXADA" Foreground="#A4E9FF" FontSize="10" FontWeight="Bold"/></StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <Border Background="#091E3B" BorderBrush="#285F91" BorderThickness="1" CornerRadius="14" Padding="17" Margin="0,12,0,0">
+                    <StackPanel>
+                        <CheckBox x:Name="IncludeSubfoldersBox" Content="Procurar episódios também nas subpastas" IsChecked="True"/>
+                        <TextBlock Text="Recomendado para bibliotecas organizadas por anime, temporada ou qualidade." Foreground="#7F9FBE" FontSize="10" Margin="24,5,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <WrapPanel Margin="0,18,0,0">
+                    <Button x:Name="EditButton" Style="{StaticResource HomePrimaryButton}" Content="Trocar pasta" Click="Edit_Click" Visibility="Collapsed" MinWidth="128" Margin="0,0,10,10"/>
+                    <Button x:Name="ChooseFolderButton" Style="{StaticResource HomePrimaryButton}" Content="Escolher pasta" Click="ChooseFolder_Click" MinWidth="140" Margin="0,0,10,10"/>
+                    <Button x:Name="FinishButton" Style="{StaticResource HomeOutlineButton}" Content="Salvar estante" Click="Finish_Click" IsEnabled="False" MinWidth="128" Margin="0,0,10,10"/>
+                    <Button x:Name="CancelEditButton" Style="{StaticResource HomeOutlineButton}" Content="Cancelar" Click="CancelEdit_Click" Visibility="Collapsed" Margin="0,0,10,10"/>
+                    <Button x:Name="ScanNowButton" Style="{StaticResource HomeOutlineButton}" Content="Reexaminar agora" Click="ScanNow_Click" Visibility="Collapsed" MinWidth="145" Margin="0,0,10,10"/>
+                    <Button x:Name="ReviewLinksButton" Style="{StaticResource HomeOutlineButton}" Content="Revisar associações" Click="ReviewLinks_Click" Visibility="Collapsed" MinWidth="155" Margin="0,0,10,10"/>
+                </WrapPanel>
+                <TextBlock x:Name="StatusText" Foreground="#8FB9D8" FontSize="12" TextWrapping="Wrap" Margin="2,4,0,0"/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

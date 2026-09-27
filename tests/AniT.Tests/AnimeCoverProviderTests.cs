@@ -88,7 +88,7 @@ public sealed class AnimeCoverProviderTests
                 postCount++;
                 requestBodies.Add(request.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
                 if (postCount == 1) return new HttpResponseMessage(HttpStatusCode.NotFound);
-                return JsonResponse("""{"data":{"Media":{"title":{"english":"Magilumiere Magical Girls Inc. Season 2"},"coverImage":{"extraLarge":"https://images.example/japanese-search.jpg","large":null},"description":"A magical company &amp; its heroines.","averageScore":82}}}""");
+                return JsonResponse("""{"data":{"Media":{"title":{"romaji":"Kabushikigaisha Magi-Lumière 2nd Season","english":"Magilumiere Magical Girls Inc. Season 2","native":"株式会社マジルミエ 第2期"},"coverImage":{"extraLarge":"https://images.example/japanese-search.jpg","large":null},"description":"A magical company &amp; its heroines.","averageScore":82,"seasonYear":2026,"studios":{"nodes":[{"name":"Moe"}]}}}}""");
             }
 
             if (request.RequestUri!.Host.Equals("api.mymemory.translated.net", StringComparison.OrdinalIgnoreCase))
@@ -116,9 +116,14 @@ public sealed class AnimeCoverProviderTests
                 null);
 
             Assert.Equal("Magilumiere Magical Girls Inc. Season 2", result.EnglishTitle);
+            Assert.Equal("株式会社マジルミエ 第2期", result.OriginalTitle);
+            Assert.Contains("Kabushikigaisha Magi-Lumière 2nd Season", result.Aliases!);
+            Assert.Contains("株式会社マジルミエ 第2期", result.Aliases!);
             Assert.True(File.Exists(result.CoverPath));
             Assert.Equal("Uma empresa mágica e suas heroínas.", result.Synopsis);
             Assert.Equal(82, result.CriticScore);
+            Assert.Equal(2026, result.ReleaseYear);
+            Assert.Equal("Moe", result.Studio);
             Assert.Equal(2, postCount);
             Assert.Contains("Kabushikigaisha Magi-Lumi", requestBodies[0]);
             Assert.Contains("Kabushiki Gaisha Magi Lumiere 2nd Season", requestBodies[1]);
@@ -281,6 +286,80 @@ public sealed class AnimeCoverProviderTests
         finally
         {
             Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public async Task EnsureArtworkGalleryAsync_ReturnsFiveCachedImagesWithoutNetwork()
+    {
+        var calls = 0;
+        using var httpClient = new HttpClient(new StubHandler(_ =>
+        {
+            calls++;
+            return new HttpResponseMessage(HttpStatusCode.InternalServerError);
+        }));
+        var directory = Path.Combine(Path.GetTempPath(), "AniT.Tests", Guid.NewGuid().ToString("N"));
+        var animeId = Guid.NewGuid();
+        var galleryDirectory = Path.Combine(directory, "Gallery", animeId.ToString("N"));
+        Directory.CreateDirectory(galleryDirectory);
+        var banner = Path.Combine(directory, "banner.jpg");
+        var cover = Path.Combine(directory, "cover.jpg");
+        await File.WriteAllBytesAsync(banner, [1]);
+        await File.WriteAllBytesAsync(cover, [2]);
+        for (var index = 1; index <= 3; index++)
+            await File.WriteAllBytesAsync(Path.Combine(galleryDirectory, $"art-{index:00}.jpg"), [(byte)(index + 2)]);
+
+        try
+        {
+            var provider = new AnimeCoverProvider(directory, httpClient);
+            var result = await provider.EnsureArtworkGalleryAsync(animeId, "Anime Example", cover, banner);
+
+            Assert.Equal(5, result.Count);
+            Assert.Equal(banner, result[0]);
+            Assert.Equal(cover, result[1]);
+            Assert.Equal(0, calls);
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public async Task EnsureCoverAsync_RejectsArtworkLargerThanTheSafetyLimit()
+    {
+        var metadataRequests = 0;
+        using var httpClient = new HttpClient(new StubHandler(request =>
+        {
+            if (request.Method == HttpMethod.Post && metadataRequests++ == 0)
+                return JsonResponse("""{"data":{"Media":{"title":{"english":"Large Image"},"coverImage":{"extraLarge":"https://images.example/huge.jpg","large":null}}}}""");
+
+            if (request.RequestUri?.Host == "images.example")
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new ByteArrayContent([0xFF, 0xD8, 0xFF, 0xD9])
+                };
+                response.Content.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+                response.Content.Headers.ContentLength = 30L * 1024 * 1024 + 1;
+                return response;
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
+        }));
+        var directory = Path.Combine(Path.GetTempPath(), "AniT.Tests", Guid.NewGuid().ToString("N"));
+
+        try
+        {
+            var provider = new AnimeCoverProvider(directory, httpClient);
+            var result = await provider.EnsureCoverAsync(Guid.NewGuid(), "Large Image", null);
+
+            Assert.Null(result);
+            Assert.Empty(Directory.Exists(directory) ? Directory.EnumerateFiles(directory, "*.download", SearchOption.AllDirectories) : []);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
         }
     }
 

@@ -13,28 +13,29 @@ Este documento comunica direção, não datas garantidas. Prioridades podem muda
 - [x] Avaliação e comentário por episódio.
 - [x] Organizador com prévia, sidecars e prevenção de sobrescrita.
 - [x] Busca instantânea por título principal e título em inglês.
-- [ ] Eliminar testes placeholder e ampliar cobertura de interface/integração.
+- [x] Eliminar testes placeholder e ampliar cobertura de domínio/infraestrutura.
+- [ ] Adicionar automação de interface WPF para os fluxos críticos.
 - [ ] Auditoria de acessibilidade, navegação por teclado e contraste.
-- [ ] Logs estruturados e diagnóstico exportável com dados sensíveis removidos.
+- [x] Logs rotativos e diagnóstico exportável com controles de privacidade.
 - [ ] Empacotamento reproduzível para Windows x64.
 
 ## Próximo — experiência de biblioteca
 
-- [ ] Expandir a busca para episódios, aliases e filtros combinados.
-- [ ] Filtros por status, nota, pasta e disponibilidade.
-- [ ] Favoritos persistentes e coleções personalizadas.
-- [ ] Calendário local de episódios e lançamentos.
-- [ ] Histórico navegável com retomada e ações em lote.
-- [ ] Edição manual de títulos, temporadas e episódios.
-- [ ] Importação/exportação de backup pela interface.
-- [ ] Melhorias para bibliotecas muito grandes e scans incrementais em segundo plano.
+- [x] Expandir a busca para episódios, aliases e filtros combinados.
+- [x] Filtros por gênero, ano, status, estúdio e ordenação.
+- [x] Favoritos persistentes, tags e coleções personalizadas atribuíveis e filtráveis.
+- [x] Calendário local de episódios e atividade.
+- [x] Histórico navegável com retomada e comentários.
+- [x] Edição, mesclagem e separação manual de títulos e episódios.
+- [x] Importação/exportação de backup pela interface.
+- [x] Scans incrementais na inicialização e em segundo plano.
 
 ## Depois — distribuição e ecossistema
 
 - [ ] Instalador e atualização segura com canal estável.
 - [ ] Build portátil documentado.
 - [ ] Localização da interface e documentação em inglês.
-- [ ] Temas e opções de acessibilidade visual.
+- [x] Temas e opções de acessibilidade visual.
 - [ ] Contrato estável para novos provedores de metadados.
 - [ ] Suporte configurável a players externos.
 - [ ] Telemetria somente se for opcional, transparente e aprovada pela comunidade.
