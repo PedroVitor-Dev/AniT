@@ -1,0 +1,19 @@
+<Window x:Class="AniT.App.ProfilePinWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Confirmar PIN · AniT" Width="430" Height="330" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" Background="#061833" ShowInTaskbar="False"
+        KeyDown="Window_KeyDown" UseLayoutRounding="True">
+    <Border Background="#071D3B" BorderBrush="#4CCFFF" BorderThickness="1" CornerRadius="20" Padding="28" Margin="12">
+        <StackPanel>
+            <TextBlock x:Name="TitleText" Text="Perfil protegido" Foreground="White" FontSize="24" FontWeight="Bold" TextAlignment="Center"/>
+            <TextBlock Text="Digite o PIN para acessar esta jornada." Foreground="#9CBBD7" FontSize="12" TextAlignment="Center" Margin="0,7,0,20"/>
+            <PasswordBox x:Name="PinBox" MaxLength="6" PasswordChar="●" FontSize="22" Height="50" Padding="12,5" Background="#0A284F" Foreground="White" CaretBrush="#62DCFF" BorderBrush="#3B7DAC" BorderThickness="1" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" PasswordChanged="PinBox_PasswordChanged"/>
+            <TextBlock x:Name="ErrorText" Foreground="#FF93A3" FontSize="11" TextAlignment="Center" MinHeight="18" Margin="0,8,0,12"/>
+            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                <Button Content="Cancelar" Height="42" Background="#102D52" Foreground="White" BorderBrush="#55CFFF" BorderThickness="1" Click="Cancel_Click"/>
+                <Button Grid.Column="2" Content="Confirmar" Height="42" Background="#31AFFF" Foreground="White" BorderThickness="0" FontWeight="SemiBold" Click="Confirm_Click"/>
+            </Grid>
+        </StackPanel>
+    </Border>
+</Window>

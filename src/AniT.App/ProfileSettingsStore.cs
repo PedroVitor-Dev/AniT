@@ -17,7 +17,10 @@ public sealed record ProfileSettings(
     bool HideFavorites = false,
     int AvatarZoomPercent = 100,
     int AvatarFocusXPercent = 50,
-    int AvatarFocusYPercent = 50)
+    int AvatarFocusYPercent = 50,
+    string? PinHash = null,
+    string? PinSalt = null,
+    int PinIterations = 0)
 {
     public override string ToString() => DisplayName;
 }
@@ -44,6 +47,29 @@ internal static class ProfileSettingsStore
     }
 
     public static IReadOnlyList<ProfileSettings> GetProfiles() => LoadCollection().Profiles;
+
+    public static bool HasPin(ProfileSettings profile) =>
+        !string.IsNullOrWhiteSpace(profile.PinHash)
+        && !string.IsNullOrWhiteSpace(profile.PinSalt)
+        && profile.PinIterations > 0;
+
+    public static bool VerifyPin(Guid profileId, string? pin)
+    {
+        var profile = GetProfiles().FirstOrDefault(item => item.ProfileId == profileId);
+        if (profile is null) return false;
+        if (!HasPin(profile)) return true;
+        return global::AniT.Core.ProfilePinSecurity.Verify(pin, profile.PinHash, profile.PinSalt, profile.PinIterations);
+    }
+
+    public static bool SetPin(Guid profileId, string pin)
+    {
+        var credential = global::AniT.Core.ProfilePinSecurity.Create(pin);
+        return UpdatePin(profileId, credential.Hash, credential.Salt, credential.Iterations);
+    }
+
+    public static bool ClearPin(Guid profileId) => UpdatePin(profileId, null, null, 0);
+
+    public static bool IsValidPin(string? pin) => global::AniT.Core.ProfilePinSecurity.IsValidFormat(pin);
 
     public static ProfileSettings Create(string displayName)
     {
@@ -189,6 +215,24 @@ internal static class ProfileSettingsStore
     {
         Directory.CreateDirectory(DataDirectory);
         WriteJsonAtomically(ProfilesFilePath, ProfilesBackupPath, JsonSerializer.Serialize(collection, JsonOptions));
+    }
+
+    private static bool UpdatePin(Guid profileId, string? hash, string? salt, int iterations)
+    {
+        lock (Sync)
+        {
+            var collection = LoadCollectionCore();
+            if (!collection.Profiles.Any(profile => profile.ProfileId == profileId)) return false;
+            var profiles = collection.Profiles
+                .Select(profile => profile.ProfileId == profileId
+                    ? profile with { PinHash = hash, PinSalt = salt, PinIterations = iterations }
+                    : profile)
+                .ToArray();
+            SaveCollectionCore(collection with { Profiles = profiles });
+            if (profileId == collection.ActiveProfileId)
+                SaveLegacyMirror(profiles.First(profile => profile.ProfileId == profileId));
+            return true;
+        }
     }
 
     private static void SaveLegacyMirror(ProfileSettings settings)

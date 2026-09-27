@@ -756,6 +756,57 @@ public partial class SystemSettingsWindow : Window
         ProfileManagementStatusText.Text = selected.ProfileId == ProfileSettingsStore.ActiveProfileId
             ? "Este é o perfil ativo."
             : $"{selected.DisplayName} está pronto para ser ativado.";
+        if (ProfilePinBox is not null) ProfilePinBox.Clear();
+        if (ProfilePinConfirmationBox is not null) ProfilePinConfirmationBox.Clear();
+        if (ProfilePinStatusText is not null)
+            ProfilePinStatusText.Text = ProfileSettingsStore.HasPin(selected)
+                ? $"🔒 {selected.DisplayName} está protegido por PIN."
+                : $"{selected.DisplayName} entra sem PIN.";
+    }
+
+    private void SaveProfilePin_Click(object sender, RoutedEventArgs e)
+    {
+        if (LocalProfileSelectorBox.SelectedItem is not ProfileSettings selected) return;
+        var pin = ProfilePinBox.Password;
+        if (!ProfileSettingsStore.IsValidPin(pin))
+        {
+            ProfilePinStatusText.Text = "Use somente números e informe de 4 a 6 dígitos.";
+            ProfilePinBox.Focus();
+            return;
+        }
+        if (!string.Equals(pin, ProfilePinConfirmationBox.Password, StringComparison.Ordinal))
+        {
+            ProfilePinStatusText.Text = "A confirmação não corresponde ao novo PIN.";
+            ProfilePinConfirmationBox.Focus();
+            return;
+        }
+        if (!ProfileSettingsStore.SetPin(selected.ProfileId, pin))
+        {
+            ProfilePinStatusText.Text = "Não foi possível localizar o perfil escolhido.";
+            return;
+        }
+        ProfilePinBox.Clear();
+        ProfilePinConfirmationBox.Clear();
+        ReloadLocalProfiles(selected.ProfileId);
+        ProfilePinStatusText.Text = $"✓ PIN de {selected.DisplayName} salvo com segurança.";
+    }
+
+    private void RemoveProfilePin_Click(object sender, RoutedEventArgs e)
+    {
+        if (LocalProfileSelectorBox.SelectedItem is not ProfileSettings selected) return;
+        if (!ProfileSettingsStore.HasPin(selected))
+        {
+            ProfilePinStatusText.Text = $"{selected.DisplayName} já entra sem PIN.";
+            return;
+        }
+        if (MessageBox.Show($"Remover o PIN de {selected.DisplayName}?", "Remover PIN", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        if (!ProfileSettingsStore.ClearPin(selected.ProfileId))
+        {
+            ProfilePinStatusText.Text = "Não foi possível localizar o perfil escolhido.";
+            return;
+        }
+        ReloadLocalProfiles(selected.ProfileId);
+        ProfilePinStatusText.Text = $"✓ {selected.DisplayName} agora entra sem PIN.";
     }
 
     private async void CreateProfile_Click(object sender, RoutedEventArgs e)
@@ -780,6 +831,7 @@ public partial class SystemSettingsWindow : Window
     {
         if (LocalProfileSelectorBox.SelectedValue is not Guid selectedId || selectedId == ProfileSettingsStore.ActiveProfileId) return;
         var selected = LocalProfiles.First(profile => profile.ProfileId == selectedId);
+        if (ProfileSettingsStore.HasPin(selected) && new ProfilePinWindow(selected) { Owner = this }.ShowDialog() != true) return;
         if (MessageBox.Show($"Trocar para {selected.DisplayName}? O AniT será reiniciado para manter as jornadas totalmente separadas.", "Trocar perfil", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
         if (!UpdateProfileDraftFromControls()) return;
         ProfileSettingsStore.Save(profileDraft);
