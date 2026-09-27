@@ -1164,7 +1164,10 @@ public partial class SystemSettingsWindow : Window
     private void Profile_Click(object sender, RoutedEventArgs e) => AppNavigation.Profile(this);
 }
 
-public sealed record NotificationHourChoice(int Hour, string Label);
+public sealed record NotificationHourChoice(int Hour, string Label)
+{
+    public override string ToString() => Label;
+}
 
 public sealed class PageMascotSettingItem
 {

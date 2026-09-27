@@ -17,7 +17,10 @@ public sealed record ProfileSettings(
     bool HideFavorites = false,
     int AvatarZoomPercent = 100,
     int AvatarFocusXPercent = 50,
-    int AvatarFocusYPercent = 50);
+    int AvatarFocusYPercent = 50)
+{
+    public override string ToString() => DisplayName;
+}
 
 public sealed record LocalProfileCollection(Guid ActiveProfileId, IReadOnlyList<ProfileSettings> Profiles);
 

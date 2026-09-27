@@ -215,6 +215,7 @@ public sealed class AniTBackupServiceTests
                 command.CommandText = "CREATE TABLE OtherApp (Id INTEGER PRIMARY KEY);";
                 await command.ExecuteNonQueryAsync();
             }
+            SqliteConnection.ClearAllPools();
             var bytes = await File.ReadAllBytesAsync(databasePath);
             var file = new AniTBackupFile("payload/Data/anit.db", bytes.Length, Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant());
             var manifest = new AniTBackupManifest("AniT Portable Backup", 1, DateTimeOffset.UtcNow, "1.0-test", testRoot,
