@@ -1,5 +1,6 @@
 using AniT.Core;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 namespace AniT.Infrastructure;
 
@@ -26,29 +27,37 @@ public sealed record LibraryScanProgress(
 
 public sealed class LibraryScanner
 {
-    private static readonly HashSet<string> VideoExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".mkv", ".mp4", ".avi", ".mov", ".webm", ".m4v", ".wmv"
-    };
-
     private readonly AniTDbContext database;
     private readonly IFileFingerprintService fingerprintService;
     private readonly AnimeMatcher matcher;
+    private readonly AniTSystemSettings settings;
+    private readonly EpisodeParsingOptions parsingOptions;
 
     public LibraryScanner(
         AniTDbContext database,
         IFileFingerprintService? fingerprintService = null,
-        AnimeMatcher? matcher = null)
+        AnimeMatcher? matcher = null,
+        AniTSystemSettings? settings = null)
     {
         this.database = database;
         this.fingerprintService = fingerprintService ?? new QuickFileFingerprintService();
         this.matcher = matcher ?? new AnimeMatcher();
+        this.settings = settings ?? AniTSystemSettings.Default;
+        parsingOptions = new EpisodeParsingOptions(
+            this.settings.RecognizeSeasonEpisodeCodes,
+            this.settings.RecognizeEpisodePrefixes,
+            this.settings.RecognizeDashNumbers,
+            this.settings.RecognizeBracketNumbers,
+            this.settings.RecognizeTrailingNumbers,
+            this.settings.UseFolderSeason,
+            this.settings.RecognizeSpecials);
     }
 
     public async Task<LibraryScanResult> ScanAsync(
         LibraryRoot root,
         IProgress<LibraryScanProgress>? progress = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool preferExistingCatalog = false)
     {
         var trackedRoot = await database.LibraryRoots.FirstOrDefaultAsync(item => item.Id == root.Id, cancellationToken) ?? root;
         if (!trackedRoot.IsEnabled) return new LibraryScanResult(0, 0, 0, [], RootUnavailable: false);
@@ -66,12 +75,19 @@ public sealed class LibraryScanner
         List<string> files;
         try
         {
+            var extensions = settings.VideoExtensions?.ToHashSet(StringComparer.OrdinalIgnoreCase)
+                             ?? AniTSystemSettings.DefaultVideoExtensions.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var enumerationOptions = new EnumerationOptions
+            {
+                RecurseSubdirectories = trackedRoot.IncludeSubfolders,
+                IgnoreInaccessible = false,
+                AttributesToSkip = FileAttributes.ReparsePoint,
+                ReturnSpecialDirectories = false
+            };
             files = await Task.Run(() => Directory
-                .EnumerateFiles(
-                    trackedRoot.Path,
-                    "*",
-                    trackedRoot.IncludeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
-                .Where(path => VideoExtensions.Contains(Path.GetExtension(path)))
+                .EnumerateFiles(trackedRoot.Path, "*", enumerationOptions)
+                .Where(path => extensions.Contains(Path.GetExtension(path)))
+                .Where(path => !ShouldIgnore(path, trackedRoot.Path, settings))
                 .ToList(), cancellationToken);
         }
         catch (Exception exception) when (exception is UnauthorizedAccessException or IOException)
@@ -131,7 +147,7 @@ public sealed class LibraryScanner
                 }
 
                 var fingerprint = await fingerprintService.ComputeQuickFingerprintAsync(path, cancellationToken);
-                var parsed = EpisodeFileNameParser.Parse(path, trackedRoot.Path);
+                var parsed = EpisodeFileNameParser.Parse(path, trackedRoot.Path, parsingOptions);
 
                 if (knownFile is not null)
                 {
@@ -142,7 +158,7 @@ public sealed class LibraryScanner
                     var knownKey = FingerprintKey(info.Length, fingerprint);
                     if (!existingByFingerprint.TryGetValue(knownKey, out var knownGroup)) existingByFingerprint[knownKey] = [knownFile];
                     else if (!knownGroup.Contains(knownFile)) knownGroup.Add(knownFile);
-                    if (parsed.CanAutoImport)
+                    if (CanAutoImport(parsed))
                     {
                         var replacementMatch = matcher.Match(parsed, matchEntries);
                         var knownEpisode = knownFile.Episode ?? episodes.FirstOrDefault(item => item.Id == knownFile.EpisodeId);
@@ -185,6 +201,19 @@ public sealed class LibraryScanner
                     }
 
                     var original = sameContent[0];
+                    duplicates++;
+                    if (settings.DuplicateHandling == LibraryDuplicateHandling.IgnoreIdentical)
+                    {
+                        skipped++;
+                        continue;
+                    }
+                    if (settings.DuplicateHandling == LibraryDuplicateHandling.SendToReview)
+                    {
+                        var duplicateMatch = CanAutoImport(parsed) ? matcher.Match(parsed, matchEntries) : null;
+                        UpsertReviewItem(pendingByPath, trackedRoot.Id, relativePath, info, fingerprint, parsed, duplicateMatch, scanStartedAt);
+                        needsReview++;
+                        continue;
+                    }
                     var duplicate = CreateMediaFile(original.EpisodeId, trackedRoot.Id, info, relativePath, fingerprint, parsed, scanStartedAt);
                     duplicate.DuplicateOfMediaFileId = original.Id;
                     duplicate.IsPreferred = false;
@@ -194,12 +223,11 @@ public sealed class LibraryScanner
                     sameContent.Add(duplicate);
                     existingByPath[relativePath] = duplicate;
                     if (pendingByPath.TryGetValue(relativePath, out var duplicateReview)) duplicateReview.Status = LibraryReviewStatus.Resolved;
-                    duplicates++;
                     matched++;
                     continue;
                 }
 
-                if (!parsed.CanAutoImport)
+                if (!CanAutoImport(parsed))
                 {
                     UpsertReviewItem(pendingByPath, trackedRoot.Id, relativePath, info, fingerprint, parsed, null, scanStartedAt);
                     needsReview++;
@@ -209,6 +237,13 @@ public sealed class LibraryScanner
 
                 var match = matcher.Match(parsed, matchEntries);
                 Anime targetAnime;
+                if (match.Best is null && preferExistingCatalog && anime.Count > 0)
+                {
+                    UpsertReviewItem(pendingByPath, trackedRoot.Id, relativePath, info, fingerprint, parsed, match, scanStartedAt);
+                    needsReview++;
+                    unrecognized.Add(relativePath);
+                    continue;
+                }
                 if (match.Best is null)
                 {
                     targetAnime = new Anime { Title = parsed.CandidateTitle! };
@@ -349,7 +384,30 @@ public sealed class LibraryScanner
         anime.Id,
         anime.Title,
         anime.EnglishTitle,
-        anime.Aliases.Select(alias => alias.Alias).ToArray());
+        anime.Aliases.Select(alias => alias.Alias).ToArray(),
+        anime.OriginalTitle);
+
+    private bool CanAutoImport(ParsedMediaFile parsed) => parsed.CanAutoImport
+        || (settings.RecognizeSpecials
+            && parsed.Kind == ParsedEpisodeKind.Special
+            && parsed.EpisodeNumber is > 0
+            && !string.IsNullOrWhiteSpace(parsed.CandidateTitle));
+
+    private static bool ShouldIgnore(string path, string root, AniTSystemSettings settings)
+    {
+        var relativePath = Path.GetRelativePath(root, path);
+        var segments = relativePath.Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Take(Math.Max(0, segments.Length - 1)).Any(segment => MatchesAny(segment, settings.IgnoredFolders))) return true;
+        var fileName = Path.GetFileName(path);
+        if (MatchesAny(fileName, settings.IgnoredFiles)) return true;
+        return (settings.IgnoredWords ?? []).Any(word => fileName.Contains(word, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool MatchesAny(string value, IReadOnlyList<string>? patterns) => (patterns ?? []).Any(pattern =>
+    {
+        var expression = "^" + Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$";
+        return Regex.IsMatch(value, expression, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    });
 
     private static MediaFile CreateMediaFile(
         Guid episodeId,

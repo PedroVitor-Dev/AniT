@@ -21,13 +21,12 @@ public partial class ProfileBannerPickerWindow : Window
     public ProfileBannerPickerWindow()
     {
         InitializeComponent();
+        systemSettings = AniTSystemSettingsStore.Load();
         var cacheDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "AniT",
-            "Cache",
+            systemSettings.ImageCacheDirectory ?? Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AniT", "Cache"),
             "ProfileBanners");
         provider = new ProfileBannerProvider(cacheDirectory);
-        systemSettings = AniTSystemSettingsStore.Load();
         foreach (var source in systemSettings.ImageSources.Where(item => item.IsEnabled && item.UseForProfileBanners))
         {
             SourceComboBox.Items.Add(new ComboBoxItem

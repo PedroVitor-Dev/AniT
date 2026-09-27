@@ -35,13 +35,6 @@
             </RadialGradientBrush>
         </Grid.Background>
 
-        <Canvas HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False" Opacity="0.7">
-            <Ellipse Width="5" Height="5" Fill="#8DEAFF" Canvas.Left="120" Canvas.Top="110"/>
-            <Ellipse Width="3" Height="3" Fill="White" Canvas.Right="160" Canvas.Top="170"/>
-            <Ellipse Width="4" Height="4" Fill="#4CCBFF" Canvas.Left="260" Canvas.Bottom="150"/>
-            <Ellipse Width="2" Height="2" Fill="White" Canvas.Right="280" Canvas.Bottom="120"/>
-        </Canvas>
-
         <Grid Width="520" Height="650" HorizontalAlignment="Center" VerticalAlignment="Center">
             <Ellipse x:Name="Aura" Width="490" Height="490" VerticalAlignment="Top" Margin="0,6,0,0" Opacity="0.4">
                 <Ellipse.RenderTransform><ScaleTransform x:Name="AuraScale" CenterX="245" CenterY="245"/></Ellipse.RenderTransform>
@@ -62,11 +55,17 @@
             <TextBlock x:Name="SparkTwo" Text="✦" Foreground="White" FontSize="27" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,152,58,0"/>
             <TextBlock x:Name="SparkThree" Text="✧" Foreground="#55D4FF" FontSize="36" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,62,102,0"/>
 
-            <Image Source="Assets/Loading/loading.png" Width="350" Height="420" Stretch="Uniform" VerticalAlignment="Top" Margin="0,18,0,0" RenderOptions.BitmapScalingMode="HighQuality">
-                <Image.Effect><DropShadowEffect Color="#168BFF" BlurRadius="34" ShadowDepth="0" Opacity="0.72"/></Image.Effect>
+            <Image Source="Assets/Loading/loading.png"
+                   Width="390" Height="390"
+                   Stretch="Uniform"
+                   VerticalAlignment="Top"
+                   Margin="0,22,0,0"
+                   ClipToBounds="False"
+                   RenderTransformOrigin="0.5,0.5"
+                   RenderOptions.BitmapScalingMode="HighQuality">
                 <Image.RenderTransform>
                     <TransformGroup>
-                        <ScaleTransform x:Name="BakiScale" CenterX="175" CenterY="210"/>
+                        <ScaleTransform x:Name="BakiScale"/>
                         <TranslateTransform x:Name="BakiTranslate"/>
                     </TransformGroup>
                 </Image.RenderTransform>

@@ -23,7 +23,7 @@
                       Height="24"
                       Stretch="Uniform"
                       Fill="Transparent"
-                      Stroke="{Binding Foreground, ElementName=Root}"
+                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                       StrokeThickness="1.75"
                       StrokeStartLineCap="Round"
                       StrokeEndLineCap="Round"
@@ -33,7 +33,8 @@
 
         <TextBlock Grid.Column="1"
                    Text="{Binding Label, ElementName=Root}"
-                   Foreground="{Binding Foreground, ElementName=Root}"
+                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                   Tag="ThemeManaged"
                    FontSize="14"
                    FontWeight="Medium"
                    VerticalAlignment="Center"/>

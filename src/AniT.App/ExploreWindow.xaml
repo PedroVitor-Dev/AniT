@@ -12,74 +12,6 @@
                 <ResourceDictionary Source="Styles/HomeTheme.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
-            <Style x:Key="ExploreComboBox" TargetType="ComboBox">
-                <Setter Property="Height" Value="43"/>
-                <Setter Property="Margin" Value="0,0,0,9"/>
-                <Setter Property="Foreground" Value="#E8F4FF"/>
-                <Setter Property="Background" Value="#081E3E"/>
-                <Setter Property="BorderBrush" Value="#24639B"/>
-                <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="Padding" Value="14,0"/>
-                <Setter Property="Cursor" Value="Hand"/>
-                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                <Setter Property="ItemContainerStyle">
-                    <Setter.Value>
-                        <Style TargetType="ComboBoxItem">
-                            <Setter Property="Foreground" Value="#DDEEFF"/>
-                            <Setter Property="Background" Value="Transparent"/>
-                            <Setter Property="Padding" Value="13,9"/>
-                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="ComboBoxItem">
-                                        <Border x:Name="ItemSurface" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
-                                            <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"/>
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="ItemSurface" Property="Background" Value="#174D82"/><Setter Property="Foreground" Value="White"/></Trigger>
-                                            <Trigger Property="IsSelected" Value="True"><Setter TargetName="ItemSurface" Property="Background" Value="#1D68A9"/><Setter Property="Foreground" Value="White"/></Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                    </Setter.Value>
-                </Setter>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="ComboBox">
-                            <Grid>
-                                <Border x:Name="ComboSurface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12">
-                                    <Grid Margin="14,0,12,0">
-                                        <ContentPresenter Content="{TemplateBinding SelectionBoxItem}" TextElement.Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center"/>
-                                        <Path Data="{StaticResource AniT.Icon.ChevronDown}" Width="14" Height="14" Stretch="Uniform" Fill="Transparent" Stroke="#A9DFFF" StrokeThickness="2"
-                                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                                    </Grid>
-                                </Border>
-                                <ToggleButton Background="Transparent" BorderThickness="0" Focusable="False" Cursor="Hand"
-                                              IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
-                                    <ToggleButton.Template>
-                                        <ControlTemplate TargetType="ToggleButton">
-                                            <Border Background="Transparent"/>
-                                        </ControlTemplate>
-                                    </ToggleButton.Template>
-                                </ToggleButton>
-                                <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" AllowsTransparency="True" PopupAnimation="Fade">
-                                    <Border Width="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}" Margin="0,5,0,0" Padding="5"
-                                            Background="#F20A1F40" BorderBrush="#337EB9" BorderThickness="1" CornerRadius="12">
-                                        <ScrollViewer MaxHeight="250"><StackPanel IsItemsHost="True"/></ScrollViewer>
-                                    </Border>
-                                </Popup>
-                            </Grid>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ComboSurface" Property="BorderBrush" Value="#5AD5FF"/><Setter TargetName="ComboSurface" Property="Background" Value="#103158"/></Trigger>
-                                <Trigger Property="IsDropDownOpen" Value="True"><Setter TargetName="ComboSurface" Property="BorderBrush" Value="#79E3FF"/></Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-
             <Storyboard x:Key="RouletteMagicAnimation" RepeatBehavior="Forever">
                 <DoubleAnimation Storyboard.TargetName="RouletteCyanGlow" Storyboard.TargetProperty="Opacity" From="0.34" To="0.92" Duration="0:0:1.6" AutoReverse="True"/>
                 <DoubleAnimation Storyboard.TargetName="RouletteCyanGlowScale" Storyboard.TargetProperty="ScaleX" From="0.985" To="1.025" Duration="0:0:1.6" AutoReverse="True"/>
@@ -207,6 +139,8 @@
                 <Setter Property="Padding" Value="0"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Stretch"/>
                 <Setter Property="Panel.ZIndex" Value="1"/>
                 <Setter Property="Template">
                     <Setter.Value>
@@ -218,20 +152,18 @@
                                         <TranslateTransform x:Name="GenreLift" Y="0"/>
                                     </TransformGroup>
                                 </Border.RenderTransform>
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter Property="Panel.ZIndex" Value="20"/>
                                     <Setter TargetName="GenreSurface" Property="Background" Value="#1829527E"/>
                                     <Setter TargetName="GenreSurface" Property="BorderBrush" Value="#8BE5FF"/>
-                                    <Setter TargetName="GenreSurface" Property="Effect"><Setter.Value><DropShadowEffect Color="#26B9FF" BlurRadius="28" ShadowDepth="5" Direction="270" Opacity="0.58"/></Setter.Value></Setter>
                                 </Trigger>
                                 <DataTrigger Binding="{Binding IsSelected}" Value="True">
                                     <Setter Property="Panel.ZIndex" Value="30"/>
                                     <Setter TargetName="GenreSurface" Property="Background" Value="#362B7FB1"/>
                                     <Setter TargetName="GenreSurface" Property="BorderBrush" Value="#C4F7FF"/>
-                                    <Setter TargetName="GenreSurface" Property="Effect"><Setter.Value><DropShadowEffect Color="#39D9FF" BlurRadius="44" ShadowDepth="0" Opacity="0.95"/></Setter.Value></Setter>
                                     <DataTrigger.EnterActions>
                                         <BeginStoryboard>
                                             <Storyboard RepeatBehavior="Forever" AutoReverse="True">
@@ -309,11 +241,11 @@
         </Grid.Background>
         <Grid.ColumnDefinitions><ColumnDefinition x:Name="SidebarColumn" Width="220"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
 
-        <Border Background="{StaticResource HomeSidebarBrush}" BorderBrush="#174576" BorderThickness="0,0,1,0">
+        <Border Background="{DynamicResource HomeSidebarBrush}" BorderBrush="#174576" BorderThickness="0,0,1,0">
             <Grid ClipToBounds="True">
                 <Grid.RowDefinitions><RowDefinition Height="118"/><RowDefinition Height="*"/><RowDefinition Height="205"/></Grid.RowDefinitions>
                 <Border Width="178" Height="92" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,2,0,0">
-                    <Border.Background><ImageBrush ImageSource="Assets/logo-fire.png" Viewbox="0,0.28,1,0.46" ViewboxUnits="RelativeToBoundingBox" Stretch="Uniform"/></Border.Background>
+                    <Border.Background><ImageBrush ImageSource="{local:ComfortableImage Path=Assets/logo-fire.png, DecodePixelWidth=320}" Viewbox="0,0.28,1,0.46" ViewboxUnits="RelativeToBoundingBox" Stretch="Uniform"/></Border.Background>
                 </Border>
                 <StackPanel Grid.Row="1" Margin="0,12,0,0">
                     <TextBlock Text="NAVEGAÇÃO" Foreground="#587DA9" FontSize="10" FontWeight="SemiBold" Margin="24,0,0,9"/>
@@ -327,9 +259,8 @@
                     <Border Height="1" Background="#214874" Margin="20,18,20,11"/>
                     <TextBlock Text="SISTEMA" Foreground="#587DA9" FontSize="10" FontWeight="SemiBold" Margin="24,0,0,7"/>
                     <local:SystemSettingsNavButton/>
-                    <Button Style="{StaticResource HomeNavButton}" Click="ConfigureShelf_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Settings}" Label="Configurar estante"/></Button>
                 </StackPanel>
-                <Image Grid.Row="2" Source="Assets/ghost_menu.png" Style="{StaticResource HomeSidebarMascot}"/>
+                <Image Grid.Row="2" Source="{local:PageMascot Page=Explorar, Fallback=Assets/ghost_menu.png}" Style="{StaticResource HomeSidebarMascot}"/>
             </Grid>
         </Border>
 
@@ -433,13 +364,13 @@
 
                                 <Border x:Name="GenreCardsHost" Grid.Row="1" Background="#66071A35" BorderBrush="#275F8F" BorderThickness="1" CornerRadius="22" Padding="15" Margin="0,8,0,18">
                                     <ItemsControl ItemsSource="{Binding Genres}">
-                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel HorizontalAlignment="Center"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="{Binding GenreCategoryColumns, RelativeSource={RelativeSource AncestorType={x:Type local:ExploreWindow}}}"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <Button Style="{StaticResource GenreCardButton}" Tag="{Binding Name}" Click="Genre_Click" Margin="10,12">
-                                                    <Border Width="{Binding GenreCategoryCardWidth, RelativeSource={RelativeSource AncestorType={x:Type local:ExploreWindow}}}" CornerRadius="22" Background="#45CFFF" Padding="3" ClipToBounds="True" SizeChanged="RoundedPanel_SizeChanged" Tag="22">
+                                                    <Border HorizontalAlignment="Stretch" CornerRadius="22" Background="{Binding AccentBrush}" Padding="3" ClipToBounds="True" Effect="{Binding GlowEffect}" SizeChanged="RoundedPanel_SizeChanged" Tag="22">
                                                         <Border CornerRadius="19" Background="#0B2345" ClipToBounds="True" SizeChanged="RoundedPanel_SizeChanged" Tag="19">
-                                                            <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Grid Height="{Binding GenreCategoryImageHeight, RelativeSource={RelativeSource AncestorType={x:Type local:ExploreWindow}}}" Background="#09234A"><Image Source="{Binding ImagePath}" Stretch="UniformToFill" Margin="-7" RenderOptions.BitmapScalingMode="HighQuality"/><Rectangle><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#00000000" Offset="0.48"/><GradientStop Color="#C8051935" Offset="1"/></LinearGradientBrush></Rectangle.Fill></Rectangle></Grid><Border Grid.Row="1" MinHeight="74" Background="#F0081B37" Padding="15,9"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Viewbox Width="27" Height="27" VerticalAlignment="Center"><Path Data="{Binding IconData}" Fill="Transparent" Stroke="{Binding Accent}" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/></Viewbox><StackPanel Grid.Column="1" Margin="11,0,0,0" VerticalAlignment="Center"><TextBlock Text="{Binding Name}" Foreground="White" FontSize="17" FontWeight="Bold" TextWrapping="Wrap"/><TextBlock Text="Explorar coleção" Foreground="#88B5D8" FontSize="10" Margin="0,3,0,0"/></StackPanel></Grid></Border></Grid>
+                                                            <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Grid Height="{Binding GenreCategoryImageHeight, RelativeSource={RelativeSource AncestorType={x:Type local:ExploreWindow}}}" Background="#09234A"><Image Source="{Binding ImageSource}" Stretch="UniformToFill" Margin="-7" RenderOptions.BitmapScalingMode="HighQuality" CacheMode="BitmapCache"/><Rectangle Fill="{Binding AccentBrush}" Opacity="0.07"/><Rectangle><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#00000000" Offset="0.48"/><GradientStop Color="#C8051935" Offset="1"/></LinearGradientBrush></Rectangle.Fill></Rectangle><Rectangle VerticalAlignment="Bottom" Height="4" Fill="{Binding AccentBrush}" Opacity="0.9"/></Grid><Border Grid.Row="1" MinHeight="74" Background="#F0081B37" Padding="15,9"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Grid Width="31" Height="31" VerticalAlignment="Center"><Path Data="{Binding IconData}" Margin="3" Stretch="Uniform" Fill="Transparent" Stroke="{Binding AccentBrush}" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" SnapsToDevicePixels="True"/></Grid><StackPanel Grid.Column="1" Margin="11,0,0,0" VerticalAlignment="Center"><TextBlock Text="{Binding Name}" Foreground="White" FontSize="17" FontWeight="Bold" TextWrapping="Wrap"/><TextBlock Text="Explorar coleção" Foreground="#88B5D8" FontSize="10" Margin="0,3,0,0"/></StackPanel></Grid></Border></Grid>
                                                         </Border>
                                                     </Border>
                                                 </Button>
@@ -487,7 +418,30 @@
                                 <DockPanel><Button DockPanel.Dock="Right" Style="{StaticResource HomeSectionLink}" Content="Ver biblioteca  →" Click="Library_Click"/><StackPanel Orientation="Horizontal"><local:IconTile IconData="{StaticResource AniT.Icon.Fire}" Foreground="#69D7FF" Width="34" Height="34"/><TextBlock Text="Em alta agora" Style="{StaticResource HomeSectionTitle}" FontSize="20" Margin="10,0,0,0" VerticalAlignment="Center"/></StackPanel></DockPanel>
                                 <ItemsControl Grid.Row="1" ItemsSource="{Binding TrendingCards}">
                                     <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate><DataTemplate><Button Style="{StaticResource HomeCardButton}" Tag="{Binding AnimeId}" Click="AnimeCard_Click" Margin="0,0,12,12"><Border Width="196" Height="224" CornerRadius="14" BorderBrush="#2C6EA5" BorderThickness="1" Background="#091D3B" ClipToBounds="True" SizeChanged="RoundedPanel_SizeChanged" Tag="14"><Grid><Grid.RowDefinitions><RowDefinition Height="132"/><RowDefinition Height="*"/></Grid.RowDefinitions><Grid><Image Source="{Binding CoverPath}" Stretch="UniformToFill"/><Rectangle><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#00000000" Offset="0.4"/><GradientStop Color="#D904142D" Offset="1"/></LinearGradientBrush></Rectangle.Fill></Rectangle><Border Width="36" Height="36" CornerRadius="18" Background="#DE0B2C54" BorderBrush="#B8F0FF" BorderThickness="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,8"><Path Data="{StaticResource AniT.Icon.Play}" Width="13" Height="13" Stretch="Uniform" Fill="White" Stroke="White" StrokeThickness="1.1" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border></Grid><Grid Grid.Row="1" Margin="11,7,11,7"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions><TextBlock Text="{Binding Title}" Foreground="White" FontWeight="SemiBold" FontSize="12" TextWrapping="Wrap" MaxHeight="34"/><TextBlock Grid.Row="1" Text="{Binding SecondaryText}" Foreground="#9DC2E8" FontSize="10" Margin="0,3,0,0" TextWrapping="Wrap" MaxHeight="29"/><TextBlock Grid.Row="2" Text="{Binding ScoreLabel}" Foreground="#FFD45D" FontSize="11" FontWeight="Bold" Margin="0,4,0,0" VerticalAlignment="Bottom"/></Grid></Grid></Border></Button></DataTemplate></ItemsControl.ItemTemplate>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Style="{StaticResource HomeCardButton}" Tag="{Binding AnimeId}" Click="AnimeCard_Click" Margin="0,0,12,12">
+                                                <Border Width="196" Height="242" CornerRadius="14" BorderBrush="#2C6EA5" BorderThickness="1" Background="#091D3B" ClipToBounds="True" SizeChanged="RoundedPanel_SizeChanged" Tag="14">
+                                                    <Grid>
+                                                        <Grid.RowDefinitions><RowDefinition Height="132"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                                                        <Grid>
+                                                            <Image Source="{Binding CoverPath}" Stretch="UniformToFill"/>
+                                                            <Rectangle><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#00000000" Offset="0.4"/><GradientStop Color="#D904142D" Offset="1"/></LinearGradientBrush></Rectangle.Fill></Rectangle>
+                                                            <Border Width="36" Height="36" CornerRadius="18" Background="#DE0B2C54" BorderBrush="#B8F0FF" BorderThickness="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,8">
+                                                                <Path Data="{StaticResource AniT.Icon.Play}" Width="13" Height="13" Stretch="Uniform" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5"><Path.RenderTransform><TranslateTransform X="1.3"/></Path.RenderTransform></Path>
+                                                            </Border>
+                                                        </Grid>
+                                                        <Grid Grid.Row="1" Margin="11,8,11,10">
+                                                            <Grid.RowDefinitions><RowDefinition Height="34"/><RowDefinition Height="*"/><RowDefinition Height="18"/></Grid.RowDefinitions>
+                                                            <TextBlock Text="{Binding Title}" Foreground="White" FontWeight="SemiBold" FontSize="12" LineHeight="16" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
+                                                            <TextBlock Grid.Row="1" Text="{Binding SecondaryText}" Foreground="#9DC2E8" FontSize="10" LineHeight="14" Margin="0,3,0,0" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
+                                                            <TextBlock Grid.Row="2" Text="{Binding ScoreLabel}" Foreground="#FFD45D" FontSize="11" FontWeight="Bold" VerticalAlignment="Bottom"/>
+                                                        </Grid>
+                                                    </Grid>
+                                                </Border>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                                 <Border x:Name="TrendingEmpty" Grid.Row="1" Background="#74102243" BorderBrush="#2C6394" BorderThickness="1" CornerRadius="13" Padding="18" Visibility="Collapsed"><TextBlock Text="Sua biblioteca ainda não tem títulos para recomendar." Foreground="#A8C7E9"/></Border>
                             </Grid>
@@ -497,7 +451,30 @@
                                 <DockPanel><Button DockPanel.Dock="Right" Style="{StaticResource HomeSectionLink}" Content="Ver todos  →" Click="Library_Click"/><StackPanel Orientation="Horizontal"><local:IconTile IconData="{StaticResource AniT.Icon.Star}" Foreground="#79DCFF" Width="34" Height="34"/><TextBlock Text="Recomendado para você" Style="{StaticResource HomeSectionTitle}" FontSize="20" Margin="10,0,0,0" VerticalAlignment="Center"/></StackPanel></DockPanel>
                                 <ItemsControl Grid.Row="1" ItemsSource="{Binding RecommendedCards}">
                                     <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate><DataTemplate><Button Style="{StaticResource HomeCardButton}" Tag="{Binding AnimeId}" Click="AnimeCard_Click" Margin="0,0,12,12"><Border Width="196" Height="208" CornerRadius="14" BorderBrush="#2C6EA5" BorderThickness="1" Background="#091D3B" ClipToBounds="True" SizeChanged="RoundedPanel_SizeChanged" Tag="14"><Grid><Grid.RowDefinitions><RowDefinition Height="124"/><RowDefinition Height="*"/></Grid.RowDefinitions><Grid><Image Source="{Binding CoverPath}" Stretch="UniformToFill"/><Rectangle><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#00000000" Offset="0.38"/><GradientStop Color="#D904142D" Offset="1"/></LinearGradientBrush></Rectangle.Fill></Rectangle><Border Width="34" Height="34" CornerRadius="17" Background="#DE0B2C54" BorderBrush="#B8F0FF" BorderThickness="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,8"><Path Data="{StaticResource AniT.Icon.Play}" Width="12" Height="12" Stretch="Uniform" Fill="White" Stroke="White" StrokeThickness="1.1" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border></Grid><Grid Grid.Row="1" Margin="11,7,11,7"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions><TextBlock Text="{Binding Title}" Foreground="White" FontWeight="SemiBold" FontSize="12" TextWrapping="Wrap" MaxHeight="34"/><Grid Grid.Row="1" Margin="0,4,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="{Binding SecondaryText}" Foreground="#9DC2E8" FontSize="10" TextWrapping="Wrap" MaxHeight="29" Margin="0,0,8,0"/><TextBlock Grid.Column="1" Text="{Binding ScoreLabel}" Foreground="#FFD45D" FontSize="11" FontWeight="Bold" VerticalAlignment="Bottom"/></Grid></Grid></Grid></Border></Button></DataTemplate></ItemsControl.ItemTemplate>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Style="{StaticResource HomeCardButton}" Tag="{Binding AnimeId}" Click="AnimeCard_Click" Margin="0,0,12,12">
+                                                <Border Width="196" Height="230" CornerRadius="14" BorderBrush="#2C6EA5" BorderThickness="1" Background="#091D3B" ClipToBounds="True" SizeChanged="RoundedPanel_SizeChanged" Tag="14">
+                                                    <Grid>
+                                                        <Grid.RowDefinitions><RowDefinition Height="124"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                                                        <Grid>
+                                                            <Image Source="{Binding CoverPath}" Stretch="UniformToFill"/>
+                                                            <Rectangle><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#00000000" Offset="0.38"/><GradientStop Color="#D904142D" Offset="1"/></LinearGradientBrush></Rectangle.Fill></Rectangle>
+                                                            <Border Width="34" Height="34" CornerRadius="17" Background="#DE0B2C54" BorderBrush="#B8F0FF" BorderThickness="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,8">
+                                                                <Path Data="{StaticResource AniT.Icon.Play}" Width="12" Height="12" Stretch="Uniform" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5"><Path.RenderTransform><TranslateTransform X="1.2"/></Path.RenderTransform></Path>
+                                                            </Border>
+                                                        </Grid>
+                                                        <Grid Grid.Row="1" Margin="11,8,11,10">
+                                                            <Grid.RowDefinitions><RowDefinition Height="34"/><RowDefinition Height="*"/><RowDefinition Height="18"/></Grid.RowDefinitions>
+                                                            <TextBlock Text="{Binding Title}" Foreground="White" FontWeight="SemiBold" FontSize="12" LineHeight="16" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
+                                                            <TextBlock Grid.Row="1" Text="{Binding SecondaryText}" Foreground="#9DC2E8" FontSize="10" LineHeight="14" Margin="0,3,0,0" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
+                                                            <TextBlock Grid.Row="2" Text="{Binding ScoreLabel}" Foreground="#FFD45D" FontSize="11" FontWeight="Bold" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
+                                                        </Grid>
+                                                    </Grid>
+                                                </Border>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                                 <Border x:Name="RecommendedEmpty" Grid.Row="1" Background="#74102243" BorderBrush="#2C6394" BorderThickness="1" CornerRadius="13" Padding="18" Visibility="Collapsed"><TextBlock Text="Nenhum título corresponde aos filtros selecionados. Experimente outro clima ou gênero." Foreground="#A8C7E9" TextWrapping="Wrap"/></Border>
                             </Grid>
@@ -505,28 +482,12 @@
                         </StackPanel>
 
                         <StackPanel x:Name="RightRail" Grid.Column="2" Margin="0,0,0,20">
-                            <Border Background="#EC081D3C" BorderBrush="#28679D" BorderThickness="1" CornerRadius="17" Padding="14" Margin="0,0,0,12">
-                                <StackPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="1,0,0,13">
-                                        <local:IconTile IconData="{StaticResource AniT.Icon.Filter}" Foreground="#8DE5FF" Width="32" Height="32"/>
-                                        <StackPanel Margin="10,-1,0,0" VerticalAlignment="Center">
-                                            <TextBlock Text="Filtros rápidos" Foreground="White" FontSize="18" FontWeight="SemiBold"/>
-                                            <TextBlock Text="Atualização automática" Foreground="#75A7D3" FontSize="9" Margin="0,2,0,0"/>
-                                        </StackPanel>
-                                    </StackPanel>
-                                    <ComboBox x:Name="GenreFilter" Style="{StaticResource ExploreComboBox}" SelectedIndex="0" SelectionChanged="QuickFilter_SelectionChanged"><ComboBoxItem Content="Todos os gêneros"/><ComboBoxItem Content="Ação"/><ComboBoxItem Content="Romance"/><ComboBoxItem Content="Fantasia"/><ComboBoxItem Content="Drama"/><ComboBoxItem Content="Slice of Life"/><ComboBoxItem Content="Mistério"/><ComboBoxItem Content="Comédia"/><ComboBoxItem Content="Isekai"/></ComboBox>
-                                    <ComboBox x:Name="YearFilter" Style="{StaticResource ExploreComboBox}" SelectedIndex="0" SelectionChanged="QuickFilter_SelectionChanged"><ComboBoxItem Content="Todos os anos"/><ComboBoxItem Content="2026"/><ComboBoxItem Content="2025"/><ComboBoxItem Content="2024"/></ComboBox>
-                                    <ComboBox x:Name="StatusFilter" Style="{StaticResource ExploreComboBox}" SelectedIndex="0" SelectionChanged="QuickFilter_SelectionChanged"><ComboBoxItem Content="Todos os status"/><ComboBoxItem Content="Em andamento"/><ComboBoxItem Content="Concluído"/></ComboBox>
-                                    <ComboBox x:Name="OrderFilter" Style="{StaticResource ExploreComboBox}" SelectedIndex="0" SelectionChanged="QuickFilter_SelectionChanged" Margin="0"><ComboBoxItem Content="Ordenar por"/><ComboBoxItem Content="Mais recentes"/><ComboBoxItem Content="Melhor avaliados"/><ComboBoxItem Content="Título"/></ComboBox>
-                                </StackPanel>
-                            </Border>
-
                             <Border Background="#EB081D3C" BorderBrush="#28679D" BorderThickness="1" CornerRadius="17" Padding="15" Margin="0,0,0,12">
                                 <StackPanel><DockPanel Margin="0,0,0,10"><Button DockPanel.Dock="Right" Style="{StaticResource HomeSectionLink}" Content="Ver todos  →"/><StackPanel Orientation="Horizontal"><local:IconTile IconData="{StaticResource AniT.Icon.Trending}" Foreground="#75DDFF" Width="29" Height="29"/><TextBlock Text="Top gêneros" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="8,0,0,0" VerticalAlignment="Center"/></StackPanel></DockPanel><Grid Margin="0,0,0,8"><Grid.ColumnDefinitions><ColumnDefinition Width="83"/><ColumnDefinition Width="*"/><ColumnDefinition Width="40"/></Grid.ColumnDefinitions><TextBlock Text="Fantasia" Foreground="#D6E9FF"/><ProgressBar Grid.Column="1" Value="78" Maximum="100" Style="{StaticResource HomeProgress}" Margin="4,0,8,0" VerticalAlignment="Center"/><TextBlock Grid.Column="2" Text="28%" Foreground="#DDEEFF" HorizontalAlignment="Right"/></Grid><Grid Margin="0,0,0,8"><Grid.ColumnDefinitions><ColumnDefinition Width="83"/><ColumnDefinition Width="*"/><ColumnDefinition Width="40"/></Grid.ColumnDefinitions><TextBlock Text="Romance" Foreground="#D6E9FF"/><ProgressBar Grid.Column="1" Value="63" Maximum="100" Style="{StaticResource HomeProgress}" Margin="4,0,8,0" VerticalAlignment="Center"/><TextBlock Grid.Column="2" Text="22%" Foreground="#DDEEFF" HorizontalAlignment="Right"/></Grid><Grid Margin="0,0,0,8"><Grid.ColumnDefinitions><ColumnDefinition Width="83"/><ColumnDefinition Width="*"/><ColumnDefinition Width="40"/></Grid.ColumnDefinitions><TextBlock Text="Drama" Foreground="#D6E9FF"/><ProgressBar Grid.Column="1" Value="54" Maximum="100" Style="{StaticResource HomeProgress}" Margin="4,0,8,0" VerticalAlignment="Center"/><TextBlock Grid.Column="2" Text="19%" Foreground="#DDEEFF" HorizontalAlignment="Right"/></Grid><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="83"/><ColumnDefinition Width="*"/><ColumnDefinition Width="40"/></Grid.ColumnDefinitions><TextBlock Text="Ação" Foreground="#D6E9FF"/><ProgressBar Grid.Column="1" Value="42" Maximum="100" Style="{StaticResource HomeProgress}" Margin="4,0,8,0" VerticalAlignment="Center"/><TextBlock Grid.Column="2" Text="13%" Foreground="#DDEEFF" HorizontalAlignment="Right"/></Grid></StackPanel>
                             </Border>
 
                             <Border Background="#EB081D3C" BorderBrush="#28679D" BorderThickness="1" CornerRadius="17" Padding="15" Margin="0,0,0,12">
-                                <StackPanel><DockPanel Margin="0,0,0,9"><Button DockPanel.Dock="Right" Style="{StaticResource HomeSectionLink}" Content="Ver todos  →" Click="Library_Click"/><StackPanel Orientation="Horizontal"><local:IconTile IconData="{StaticResource AniT.Icon.Sparkles}" Foreground="#9CE6FF" Width="29" Height="29"/><TextBlock Text="Lançamentos" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="9,0,0,0" VerticalAlignment="Center"/></StackPanel></DockPanel><ItemsControl ItemsSource="{Binding ReleaseCards}"><ItemsControl.ItemTemplate><DataTemplate><Button Style="{StaticResource HomeCardButton}" Tag="{Binding AnimeId}" Click="AnimeCard_Click" HorizontalAlignment="Stretch"><Grid Width="252" Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="56"/><ColumnDefinition Width="*"/><ColumnDefinition Width="44"/></Grid.ColumnDefinitions><Border Width="50" Height="40" CornerRadius="8" ClipToBounds="True" SizeChanged="RoundedPanel_SizeChanged" Tag="8"><Image Source="{Binding CoverPath}" Stretch="UniformToFill"/></Border><StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center"><TextBlock Text="{Binding Title}" Foreground="#F4F8FF" FontSize="11" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding SecondaryText}" Foreground="#90B4D9" FontSize="9" Margin="0,2,0,0"/></StackPanel><Border Grid.Column="2" Background="#195CD9" CornerRadius="9" Padding="7,4" VerticalAlignment="Center"><TextBlock Text="NOVO" Foreground="White" FontSize="8" FontWeight="Bold" HorizontalAlignment="Center"/></Border></Grid></Button></DataTemplate></ItemsControl.ItemTemplate></ItemsControl><TextBlock x:Name="ReleasesEmpty" Text="Novidades da sua estante aparecerão aqui." Foreground="#8DAED0" FontSize="10" Margin="0,4,0,0" Visibility="Collapsed"/></StackPanel>
+                                <StackPanel><DockPanel Margin="0,0,0,9"><Button DockPanel.Dock="Right" Style="{StaticResource HomeSectionLink}" Content="Ver todos  →" Click="Library_Click"/><StackPanel Orientation="Horizontal"><local:IconTile IconData="{StaticResource AniT.Icon.Sparkles}" Foreground="#9CE6FF" Width="29" Height="29"/><TextBlock Text="Lançamentos" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="9,0,0,0" VerticalAlignment="Center"/></StackPanel></DockPanel><ItemsControl ItemsSource="{Binding ReleaseCards}"><ItemsControl.ItemTemplate><DataTemplate><Button Style="{StaticResource HomeCardButton}" Tag="{Binding AnimeId}" Click="AnimeCard_Click" HorizontalAlignment="Stretch"><Grid Width="252" Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="56"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><Border Width="50" Height="40" CornerRadius="8" ClipToBounds="True" SizeChanged="RoundedPanel_SizeChanged" Tag="8"><Image Source="{Binding CoverPath}" Stretch="UniformToFill"/></Border><StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center"><TextBlock Text="{Binding Title}" Foreground="#F4F8FF" FontSize="11" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding SecondaryText}" Foreground="#90B4D9" FontSize="9" Margin="0,2,0,0"/></StackPanel><Border Grid.Column="2" Visibility="{Binding NewBadgeVisibility}" Background="#164C79" BorderBrush="#63D9FF" BorderThickness="1" CornerRadius="9" Padding="7,4" VerticalAlignment="Center"><TextBlock Text="NOVO" Foreground="#DDF8FF" FontSize="8" FontWeight="Bold" HorizontalAlignment="Center"/></Border></Grid></Button></DataTemplate></ItemsControl.ItemTemplate></ItemsControl><TextBlock x:Name="ReleasesEmpty" Text="Novidades da sua estante aparecerão aqui." Foreground="#8DAED0" FontSize="10" Margin="0,4,0,0" Visibility="Collapsed"/></StackPanel>
                             </Border>
 
                             <Border Background="#EB081D3C" BorderBrush="#28679D" BorderThickness="1" CornerRadius="17" Padding="16">
@@ -549,7 +510,7 @@
                     <Border.RenderTransform><ScaleTransform x:Name="RouletteVioletGlowScale"/></Border.RenderTransform>
                 </Border>
 
-                <Canvas Width="820" Height="560" IsHitTestVisible="False" Panel.ZIndex="4" ClipToBounds="False">
+                <Canvas x:Name="RouletteParticlesLayer" Width="820" Height="560" IsHitTestVisible="False" Panel.ZIndex="4" ClipToBounds="False">
                     <TextBlock x:Name="RouletteParticleOne" Text="✦" Foreground="#9AF1FF" FontSize="24" Canvas.Left="24" Canvas.Top="370" Opacity="0"><TextBlock.Effect><DropShadowEffect Color="#3DDCFF" BlurRadius="14" ShadowDepth="0" Opacity="0.9"/></TextBlock.Effect><TextBlock.RenderTransform><TranslateTransform x:Name="RouletteParticleOneMove"/></TextBlock.RenderTransform></TextBlock>
                     <Ellipse x:Name="RouletteParticleTwo" Width="9" Height="9" Fill="#64DCFF" Canvas.Left="63" Canvas.Top="455" Opacity="0"><Ellipse.Effect><DropShadowEffect Color="#32CDFF" BlurRadius="15" ShadowDepth="0" Opacity="1"/></Ellipse.Effect><Ellipse.RenderTransform><TranslateTransform x:Name="RouletteParticleTwoMove"/></Ellipse.RenderTransform></Ellipse>
                     <TextBlock x:Name="RouletteParticleThree" Text="✧" Foreground="#D9C5FF" FontSize="30" Canvas.Left="92" Canvas.Top="278" Opacity="0"><TextBlock.Effect><DropShadowEffect Color="#9D70FF" BlurRadius="16" ShadowDepth="0" Opacity="0.9"/></TextBlock.Effect><TextBlock.RenderTransform><TranslateTransform x:Name="RouletteParticleThreeMove"/></TextBlock.RenderTransform></TextBlock>

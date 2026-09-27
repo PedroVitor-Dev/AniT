@@ -11,6 +11,7 @@ public sealed class LibraryOrganizer(AniTDbContext database)
         IEnumerable<Guid> mediaFileIds,
         string destinationRoot,
         string fileTemplate = "{AnimeTitle} - S{Season:00}E{Episode:00}",
+        AnimeTitlePreference titlePreference = AnimeTitlePreference.Romaji,
         CancellationToken cancellationToken = default)
     {
         var ids = mediaFileIds.ToHashSet();
@@ -18,6 +19,7 @@ public sealed class LibraryOrganizer(AniTDbContext database)
             .Where(file => ids.Contains(file.Id))
             .Include(file => file.LibraryRoot)
             .Include(file => file.Episode)!.ThenInclude(episode => episode!.Season)!.ThenInclude(season => season!.Anime)
+            .ThenInclude(anime => anime!.Aliases)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
         var operations = new List<FileOrganizationOperation>();
@@ -26,7 +28,7 @@ public sealed class LibraryOrganizer(AniTDbContext database)
             cancellationToken.ThrowIfCancellationRequested();
             var source = Path.Combine(file.LibraryRoot!.Path, file.RelativePath);
             var anime = file.Episode!.Season!.Anime!;
-            var safeAnimeTitle = Sanitize(anime.Title);
+            var safeAnimeTitle = Sanitize(OrganizationPreferences.PreferredTitle(anime, titlePreference));
             var baseName = fileTemplate
                 .Replace("{AnimeTitle}", safeAnimeTitle, StringComparison.Ordinal)
                 .Replace("{Season:00}", file.Episode.Season.Number.ToString("00"), StringComparison.Ordinal)

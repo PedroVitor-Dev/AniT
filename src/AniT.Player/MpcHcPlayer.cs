@@ -3,6 +3,15 @@ using System.IO;
 
 namespace AniT.Player;
 
+public sealed record MpcHcPlaybackOptions(
+    double Speed,
+    bool StartFullscreen,
+    string PreferredAudioLanguage,
+    string PreferredSubtitleLanguage)
+{
+    public static MpcHcPlaybackOptions Default { get; } = new(1.0, false, "auto", "auto");
+}
+
 /// <summary>Controls the bundled MPC-HC instance through its documented /slave WM_COPYDATA API.</summary>
 public sealed class MpcHcPlayer : IMediaPlayer, IDisposable
 {
@@ -26,13 +35,16 @@ public sealed class MpcHcPlayer : IMediaPlayer, IDisposable
     }
 
     public async Task PlayAsync(MediaFile file, TimeSpan? position, CancellationToken cancellationToken = default)
+        => await PlayAsync(file, position, MpcHcPlaybackOptions.Default, cancellationToken);
+
+    public async Task PlayAsync(MediaFile file, TimeSpan? position, MpcHcPlaybackOptions options, CancellationToken cancellationToken = default)
     {
         var root = file.LibraryRoot?.Path ?? throw new InvalidOperationException("A raiz da biblioteca não foi carregada para este episódio.");
         var path = Path.Combine(root, file.RelativePath);
         if (!File.Exists(path)) throw new FileNotFoundException("O arquivo do episódio não foi encontrado.", path);
 
         await bridge.StartAsync(executablePath, cancellationToken);
-        bridge.OpenFile(path, position);
+        bridge.OpenFile(path, position, options);
     }
 
     public Task PauseAsync(CancellationToken cancellationToken = default) { bridge.Pause(); return Task.CompletedTask; }

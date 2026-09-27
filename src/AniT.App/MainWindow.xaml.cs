@@ -45,7 +45,9 @@ public partial class MainWindow : Window
 
         try
         {
-            var scanner = new global::AniT.Infrastructure.LibraryScanner(App.Database);
+            var scanner = new global::AniT.Infrastructure.LibraryScanner(
+                App.Database,
+                settings: global::AniT.Infrastructure.AniTSystemSettingsStore.Load());
             var result = await scanner.ScanAsync(root);
             await App.Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
                 global::AniT.Core.Achievements.AchievementEventType.LibraryChanged));

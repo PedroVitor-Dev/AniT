@@ -1,0 +1,39 @@
+<Window x:Class="AniT.App.AnimeOrganizationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Organizar anime · AniT" Width="680" Height="610"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResizeWithGrip"
+        Background="#06172E" Foreground="White" Loaded="Window_Loaded">
+    <Grid Margin="24">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel>
+            <TextBlock Text="Tags e coleções" FontSize="25" FontWeight="Bold"/>
+            <TextBlock Text="Organize este título usando as opções criadas nas configurações. As escolhas acompanham o banco e o backup."
+                       Foreground="#9DBEDD" Margin="0,7,0,18" TextWrapping="Wrap"/>
+        </StackPanel>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <Border Background="#0B2548" BorderBrush="#3277AB" BorderThickness="1" CornerRadius="16" Padding="18">
+                    <StackPanel>
+                        <TextBlock Text="Tags personalizadas" FontSize="17" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="NoTagsText" Text="Nenhuma tag cadastrada. Adicione tags em Configurações › Organização."
+                                   Foreground="#8FB2D2" Margin="0,7,0,0" TextWrapping="Wrap"/>
+                        <WrapPanel x:Name="TagsPanel" Margin="0,11,0,0"/>
+                    </StackPanel>
+                </Border>
+                <Border Background="#0B2548" BorderBrush="#3277AB" BorderThickness="1" CornerRadius="16" Padding="18" Margin="0,16,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Coleções" FontSize="17" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="NoCollectionsText" Text="Nenhuma coleção cadastrada. Adicione coleções em Configurações › Organização."
+                                   Foreground="#8FB2D2" Margin="0,7,0,0" TextWrapping="Wrap"/>
+                        <WrapPanel x:Name="CollectionsPanel" Margin="0,11,0,0"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Style="{StaticResource HomeOutlineButton}" Content="Cancelar" MinWidth="110" IsCancel="True"/>
+            <Button Style="{StaticResource HomePrimaryButton}" Content="Salvar organização" MinWidth="170" Margin="12,0,0,0" Click="Save_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

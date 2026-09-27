@@ -30,7 +30,12 @@ public partial class OrganizationPreviewWindow : Window
             .Where(file => file.Availability == global::AniT.Core.MediaFileAvailability.Available && file.DuplicateOfMediaFileId == null)
             .Select(file => file.Id)
             .ToListAsync();
-        plan = await new global::AniT.Infrastructure.LibraryOrganizer(context).BuildPlanAsync(ids, dialog.FolderName);
+        var settings = global::AniT.Infrastructure.AniTSystemSettingsStore.Load();
+        plan = await new global::AniT.Infrastructure.LibraryOrganizer(context).BuildPlanAsync(
+            ids,
+            dialog.FolderName,
+            global::AniT.Infrastructure.OrganizationPreferences.RenameTemplate(settings.EpisodeNumberDisplayFormat),
+            settings.AnimeTitlePreference);
         PreviewItems.Clear();
         foreach (var operation in plan.Operations)
             PreviewItems.Add(new OrganizationPreviewItem(operation));

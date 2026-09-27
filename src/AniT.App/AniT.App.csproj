@@ -10,8 +10,9 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <ImplicitUsings>disable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>..\..\assets\anit.ico</ApplicationIcon>
   </PropertyGroup>
 
@@ -36,6 +37,10 @@
     <Resource Include="..\..\assets\explore\6.png" Link="Assets\Explore\6.png" />
     <Resource Include="..\..\assets\explore\7.png" Link="Assets\Explore\7.png" />
     <Resource Include="..\..\assets\explore\8.png" Link="Assets\Explore\8.png" />
+    <Resource Include="..\..\assets\explore\9.png" Link="Assets\Explore\9.png" />
+    <Resource Include="..\..\assets\explore\10.png" Link="Assets\Explore\10.png" />
+    <Resource Include="..\..\assets\explore\11.png" Link="Assets\Explore\11.png" />
+    <Resource Include="..\..\assets\explore\12.png" Link="Assets\Explore\12.png" />
     <Resource Include="..\..\assets\calendario\banner.png" Link="Assets\Calendar\banner.png" />
     <Resource Include="..\..\assets\calendario\samurai.png" Link="Assets\Calendar\samurai.png" />
     <Resource Include="..\..\assets\calendario\1.png" Link="Assets\Calendar\1.png" />
@@ -53,6 +58,7 @@
     <Resource Include="..\..\assets\badges\**\*" Link="Assets\Badges\%(RecursiveDir)%(Filename)%(Extension)" />
     <Resource Include="..\..\assets\loading.png" Link="Assets\Loading\loading.png" />
     <Resource Include="..\..\assets\loading_....png" Link="Assets\Loading\loading-text.png" />
+    <Resource Include="..\..\assets\atualizandoimagens.png" Link="Assets\atualizandoimagens.png" />
     <Resource Include="..\..\assets\baki-pi\normal-sf.png" Link="Assets\normal-sf.png" />
     <Resource Include="..\..\assets\baki-pi\angry-sf.png" Link="Assets\angry-sf.png" />
     <Resource Include="..\..\assets\baki-pi\sad-sf.png" Link="Assets\sad-sf.png" />

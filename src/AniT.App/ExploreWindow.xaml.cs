@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -8,6 +9,8 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
 namespace AniT.App;
@@ -34,21 +37,32 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
 
     public ObservableCollection<ExploreGenreCard> Genres { get; } =
     [
-        new("Ação", Geometry.Parse("M5,3 L19,17 M3,5 L7,3 7,7 M17,17 L21,21 M19,3 L5,17 M21,5 L17,3 17,7 M7,17 L3,21"), "#FF6580", "Assets/Explore/2.png"),
-        new("Romance", Geometry.Parse("M12,21 C10.2,19.2 4,15 4,9.5 C4,6.5 6.2,4.5 9,4.5 C10.6,4.5 11.6,5.4 12,6.2 C12.4,5.4 13.4,4.5 15,4.5 C17.8,4.5 20,6.5 20,9.5 C20,15 13.8,19.2 12,21 Z"), "#FF6FAA", "Assets/Explore/7.png"),
-        new("Fantasia", Geometry.Parse("M12,3 L14.7,8.5 21,9.4 16.5,13.8 17.6,20 12,17 6.4,20 7.5,13.8 3,9.4 9.3,8.5 Z"), "#73E6FF", "Assets/Explore/1.png"),
-        new("Drama", Geometry.Parse("M12,3 L21,12 12,21 3,12 Z M12,7 L17,12 12,17 7,12 Z"), "#D595FF", "Assets/Explore/4.png"),
-        new("Slice of Life", Geometry.Parse("M12,2 C13.2,6.2 18.5,8.1 18.5,13.4 C18.5,18 15.7,21.5 12,21.5 C8.1,21.5 5,18.4 5,14.1 C5,10.5 7.4,8 9.2,5.1 C9.3,8.1 10.6,9.6 12,10.6 C13.2,8.1 12.8,4.8 12,2 Z M12,12 C14.2,14.1 14.1,16.7 12,18.7 C9.9,17.5 9.2,14.8 12,12 Z"), "#FFD06A", "Assets/Explore/5.png"),
-        new("Mistério", Geometry.Parse("M10.5,4 A6.5,6.5 0 1 1 10.49,17 M15.2,15.2 L21,21"), "#9BE9FF", "Assets/Explore/6.png"),
-        new("Comédia", Geometry.Parse("M12,3 A9,9 0 1 1 11.99,3 M8,10 L8.1,10 M16,10 L16.1,10 M8,14 C9,17 15,17 16,14"), "#FFD45D", "Assets/Explore/3.png"),
-        new("Isekai", Geometry.Parse("M5,22 L5,3 M6,4 L19,4 16,9 19,14 6,14 Z"), "#77E1D2", "Assets/Explore/8.png")
+        new("Ação", Icon("M4,4 L20,20 M4,4 L8,5 5,8 Z M16,19 L19,16 21,19 19,21 Z M20,4 L4,20 M20,4 L16,5 19,8 Z M8,19 L5,16 3,19 5,21 Z"), "#FF6580", "Assets/Explore/2.png"),
+        new("Romance", Icon("M12,21 C10,19 3,14.8 3,8.8 C3,5.6 5.4,3.5 8.4,3.5 C10.1,3.5 11.4,4.4 12,5.8 C12.6,4.4 13.9,3.5 15.6,3.5 C18.6,3.5 21,5.6 21,8.8 C21,14.8 14,19 12,21 Z"), "#FF6FAA", "Assets/Explore/7.png"),
+        new("Fantasia", Icon("M12,2.5 L14,8.5 20,10.5 14,12.5 12,18.5 10,12.5 4,10.5 10,8.5 Z M19,15.5 L20,18.5 22.5,19.5 20,20.5 19,23 18,20.5 15.5,19.5 18,18.5 Z"), "#73E6FF", "Assets/Explore/1.png"),
+        new("Drama", Icon("M3.5,4.5 C7,3.5 10,3.5 13,4.5 L13,11.5 C12,15 9.5,17 7.5,17 C5.5,15.5 4,12.5 3.5,4.5 Z M7,8 L8.5,8 M10.5,8 L12,8 M7.2,12.5 C8.2,11.5 10.3,11.5 11.3,12.5 M12,7 C15,6 18,6 20.5,7 L20,14 C19,18 16.5,20.5 14.5,20.5 C12.8,19.6 11.5,18 10.8,16 M14,11 L15.5,11 M17.5,10.5 L19,10.5 M14,15.5 C15,17 18,17 19,15"), "#D595FF", "Assets/Explore/4.png"),
+        new("Slice of Life", Icon("M4,8 L17,8 17,14 C17,18 14,20.5 10.5,20.5 C7,20.5 4,18 4,14 Z M17,10 L19,10 C22,10 22,15 19,15 L17,15 M8,3 C6,5 10,5.5 8,8 M13,3 C11,5 15,5.5 13,8"), "#FFD06A", "Assets/Explore/5.png"),
+        new("Mistério", Icon("M10,3 A7,7 0 0 1 10,17 A7,7 0 0 1 10,3 M15,15 L21,21"), "#9BE9FF", "Assets/Explore/6.png"),
+        new("Comédia", Icon("M12,3 A9,9 0 0 1 12,21 A9,9 0 0 1 12,3 M8,10 L8.1,10 M16,10 L16.1,10 M8,14 C9.2,17.2 14.8,17.2 16,14"), "#FFD45D", "Assets/Explore/3.png"),
+        new("Isekai", Icon("M5,3 L18,3 18,21 5,21 Z M9,7 L15,6 15,18 9,17 Z M12.5,12 L13,12 M18,21 L21,21"), "#77E1D2", "Assets/Explore/8.png"),
+        new("Ecchi", Icon("M9,20 C7.3,18.5 3.5,15.5 3.5,11.8 C3.5,9.4 5.2,8 7.2,8 C8.3,8 9.3,8.6 10,9.5 C10.7,8.6 11.7,8 12.8,8 C14.8,8 16.5,9.4 16.5,11.8 C16.5,15.5 10.7,18.8 9,20 Z M18,3 L18.8,5.2 21,6 18.8,6.8 18,9 17.2,6.8 15,6 17.2,5.2 Z"), "#FF82C7", "Assets/Explore/11.png"),
+        new("Horror", Icon("M5,10 C5,5.5 8,3 12,3 C16,3 19,5.5 19,10 C19,13 17.5,15.5 15.5,16.5 L15.5,20 13.2,18.8 12,21 10.8,18.8 8.5,20 8.5,16.5 C6.5,15.5 5,13 5,10 Z M8.5,8 A2,2 0 0 1 8.5,12 A2,2 0 0 1 8.5,8 M15.5,8 A2,2 0 0 1 15.5,12 A2,2 0 0 1 15.5,8 M12,12.5 L10.8,15 13.2,15 Z"), "#C18BFF", "Assets/Explore/12.png"),
+        new("Aventura", Icon("M12,3 A9,9 0 0 1 12,21 A9,9 0 0 1 12,3 M15.8,8.2 L13.5,13.5 8.2,15.8 10.5,10.5 Z M12,11.2 L12.1,11.2"), "#F4B35F", "Assets/Explore/10.png"),
+        new("Esportes", Icon("M12,3 A9,9 0 0 1 12,21 A9,9 0 0 1 12,3 M9,8.5 L12,6.5 15,8.5 14,12.5 10,12.5 Z M4,10 L10,12.5 12,20 M20,10 L14,12.5 12,20 M7,5 L9,8.5 M17,5 L15,8.5"), "#69D9FF", "Assets/Explore/9.png")
     ];
+
+    private static new Geometry Icon(string pathData)
+    {
+        var geometry = Geometry.Parse(pathData);
+        geometry.Freeze();
+        return geometry;
+    }
 
     public ObservableCollection<ExploreAnimeCard> TrendingCards { get; } = [];
     public ObservableCollection<ExploreAnimeCard> RecommendedCards { get; } = [];
     public ObservableCollection<ExploreAnimeCard> ReleaseCards { get; } = [];
     public ObservableCollection<GenreAnimeShowcaseCard> GenreAnimeCards { get; } = [];
-    public double GenreCategoryCardWidth { get; private set; } = 246;
+    public int GenreCategoryColumns { get; private set; } = 4;
     public double GenreCategoryImageHeight { get; private set; } = 226;
     public double GenreResultCardWidth { get; private set; } = 268;
     public double GenreResultCoverHeight { get; private set; } = 252;
@@ -56,8 +70,15 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
     public ExploreWindow()
     {
         InitializeComponent();
+        var appearance = global::AniT.Infrastructure.AniTSystemSettingsStore.Load();
+        RouletteParticlesLayer.Opacity = appearance.ReduceMotion ? 0 : appearance.AnimationIntensity / 100d;
+        RouletteParticlesLayer.Visibility = appearance.ReduceMotion || appearance.AnimationIntensity == 0
+            ? Visibility.Collapsed
+            : Visibility.Visible;
         GlobalSearchController.Attach(this, SearchBox, SearchHint, SearchContainer);
         ResponsiveWindow.FitToWorkArea(this, 1380, 860);
+        App.LibraryArtworkUpdated += App_LibraryArtworkUpdated;
+        Closed += (_, _) => App.LibraryArtworkUpdated -= App_LibraryArtworkUpdated;
         DataContext = this;
     }
 
@@ -74,10 +95,14 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
             .Include(item => item.Seasons)
             .ThenInclude(season => season.Episodes)
             .ThenInclude(episode => episode.PlaybackProgress)
+            .Include(item => item.Seasons)
+            .ThenInclude(season => season.Episodes)
+            .ThenInclude(episode => episode.MediaFiles)
             .AsNoTracking()
             .ToListAsync();
 
         sourceCards.Clear();
+        var now = DateTimeOffset.UtcNow;
         foreach (var item in anime)
         {
             var episodes = item.Seasons.SelectMany(season => season.Episodes).ToList();
@@ -106,10 +131,12 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
                 item.Id,
                 item.Title,
                 item.EnglishTitle ?? $"{episodes.Count} episódio{(episodes.Count == 1 ? string.Empty : "s")}",
-                IsUsableCover(item.CoverPath) ? item.CoverPath! : "Assets/Explore/banner.png",
-                score > 0 ? $"★ {score:0.0}" : "Novo",
+                IsUsableCover(item.CoverPath) ? item.CoverPath! : App.UpdatingArtworkPath,
+                score > 0 ? $"★ {score:0.0}" : "Sem nota",
                 item.IsFavorite,
                 item.CreatedAt,
+                global::AniT.Core.LibraryFreshness.GetLatestImportAt(item),
+                global::AniT.Core.LibraryFreshness.IsNew(item, now),
                 lastActivity,
                 nextEpisode?.Id,
                 item.Genres ?? string.Empty,
@@ -140,43 +167,12 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
                     global::AniT.Core.AnimeGenreCatalog.ToSearchText(card.Genres)));
         }
 
-        if (GenreFilter?.SelectedItem is ComboBoxItem { Content: string selectedGenre }
-            && GenreFilter.SelectedIndex > 0)
-        {
-            var canonicalGenre = global::AniT.Core.AnimeGenreCatalog.All
-                .FirstOrDefault(item => string.Equals(item.DisplayName, selectedGenre, StringComparison.CurrentCultureIgnoreCase))
-                ?.CanonicalName ?? selectedGenre;
-            filtered = filtered.Where(card => global::AniT.Core.AnimeGenreCatalog.Parse(card.Genres)
-                .Contains(canonicalGenre, StringComparer.OrdinalIgnoreCase));
-        }
-
-        if (YearFilter?.SelectedItem is ComboBoxItem { Content: string selectedYear }
-            && YearFilter.SelectedIndex > 0
-            && int.TryParse(selectedYear, out var year))
-        {
-            filtered = filtered.Where(card => card.CreatedAt.Year == year);
-        }
-
-        if (StatusFilter?.SelectedIndex > 0)
-        {
-            var status = StatusFilter.SelectedIndex == 1
-                ? ExploreLibraryStatus.Watching
-                : ExploreLibraryStatus.Completed;
-            filtered = filtered.Where(card => card.LibraryStatus == status);
-        }
-
-        filtered = OrderFilter?.SelectedIndex switch
-        {
-            1 => filtered.OrderByDescending(card => card.CreatedAt),
-            2 => filtered.OrderByDescending(card => ParseScore(card.ScoreLabel)),
-            3 => filtered.OrderBy(card => card.Title),
-            _ => filtered.OrderByDescending(card => card.LastActivity)
-        };
+        filtered = filtered.OrderByDescending(card => card.LastActivity);
 
         var cards = filtered.ToList();
         Replace(TrendingCards, cards.Take(5));
         Replace(RecommendedCards, cards.OrderByDescending(card => card.IsFavorite).ThenByDescending(card => ParseScore(card.ScoreLabel)).Take(5));
-        Replace(ReleaseCards, cards.OrderByDescending(card => card.CreatedAt).Take(3));
+        Replace(ReleaseCards, cards.OrderByDescending(card => card.LatestImportAt).Take(3));
 
         TrendingEmpty.Visibility = TrendingCards.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         RecommendedEmpty.Visibility = RecommendedCards.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -196,6 +192,12 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
 
     private static bool IsUsableCover(string? path) => !string.IsNullOrWhiteSpace(path) && File.Exists(path);
 
+    private async void App_LibraryArtworkUpdated(object? sender, EventArgs e)
+    {
+        if (!IsLoaded || !IsVisible) return;
+        await LoadAsync();
+    }
+
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (SearchHint is not null) SearchHint.Visibility = string.IsNullOrEmpty(SearchBox.Text) ? Visibility.Visible : Visibility.Collapsed;
@@ -205,13 +207,6 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
     private void SearchBox_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter) ApplyCurrentFilters();
-    }
-
-    private void QuickFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (!IsLoaded) return;
-        if (ReferenceEquals(sender, GenreFilter)) SyncGenreShowcaseFromFilter();
-        ApplyCurrentFilters();
     }
 
     private void RouletteClose_Click(object sender, RoutedEventArgs e)
@@ -334,18 +329,13 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
     private void Genre_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button { Tag: string genre }) return;
-        var targetIndex = Math.Max(0, Genres.ToList().FindIndex(item => item.Name == genre) + 1);
         if (Genres.FirstOrDefault(item => item.Name == genre)?.IsSelected == true)
         {
-            GenreFilter.SelectedIndex = 0;
-            SyncGenreShowcaseFromFilter();
-            ApplyCurrentFilters();
+            ClearGenreShowcase();
             return;
         }
 
-        GenreFilter.SelectedIndex = targetIndex;
         SelectGenreShowcase(genre);
-        ApplyCurrentFilters();
     }
 
     private void GenreCategoriesToggle_Click(object sender, RoutedEventArgs e)
@@ -367,19 +357,13 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
         GenreCategoriesToggle.Content = "Mostrar categorias  ⌄";
     }
 
-    private void SyncGenreShowcaseFromFilter()
+    private void ClearGenreShowcase()
     {
-        if (GenreFilter.SelectedIndex <= 0 || GenreFilter.SelectedItem is not ComboBoxItem { Content: string displayName })
-        {
-            selectedGenreCanonical = null;
-            foreach (var item in Genres) item.IsSelected = false;
-            GenreAnimeCards.Clear();
-            GenreResultsPanel.Visibility = Visibility.Collapsed;
-            SelectedGenrePill.Visibility = Visibility.Collapsed;
-            return;
-        }
-
-        SelectGenreShowcase(displayName);
+        selectedGenreCanonical = null;
+        foreach (var item in Genres) item.IsSelected = false;
+        GenreAnimeCards.Clear();
+        GenreResultsPanel.Visibility = Visibility.Collapsed;
+        SelectedGenrePill.Visibility = Visibility.Collapsed;
     }
 
     private void SelectGenreShowcase(string displayName)
@@ -439,14 +423,10 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
 
     public void SelectGenre(string genre)
     {
-        var option = GenreFilter.Items.OfType<ComboBoxItem>()
-            .FirstOrDefault(item => string.Equals(item.Content?.ToString(), genre, StringComparison.CurrentCultureIgnoreCase));
-        if (option is not null) GenreFilter.SelectedItem = option;
         SearchBox.Clear();
         if (IsLoaded)
         {
-            SelectGenreShowcase(option?.Content?.ToString() ?? genre);
-            ApplyCurrentFilters();
+            SelectGenreShowcase(genre);
         }
         GenreSection.BringIntoView();
     }
@@ -473,11 +453,6 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
     }
 
     private void Library_Click(object sender, RoutedEventArgs e) => AppNavigation.OpenLibrary(this);
-
-    private async void ConfigureShelf_Click(object sender, RoutedEventArgs e)
-    {
-        if (new SetupShelfWindow { Owner = this }.ShowDialog() is true) await LoadAsync();
-    }
 
     private void Home_Click(object sender, RoutedEventArgs e) => AppNavigation.Home(this);
     private void Calendar_Click(object sender, RoutedEventArgs e) => AppNavigation.Calendar(this);
@@ -515,7 +490,7 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
             DiscoveryMascotTranslate.X = 4;
             DiscoveryMascotGlow.Width = 225;
             DiscoveryMascotGlow.Margin = new Thickness(0, 0, 14, -16);
-            SetGenreCardSizes(210, 188, 230, 220, 13);
+            SetGenreCardSizes(3, 188, 230, 220, 13);
         }
         else if (width < 1600)
         {
@@ -532,7 +507,7 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
             DiscoveryMascotTranslate.X = 8;
             DiscoveryMascotGlow.Width = 300;
             DiscoveryMascotGlow.Margin = new Thickness(0, 0, 22, -18);
-            SetGenreCardSizes(226, 204, 244, 230, 16);
+            SetGenreCardSizes(width < 1450 ? 3 : 4, 204, 244, 230, 16);
         }
         else if (width < 2300)
         {
@@ -549,7 +524,7 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
             DiscoveryMascotTranslate.X = 10;
             DiscoveryMascotGlow.Width = 335;
             DiscoveryMascotGlow.Margin = new Thickness(0, 0, 24, -20);
-            SetGenreCardSizes(246, 226, 268, 252, 20);
+            SetGenreCardSizes(width < 1850 ? 4 : 6, 226, 268, 252, 20);
         }
         else
         {
@@ -566,24 +541,35 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
             DiscoveryMascotTranslate.X = 12;
             DiscoveryMascotGlow.Width = 360;
             DiscoveryMascotGlow.Margin = new Thickness(0, 0, 27, -22);
-            SetGenreCardSizes(276, 250, 292, 276, 22);
+            SetGenreCardSizes(6, 250, 292, 276, 22);
         }
     }
 
     private void SetGenreCardSizes(
-        double categoryWidth,
+        int categoryColumns,
         double categoryImageHeight,
         double resultWidth,
         double resultCoverHeight,
         double panelPadding)
     {
-        GenreCategoryCardWidth = categoryWidth;
+        var appearance = global::AniT.Infrastructure.AniTSystemSettingsStore.Load();
+        if (appearance.CardsPerRow > 0) categoryColumns = appearance.CardsPerRow;
+        var density = appearance.CardSize switch
+        {
+            global::AniT.Infrastructure.AppearanceCardSize.Compact => 0.88,
+            global::AniT.Infrastructure.AppearanceCardSize.Large => 1.12,
+            _ => 1d
+        };
+        categoryImageHeight *= density;
+        resultWidth *= density;
+        resultCoverHeight *= density;
+        GenreCategoryColumns = categoryColumns;
         GenreCategoryImageHeight = categoryImageHeight;
         GenreResultCardWidth = resultWidth;
         GenreResultCoverHeight = resultCoverHeight;
         GenreCardsHost.Padding = new Thickness(panelPadding);
         GenreResultsPanel.Padding = new Thickness(panelPadding);
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(GenreCategoryCardWidth)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(GenreCategoryColumns)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(GenreCategoryImageHeight)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(GenreResultCardWidth)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(GenreResultCoverHeight)));
@@ -592,20 +578,31 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
 
 public sealed class ExploreGenreCard : INotifyPropertyChanged
 {
+    private const int OptimizedImageWidth = 720;
+    private static readonly ConcurrentDictionary<string, ImageSource> ImageCache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly DropShadowEffect normalGlow;
+    private readonly DropShadowEffect selectedGlow;
     private bool isSelected;
 
     public ExploreGenreCard(string name, Geometry iconData, string accent, string imagePath)
     {
         Name = name;
         IconData = iconData;
-        Accent = accent;
-        ImagePath = imagePath;
+        AccentColor = (Color)ColorConverter.ConvertFromString(accent);
+        var accentBrush = new SolidColorBrush(AccentColor);
+        accentBrush.Freeze();
+        AccentBrush = accentBrush;
+        normalGlow = CreateGlow(AccentColor, 21, 0.44);
+        selectedGlow = CreateGlow(AccentColor, 38, 0.92);
+        ImageSource = ImageCache.GetOrAdd(imagePath, LoadOptimizedImage);
     }
 
     public string Name { get; }
     public Geometry IconData { get; }
-    public string Accent { get; }
-    public string ImagePath { get; }
+    public Color AccentColor { get; }
+    public Brush AccentBrush { get; }
+    public Effect GlowEffect => isSelected ? selectedGlow : normalGlow;
+    public ImageSource ImageSource { get; }
     public bool IsSelected
     {
         get => isSelected;
@@ -614,10 +611,37 @@ public sealed class ExploreGenreCard : INotifyPropertyChanged
             if (isSelected == value) return;
             isSelected = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelected)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(GlowEffect)));
         }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
+
+    private static DropShadowEffect CreateGlow(Color color, double blurRadius, double opacity)
+    {
+        var effect = new DropShadowEffect
+        {
+            Color = color,
+            BlurRadius = blurRadius,
+            ShadowDepth = 0,
+            Opacity = opacity,
+            RenderingBias = RenderingBias.Performance
+        };
+        effect.Freeze();
+        return effect;
+    }
+
+    private static ImageSource LoadOptimizedImage(string imagePath)
+    {
+        var image = new BitmapImage();
+        image.BeginInit();
+        image.CacheOption = BitmapCacheOption.OnLoad;
+        image.DecodePixelWidth = OptimizedImageWidth;
+        image.UriSource = new Uri($"pack://application:,,,/{imagePath.Replace('\\', '/')}", UriKind.Absolute);
+        image.EndInit();
+        image.Freeze();
+        return image;
+    }
 }
 
 public sealed record GenreAnimeShowcaseCard(
@@ -638,10 +662,15 @@ public sealed record ExploreAnimeCard(
     string ScoreLabel,
     bool IsFavorite,
     DateTimeOffset CreatedAt,
+    DateTimeOffset LatestImportAt,
+    bool IsNew,
     DateTimeOffset LastActivity,
     Guid? NextEpisodeId,
     string Genres,
-    ExploreLibraryStatus LibraryStatus);
+    ExploreLibraryStatus LibraryStatus)
+{
+    public Visibility NewBadgeVisibility => IsNew ? Visibility.Visible : Visibility.Collapsed;
+}
 
 public enum ExploreLibraryStatus
 {

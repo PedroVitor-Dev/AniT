@@ -6,6 +6,7 @@
         Width="1440" Height="900" MinWidth="1060" MinHeight="700"
         Background="#020B1D" WindowStartupLocation="CenterOwner" WindowState="Maximized"
         Loaded="Window_Loaded" Activated="Window_Activated" SizeChanged="Window_SizeChanged"
+        PreviewKeyDown="Window_PreviewKeyDown" Closed="Window_Closed"
         UseLayoutRounding="True" SnapsToDevicePixels="True">
     <Window.Resources>
         <ResourceDictionary>
@@ -16,8 +17,11 @@
             <Style x:Key="DetailPanel" TargetType="Border">
                 <Setter Property="Background" Value="#E9081D3C"/>
                 <Setter Property="BorderBrush" Value="#28679D"/>
-                <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="CornerRadius" Value="17"/>
+                <Setter Property="BorderThickness" Value="1.25"/>
+                <Setter Property="CornerRadius" Value="18"/>
+                <Setter Property="ClipToBounds" Value="True"/>
+                <Setter Property="Tag" Value="18"/>
+                <EventSetter Event="SizeChanged" Handler="RoundedPanel_SizeChanged"/>
             </Style>
 
             <Style x:Key="ActionButton" TargetType="Button" BasedOn="{StaticResource HomePrimaryButton}">
@@ -102,7 +106,7 @@
                         <ControlTemplate TargetType="TabControl">
                             <Grid>
                                 <Grid.RowDefinitions><RowDefinition Height="58"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                                <Border BorderBrush="#204F7D" BorderThickness="0,0,0,1" Background="#9A061831" CornerRadius="16,16,0,0">
+                                <Border BorderBrush="#285F92" BorderThickness="1" Background="#D9081D3C" CornerRadius="16">
                                     <TabPanel IsItemsHost="True" Background="Transparent" Margin="8,2,0,0"/>
                                 </Border>
                                 <ContentPresenter Grid.Row="1" ContentSource="SelectedContent" Margin="0,14,0,0"/>
@@ -137,7 +141,7 @@
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
                             <Border x:Name="PlaySurface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="22">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="PlaySurface" Property="Background" Value="#FF168DE0"/><Setter TargetName="PlaySurface" Property="BorderBrush" Value="White"/></Trigger>
@@ -148,6 +152,17 @@
                 </Setter>
             </Style>
 
+            <Style x:Key="ArtworkPreviewButton" TargetType="Button">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border x:Name="ArtworkSurface" Background="{TemplateBinding Background}"><ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ArtworkSurface" Property="Opacity" Value="0.9"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+            </Style>
+
             <DataTemplate x:Key="EpisodeCardTemplate">
                 <Border Style="{StaticResource EpisodeRow}" Padding="12" Margin="0,0,0,10">
                     <Grid>
@@ -156,7 +171,7 @@
                             <ColumnDefinition Width="326"/><ColumnDefinition Width="142"/>
                         </Grid.ColumnDefinitions>
                         <Border Width="116" Height="78" CornerRadius="11" Background="#0A2346" ClipToBounds="True" SizeChanged="RoundedPanel_SizeChanged" Tag="11">
-                            <Grid><Image Source="{Binding DataContext.CoverPath, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="UniformToFill"/><Rectangle Fill="#4203152D"/><Button Style="{StaticResource EpisodePlayButton}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0" Tag="{Binding Id}" Click="EpisodePlay_Click"><TextBlock Text="▶" FontSize="12"/></Button></Grid>
+                            <Grid><Image Source="{Binding DataContext.CoverPath, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="UniformToFill"/><Rectangle Fill="#4203152D"/><Button Style="{StaticResource EpisodePlayButton}" HorizontalAlignment="Center" VerticalAlignment="Center" Tag="{Binding Id}" Click="EpisodePlay_Click"><Viewbox Width="15" Height="15"><Path Data="{StaticResource AniT.Icon.Play}" Fill="White" Stretch="Uniform"/></Viewbox></Button></Grid>
                         </Border>
                         <TextBlock Grid.Column="1" Text="{Binding Number}" Foreground="#EAF6FF" FontSize="25" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                         <StackPanel Grid.Column="2" Margin="10,0,14,0" VerticalAlignment="Center"><TextBlock Text="{Binding Title}" Foreground="White" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding StatusLabel}" Foreground="{Binding StatusColor}" FontSize="10" FontWeight="SemiBold" Margin="0,5,0,0"/><TextBlock Text="{Binding ProgressLabel}" Foreground="#C7DDF4" FontSize="9" Margin="0,6,0,0"/><ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}" Maximum="100" Style="{StaticResource HomeProgress}" Height="6" Margin="0,5,0,0"/></StackPanel>
@@ -171,8 +186,8 @@
                             </StackPanel>
                         </StackPanel>
                         <StackPanel Grid.Column="4" VerticalAlignment="Center" Margin="7,0,0,0">
-                            <Button Style="{StaticResource CompactButton}" Content="{Binding EpisodeNoteActionLabel}" ToolTip="{Binding EpisodeNoteToolTip}" Tag="{Binding Id}" Click="EpisodeNote_Click" Padding="8,7" Margin="0,0,0,7"/>
-                            <Button Style="{StaticResource CompactButton}" Tag="{Binding Id}" Click="ToggleWatched_Click" Padding="8,7"><TextBlock Text="{Binding WatchedActionLabel}" TextWrapping="Wrap" TextAlignment="Center"/></Button>
+                            <Button Style="{StaticResource CompactButton}" ToolTip="{Binding EpisodeNoteToolTip}" Tag="{Binding Id}" Click="EpisodeNote_Click" Padding="8,7" Margin="0,0,0,7"><StackPanel Orientation="Horizontal" HorizontalAlignment="Center"><Path Data="{StaticResource AniT.Icon.Note}" Width="13" Height="13" Stretch="Uniform" Fill="Transparent" Stroke="#8DE7FF" StrokeThickness="1.8" StrokeLineJoin="Round"/><TextBlock Text="{Binding EpisodeNoteActionLabel}" Margin="6,0,0,0" VerticalAlignment="Center"/></StackPanel></Button>
+                            <Button Style="{StaticResource CompactButton}" Tag="{Binding Id}" Click="ToggleWatched_Click" Padding="8,7"><StackPanel Orientation="Horizontal" HorizontalAlignment="Center"><Path Data="{StaticResource AniT.Icon.Eye}" Width="13" Height="13" Stretch="Uniform" Fill="Transparent" Stroke="#8DE7FF" StrokeThickness="1.8" StrokeLineJoin="Round"/><TextBlock Text="{Binding WatchedActionLabel}" Margin="6,0,0,0" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center"/></StackPanel></Button>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -186,7 +201,7 @@
                             <ColumnDefinition Width="142"/><ColumnDefinition Width="462"/><ColumnDefinition Width="158"/>
                         </Grid.ColumnDefinitions>
                         <Border Width="160" Height="100" CornerRadius="13" Background="#0A2346" ClipToBounds="True" SizeChanged="RoundedPanel_SizeChanged" Tag="13">
-                            <Grid><Image Source="{Binding DataContext.CoverPath, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="UniformToFill"/><Rectangle Fill="#4203152D"/><Button Style="{StaticResource EpisodePlayButton}" Width="48" Height="48" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,11,0" Tag="{Binding Id}" Click="EpisodePlay_Click"><TextBlock Text="▶" FontSize="15"/></Button></Grid>
+                            <Grid><Image Source="{Binding DataContext.CoverPath, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="UniformToFill"/><Rectangle Fill="#4203152D"/><Button Style="{StaticResource EpisodePlayButton}" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" Tag="{Binding Id}" Click="EpisodePlay_Click"><Viewbox Width="17" Height="17"><Path Data="{StaticResource AniT.Icon.Play}" Fill="White" Stretch="Uniform"/></Viewbox></Button></Grid>
                         </Border>
                         <TextBlock Grid.Column="1" Text="{Binding Number}" Foreground="#EAF6FF" FontSize="31" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                         <StackPanel Grid.Column="2" Margin="13,0,18,0" VerticalAlignment="Center"><TextBlock Text="{Binding Title}" Foreground="White" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding VersionSummary}" Foreground="#8EB5DE" FontSize="11" Margin="0,7,0,0" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding StatusLabel}" Foreground="{Binding StatusColor}" FontSize="11" FontWeight="SemiBold" Margin="0,5,0,0"/></StackPanel>
@@ -202,8 +217,8 @@
                             </StackPanel>
                         </StackPanel>
                         <StackPanel Grid.Column="5" VerticalAlignment="Center" Margin="9,0,0,0">
-                            <Button Style="{StaticResource CompactButton}" Content="{Binding EpisodeNoteActionLabel}" ToolTip="{Binding EpisodeNoteToolTip}" Tag="{Binding Id}" Click="EpisodeNote_Click" Padding="10,9" Margin="0,0,0,8"/>
-                            <Button Style="{StaticResource CompactButton}" Content="{Binding WatchedActionLabel}" Tag="{Binding Id}" Click="ToggleWatched_Click" Padding="10,9"/>
+                            <Button Style="{StaticResource CompactButton}" ToolTip="{Binding EpisodeNoteToolTip}" Tag="{Binding Id}" Click="EpisodeNote_Click" Padding="10,9" Margin="0,0,0,8"><StackPanel Orientation="Horizontal" HorizontalAlignment="Center"><Path Data="{StaticResource AniT.Icon.Note}" Width="14" Height="14" Stretch="Uniform" Fill="Transparent" Stroke="#8DE7FF" StrokeThickness="1.8" StrokeLineJoin="Round"/><TextBlock Text="{Binding EpisodeNoteActionLabel}" Margin="7,0,0,0" VerticalAlignment="Center"/></StackPanel></Button>
+                            <Button Style="{StaticResource CompactButton}" Tag="{Binding Id}" Click="ToggleWatched_Click" Padding="10,9"><StackPanel Orientation="Horizontal" HorizontalAlignment="Center"><Path Data="{StaticResource AniT.Icon.Eye}" Width="14" Height="14" Stretch="Uniform" Fill="Transparent" Stroke="#8DE7FF" StrokeThickness="1.8" StrokeLineJoin="Round"/><TextBlock Text="{Binding WatchedActionLabel}" Margin="7,0,0,0" VerticalAlignment="Center"/></StackPanel></Button>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -216,10 +231,10 @@
         <Grid.Background><RadialGradientBrush GradientOrigin="0.70,0.04" Center="0.70,0.04" RadiusX="0.96" RadiusY="1.08"><GradientStop Color="#0A356D" Offset="0"/><GradientStop Color="#041A38" Offset="0.44"/><GradientStop Color="#020A1A" Offset="1"/></RadialGradientBrush></Grid.Background>
         <Grid.ColumnDefinitions><ColumnDefinition x:Name="SidebarColumn" Width="220"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
 
-        <Border Background="{StaticResource HomeSidebarBrush}" BorderBrush="#174576" BorderThickness="0,0,1,0">
+        <Border Background="{DynamicResource HomeSidebarBrush}" BorderBrush="#174576" BorderThickness="0,0,1,0">
             <Grid ClipToBounds="True">
                 <Grid.RowDefinitions><RowDefinition Height="118"/><RowDefinition Height="*"/><RowDefinition Height="205"/></Grid.RowDefinitions>
-                <Border Width="178" Height="92" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,2,0,0"><Border.Background><ImageBrush ImageSource="Assets/logo-fire.png" Viewbox="0,0.28,1,0.46" ViewboxUnits="RelativeToBoundingBox" Stretch="Uniform"/></Border.Background></Border>
+                <Border Width="178" Height="92" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,2,0,0"><Border.Background><ImageBrush ImageSource="{local:ComfortableImage Path=Assets/logo-fire.png, DecodePixelWidth=320}" Viewbox="0,0.28,1,0.46" ViewboxUnits="RelativeToBoundingBox" Stretch="Uniform"/></Border.Background></Border>
                 <StackPanel Grid.Row="1" Margin="0,12,0,0">
                     <TextBlock Text="NAVEGAÇÃO" Foreground="#587DA9" FontSize="10" FontWeight="SemiBold" Margin="24,0,0,9"/>
                     <Button Style="{StaticResource HomeNavButton}" Click="Back_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Home}" Label="Início"/></Button>
@@ -231,7 +246,7 @@
                     <Button Style="{StaticResource HomeNavButton}" Click="Profile_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Profile}" Label="Perfil"/></Button>
                     <local:SystemSettingsNavButton/>
                 </StackPanel>
-                <Image Grid.Row="2" Source="Assets/ghost_menu.png" Style="{StaticResource HomeSidebarMascot}"/>
+                <Image Grid.Row="2" Source="{local:PageMascot Page=Anime, Fallback=Assets/ghost_menu.png}" Style="{StaticResource HomeSidebarMascot}"/>
             </Grid>
         </Border>
 
@@ -240,14 +255,19 @@
             <Border Background="#D9051937" BorderBrush="#174A7C" BorderThickness="0,0,0,1">
                 <Grid MaxWidth="2500" Margin="28,0" HorizontalAlignment="Stretch">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <Border x:Name="SearchContainer" MinWidth="300" MaxWidth="560" Height="46" Margin="0,0,20,0" Background="#A20B254B" BorderBrush="#336C9F" BorderThickness="1" CornerRadius="23" HorizontalAlignment="Stretch" VerticalAlignment="Center"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="48"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><TextBlock Text="⌕" Foreground="#A9C7EC" FontSize="25" HorizontalAlignment="Center" VerticalAlignment="Center"/><Grid Grid.Column="1"><TextBlock x:Name="SearchHint" Text="Buscar animes, episódios, gêneros..." Foreground="#7F9FC8" FontSize="14" VerticalAlignment="Center" IsHitTestVisible="False"/><TextBox x:Name="SearchBox" Background="Transparent" BorderThickness="0" Foreground="White" CaretBrush="#62D6FF" FontSize="14" VerticalContentAlignment="Center" Padding="0,0,14,0" TextChanged="SearchBox_TextChanged" KeyDown="SearchBox_KeyDown"/></Grid></Grid></Border>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"><Button Style="{StaticResource HomeTopButton}" Content="⌂  Início" Click="Back_Click"/><Button Style="{StaticResource HomeTopButton}" Content="▶  Assistir" Click="PlayNext_Click"/><Button x:Name="LibraryTopButton" Style="{StaticResource HomeTopButton}" Content="♡  Biblioteca" Click="Library_Click"/><Border Width="1" Height="30" Background="#24527F" Margin="10,0,12,0"/><local:ProfileAvatarButton/></StackPanel>
+                    <Border x:Name="SearchContainer" MinWidth="300" MaxWidth="560" Height="46" Margin="0,0,20,0" Background="#A20B254B" BorderBrush="#336C9F" BorderThickness="1" CornerRadius="23" HorizontalAlignment="Stretch" VerticalAlignment="Center"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="48"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Path Data="{StaticResource AniT.Icon.Search}" Width="19" Height="19" Stretch="Uniform" Fill="Transparent" Stroke="#A9C7EC" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round" HorizontalAlignment="Center" VerticalAlignment="Center"/><Grid Grid.Column="1"><TextBlock x:Name="SearchHint" Text="Buscar animes, episódios, gêneros..." Foreground="#7F9FC8" FontSize="14" VerticalAlignment="Center" IsHitTestVisible="False"/><TextBox x:Name="SearchBox" Background="Transparent" BorderThickness="0" Foreground="White" CaretBrush="#62D6FF" FontSize="14" VerticalContentAlignment="Center" Padding="0,0,14,0" TextChanged="SearchBox_TextChanged" KeyDown="SearchBox_KeyDown"/></Grid></Grid></Border>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Style="{StaticResource HomeTopButton}" Click="Back_Click"><StackPanel Orientation="Horizontal"><Path Data="{StaticResource AniT.Icon.Home}" Width="14" Height="14" Stretch="Uniform" Fill="Transparent" Stroke="#BFD8F3" StrokeThickness="1.8" StrokeLineJoin="Round"/><TextBlock Text="Início" Margin="6,0,0,0"/></StackPanel></Button>
+                        <Button Style="{StaticResource HomeTopButton}" Click="PlayNext_Click"><StackPanel Orientation="Horizontal"><Path Data="{StaticResource AniT.Icon.Play}" Width="14" Height="14" Stretch="Uniform" Fill="#BFD8F3"/><TextBlock Text="Assistir" Margin="6,0,0,0"/></StackPanel></Button>
+                        <Button x:Name="LibraryTopButton" Style="{StaticResource HomeTopButton}" Click="Library_Click"><StackPanel Orientation="Horizontal"><Path Data="{StaticResource AniT.Icon.Library}" Width="15" Height="15" Stretch="Uniform" Fill="Transparent" Stroke="#BFD8F3" StrokeThickness="1.7" StrokeLineJoin="Round"/><TextBlock Text="Biblioteca" Margin="6,0,0,0"/></StackPanel></Button>
+                        <Border Width="1" Height="30" Background="#24527F" Margin="10,0,12,0"/><local:ProfileAvatarButton/>
+                    </StackPanel>
                 </Grid>
             </Border>
 
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" PanningMode="VerticalOnly">
                 <StackPanel x:Name="DetailsContentHost" MaxWidth="2500" Margin="24,16,24,44" HorizontalAlignment="Stretch">
-                    <Button Style="{StaticResource HomeTopButton}" Content="←   Voltar" HorizontalAlignment="Left" Click="Back_Click" Margin="0,0,0,10"/>
+                    <Button Style="{StaticResource HomeTopButton}" HorizontalAlignment="Left" Click="Back_Click" Margin="0,0,0,10"><StackPanel Orientation="Horizontal"><Path Data="{StaticResource AniT.Icon.ArrowLeft}" Width="16" Height="16" Stretch="Uniform" Fill="Transparent" Stroke="#BFD8F3" StrokeThickness="1.9" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/><TextBlock Text="Voltar" Margin="7,0,0,0"/></StackPanel></Button>
 
                     <Border x:Name="HeroBanner" Height="322" Background="#43C8FF" CornerRadius="20" Padding="2" ClipToBounds="True" SizeChanged="RoundedPanel_SizeChanged" Tag="20">
                         <Border.Effect><DropShadowEffect Color="#168BFF" BlurRadius="25" ShadowDepth="0" Opacity="0.30"/></Border.Effect>
@@ -262,8 +282,12 @@
                                     <TextBlock x:Name="HeroTitleText" Text="{Binding AnimeTitle}" Foreground="White" FontSize="42" FontWeight="Bold" TextWrapping="Wrap" TextTrimming="None"/>
                                     <TextBlock Text="{Binding EnglishTitleDisplay}" Foreground="#C7DCF4" FontSize="16" FontStyle="Italic" Margin="0,5,0,0" TextWrapping="Wrap"/>
                                     <WrapPanel Margin="0,15,0,0"><Border Background="#8A12345A" BorderBrush="#3B83B8" BorderThickness="1" CornerRadius="12" Padding="13,6" Margin="0,0,8,7"><TextBlock Text="Biblioteca local" Foreground="#D9EFFF" FontSize="11"/></Border><Border Background="#8A12345A" BorderBrush="#3B83B8" BorderThickness="1" CornerRadius="12" Padding="13,6" Margin="0,0,8,7"><TextBlock Text="{Binding WatchStateLabel}" Foreground="#72E0BE" FontSize="11"/></Border><Border Background="#8A12345A" BorderBrush="#3B83B8" BorderThickness="1" CornerRadius="12" Padding="13,6" Margin="0,0,8,7"><TextBlock Text="{Binding EpisodeCountLabel}" Foreground="#D9EFFF" FontSize="11"/></Border></WrapPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,7,0,0"><TextBlock Text="★" Foreground="#FFD45D" FontSize="22"/><TextBlock Text="{Binding CriticFiveLabel}" Foreground="#FFF0B0" FontSize="20" FontWeight="Bold" Margin="7,0,0,0"/><TextBlock Text="  Nota pública via AniList" Foreground="#A7C1DF" FontSize="11" VerticalAlignment="Center" Margin="7,0,0,0"/><Border Width="1" Height="20" Background="#3A628A" Margin="14,0"/><TextBlock Text="{Binding Summary}" Foreground="#CAE0F5" FontSize="12" VerticalAlignment="Center"/></StackPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,18,0,0"><Button Style="{StaticResource ActionButton}" Content="{Binding PlayNextLabel}" IsEnabled="{Binding CanPlayNext}" Click="PlayNext_Click" MinWidth="188"/></StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,7,0,0"><Path Data="{StaticResource AniT.Icon.Star}" Width="18" Height="18" Stretch="Uniform" Fill="#FFD45D" Stroke="#FFE08A" StrokeThickness="0.7" VerticalAlignment="Center"/><TextBlock Text="{Binding CriticFiveLabel}" Foreground="#FFF0B0" FontSize="20" FontWeight="Bold" Margin="7,0,0,0"/><TextBlock Text="Nota pública via AniList" Foreground="#A7C1DF" FontSize="11" VerticalAlignment="Center" Margin="11,0,0,0"/><Border Width="1" Height="20" Background="#3A628A" Margin="14,0"/><TextBlock Text="{Binding Summary}" Foreground="#CAE0F5" FontSize="12" VerticalAlignment="Center"/></StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
+                                        <Button Style="{StaticResource ActionButton}" IsEnabled="{Binding CanPlayNext}" Click="PlayNext_Click" MinWidth="188"><StackPanel Orientation="Horizontal" HorizontalAlignment="Center"><Path Data="{StaticResource AniT.Icon.Play}" Width="15" Height="15" Stretch="Uniform" Fill="White"/><TextBlock Text="{Binding PlayNextLabel}" Margin="8,0,0,0"/></StackPanel></Button>
+                                        <Button Style="{StaticResource SecondaryButton}" Click="Favorite_Click" ToolTip="{Binding FavoriteToolTip}" Margin="12,0,0,0" MinWidth="126"><StackPanel Orientation="Horizontal" HorizontalAlignment="Center"><Path Data="{StaticResource AniT.Icon.Heart}" Width="17" Height="17" Stretch="Uniform" Fill="{Binding FavoriteFill}" Stroke="{Binding FavoriteStroke}" StrokeThickness="1.8" StrokeLineJoin="Round"/><TextBlock Text="{Binding FavoriteLabel}" Margin="8,0,0,0" VerticalAlignment="Center"/></StackPanel></Button>
+                                        <Button Style="{StaticResource SecondaryButton}" Click="OrganizeAnime_Click" ToolTip="Adicionar este anime a tags e coleções" Margin="12,0,0,0" MinWidth="126"><StackPanel Orientation="Horizontal" HorizontalAlignment="Center"><Path Data="{StaticResource AniT.Icon.Library}" Width="17" Height="17" Stretch="Uniform" Fill="Transparent" Stroke="#D2F0FF" StrokeThickness="1.8" StrokeLineJoin="Round"/><TextBlock Text="Organizar" Margin="8,0,0,0" VerticalAlignment="Center"/></StackPanel></Button>
+                                    </StackPanel>
                                 </StackPanel>
                             </Grid>
                         </Border>
@@ -273,21 +297,24 @@
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="18"/><ColumnDefinition x:Name="RightRailColumn" Width="320"/></Grid.ColumnDefinitions>
 
                         <TabControl x:Name="AnimeTabControl" Style="{StaticResource AnimeTabs}">
-                            <TabItem Header="▣   Sinopse">
+                            <TabItem>
+                                <TabItem.Header><StackPanel Orientation="Horizontal"><Path Data="{StaticResource AniT.Icon.Document}" Width="15" Height="15" Stretch="Uniform" Fill="Transparent" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=TabItem}}" StrokeThickness="1.7" StrokeLineJoin="Round"/><TextBlock Text="Sinopse" Margin="8,0,0,0"/></StackPanel></TabItem.Header>
                                 <StackPanel>
                                     <Border Style="{StaticResource DetailPanel}" Padding="20" Margin="0,0,0,14">
                                         <Grid>
                                             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="24"/><ColumnDefinition Width="420"/></Grid.ColumnDefinitions>
                                             <StackPanel VerticalAlignment="Top">
-                                                <StackPanel Orientation="Horizontal"><TextBlock Text="▣" Foreground="#7BE1FF" FontSize="23"/><TextBlock Text="Sinopse" Foreground="White" FontSize="20" FontWeight="SemiBold" Margin="10,0,0,0"/></StackPanel>
+                                                <StackPanel Orientation="Horizontal"><local:IconTile IconData="{StaticResource AniT.Icon.Document}" Foreground="#7BE1FF" Width="32" Height="32"/><TextBlock Text="Sinopse" Foreground="White" FontSize="20" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center"/></StackPanel>
                                                 <TextBlock Text="{Binding Synopsis}" Foreground="#D7E9FA" FontSize="15" FontWeight="Medium" TextWrapping="Wrap" LineHeight="24" Margin="0,16,0,0" HorizontalAlignment="Stretch"/>
                                             </StackPanel>
                                             <Border Grid.Column="2" Height="224" CornerRadius="14" Background="#06172E" BorderBrush="#3979AA" BorderThickness="1" ClipToBounds="True" SizeChanged="RoundedPanel_SizeChanged" Tag="14">
-                                                <Grid>
-                                                    <Image Source="{Binding SynopsisArtworkPath}" Stretch="UniformToFill"/>
-                                                    <Rectangle><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#00112643" Offset="0.48"/><GradientStop Color="#D9051833" Offset="1"/></LinearGradientBrush></Rectangle.Fill></Rectangle>
-                                                    <Border VerticalAlignment="Bottom" Background="#B5071C39" Padding="12,8"><TextBlock Text="Arte do anime" Foreground="#BFD9F2" FontSize="10" FontWeight="SemiBold"/></Border>
-                                                </Grid>
+                                                <Button Style="{StaticResource ArtworkPreviewButton}" Click="OpenArtworkProjector_Click" ToolTip="Abrir galeria de artes">
+                                                    <Grid>
+                                                        <Image Source="{Binding SynopsisArtworkPath}" Stretch="UniformToFill"/>
+                                                        <Rectangle><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#00112643" Offset="0.48"/><GradientStop Color="#D9051833" Offset="1"/></LinearGradientBrush></Rectangle.Fill></Rectangle>
+                                                        <Border VerticalAlignment="Bottom" Background="#D5071C39" Padding="12,9"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock x:Name="ArtworkCountText" Text="Arte do anime · clique para ampliar" Foreground="#D7EDFF" FontSize="10" FontWeight="SemiBold"/><Path Grid.Column="1" Data="{StaticResource AniT.Icon.ArrowRight}" Width="13" Height="13" Stretch="Uniform" Fill="Transparent" Stroke="#8DE7FF" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Margin="9,0,0,0"/></Grid></Border>
+                                                    </Grid>
+                                                </Button>
                                             </Border>
                                         </Grid>
                                     </Border>
@@ -296,7 +323,8 @@
                                 </StackPanel>
                             </TabItem>
 
-                            <TabItem x:Name="EpisodesTab" Header="☷   Episódios">
+                            <TabItem x:Name="EpisodesTab">
+                                <TabItem.Header><StackPanel Orientation="Horizontal"><Path Data="{StaticResource AniT.Icon.List}" Width="15" Height="15" Stretch="Uniform" Fill="Transparent" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=TabItem}}" StrokeThickness="1.8" StrokeStartLineCap="Round"/><TextBlock Text="Episódios" Margin="8,0,0,0"/></StackPanel></TabItem.Header>
                                 <StackPanel><DockPanel Margin="4,0,2,12"><StackPanel><TextBlock Text="Sua lista local" Foreground="White" FontSize="21" FontWeight="SemiBold"/><TextBlock Text="Reproduza, avalie e marque seu progresso." Foreground="#8FACCE" FontSize="11" Margin="0,3,0,0"/></StackPanel><TextBlock Text="{Binding EpisodeCountLabel}" Foreground="#9FBBDD" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/></DockPanel><ItemsControl x:Name="EpisodeList" ItemsSource="{Binding Episodes}" ItemTemplate="{StaticResource EpisodeCardTemplate}"/></StackPanel>
                             </TabItem>
                         </TabControl>
@@ -304,13 +332,54 @@
                         <StackPanel x:Name="DetailsRightRail" Grid.Column="2">
                             <Border Background="#43C8FF" CornerRadius="17" Padding="2" Margin="0,0,0,12" ClipToBounds="True" SizeChanged="RoundedPanel_SizeChanged" Tag="17"><Border Background="#0A2347" CornerRadius="15" ClipToBounds="True" SizeChanged="RoundedPanel_SizeChanged" Tag="15"><Grid Height="174"><Image Source="Assets/ghost_background.png" Stretch="UniformToFill" Opacity="0.26"/><Image Source="Assets/happy-sf.png" Width="135" Height="150" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="4,0,0,-7"/><StackPanel Margin="134,24,15,15"><TextBlock Text="Baki-Pi diz:" Foreground="White" FontSize="17" FontWeight="Bold"/><TextBlock Text="Cada episódio é uma nova lembrança na sua jornada. ✦" Foreground="#C8DDF3" FontSize="11" TextWrapping="Wrap" LineHeight="17" Margin="0,7,0,0"/></StackPanel></Grid></Border></Border>
 
-                            <Border Style="{StaticResource DetailPanel}" Padding="17" Margin="0,0,0,12"><StackPanel><StackPanel Orientation="Horizontal"><TextBlock Text="★" Foreground="#8CE7FF" FontSize="20"/><TextBlock Text="Nota do AniList" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="9,0,0,0"/></StackPanel><StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,15,0,7"><TextBlock Text="★" Foreground="#FFD45D" FontSize="28"/><TextBlock Text="{Binding CriticFiveLabel}" Foreground="White" FontSize="35" FontWeight="Bold" Margin="8,-2,0,0"/><TextBlock Text="/5" Foreground="#9CB8D7" FontSize="15" VerticalAlignment="Bottom" Margin="4,0,0,8"/></StackPanel><TextBlock Text="{Binding CriticScoreLabel, StringFormat=Pontuação pública · {0}}" Foreground="#87A8CC" FontSize="10" HorizontalAlignment="Center" Margin="0,0,0,15"/><Button Style="{StaticResource HomePrimaryButton}" Content="Dar minha nota   ★" Click="OpenEpisodeRatings_Click" HorizontalAlignment="Stretch"/></StackPanel></Border>
+                            <Border Style="{StaticResource DetailPanel}" Padding="17" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal"><local:IconTile IconData="{StaticResource AniT.Icon.Star}" Foreground="#8CE7FF" Width="29" Height="29"/><TextBlock Text="Nota do AniList" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="9,0,0,0" VerticalAlignment="Center"/></StackPanel>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,15,0,7"><Path Data="{StaticResource AniT.Icon.Star}" Width="23" Height="23" Stretch="Uniform" Fill="#FFD45D" Stroke="#FFE08A" StrokeThickness="0.7"/><TextBlock Text="{Binding CriticFiveLabel}" Foreground="White" FontSize="35" FontWeight="Bold" Margin="8,-2,0,0"/><TextBlock Text="/5" Foreground="#9CB8D7" FontSize="15" VerticalAlignment="Bottom" Margin="4,0,0,8"/></StackPanel>
+                                    <TextBlock Text="{Binding CriticScoreLabel, StringFormat=Pontuação pública · {0}}" Foreground="#87A8CC" FontSize="10" HorizontalAlignment="Center" Margin="0,0,0,15"/>
+                                    <Button Style="{StaticResource HomePrimaryButton}" Click="OpenEpisodeRatings_Click" HorizontalAlignment="Stretch"><StackPanel Orientation="Horizontal" HorizontalAlignment="Center"><Path Data="{StaticResource AniT.Icon.Star}" Width="14" Height="14" Stretch="Uniform" Fill="White"/><TextBlock Text="Dar minha nota" Margin="7,0,0,0"/></StackPanel></Button>
+                                </StackPanel>
+                            </Border>
 
-                            <Border Style="{StaticResource DetailPanel}" Padding="17"><StackPanel><DockPanel><Button DockPanel.Dock="Right" Style="{StaticResource HomeSectionLink}" Content="Editar  →" Click="EditComment_Click"/><StackPanel Orientation="Horizontal"><TextBlock Text="▤" Foreground="#8DE5FF" FontSize="19"/><TextBlock Text="Sua crítica" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="9,0,0,0"/></StackPanel></DockPanel><Grid Margin="0,13,0,9"><Grid.ColumnDefinitions><ColumnDefinition Width="48"/><ColumnDefinition Width="*"/><ColumnDefinition Width="64"/></Grid.ColumnDefinitions><local:ProfileAvatarButton Width="42" Height="42"/><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="Você" Foreground="White" FontWeight="SemiBold"/><TextBlock Text="{Binding RatedEpisodeCountLabel}" Foreground="#8EAED1" FontSize="9" Margin="0,2,0,0"/></StackPanel><StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"><TextBlock Text="★" Foreground="#FFD45D" FontSize="17"/><TextBlock Text="{Binding LocalAverageLabel}" Foreground="#FFF0B0" FontSize="16" FontWeight="Bold" Margin="4,0,0,0"/></StackPanel></Grid><TextBlock Text="{Binding LocalReviewSummary}" Foreground="#C4D8EE" FontSize="11" TextWrapping="Wrap" LineHeight="17" MaxHeight="112"/></StackPanel></Border>
+                            <Border Style="{StaticResource DetailPanel}" Padding="17">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource HomeSectionLink}" Click="EditComment_Click"><StackPanel Orientation="Horizontal"><Path Data="{StaticResource AniT.Icon.Edit}" Width="13" Height="13" Stretch="Uniform" Fill="Transparent" Stroke="#9BDFFF" StrokeThickness="1.8" StrokeLineJoin="Round"/><TextBlock Text="Editar" Margin="6,0,0,0"/></StackPanel></Button>
+                                        <StackPanel Orientation="Horizontal"><local:IconTile IconData="{StaticResource AniT.Icon.Document}" Foreground="#8DE5FF" Width="29" Height="29"/><TextBlock Text="Sua crítica" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="9,0,0,0" VerticalAlignment="Center"/></StackPanel>
+                                    </DockPanel>
+                                    <Grid Margin="0,13,0,9"><Grid.ColumnDefinitions><ColumnDefinition Width="48"/><ColumnDefinition Width="*"/><ColumnDefinition Width="64"/></Grid.ColumnDefinitions><local:ProfileAvatarButton Width="42" Height="42"/><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="Você" Foreground="White" FontWeight="SemiBold"/><TextBlock Text="{Binding RatedEpisodeCountLabel}" Foreground="#8EAED1" FontSize="9" Margin="0,2,0,0"/></StackPanel><StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"><Path Data="{StaticResource AniT.Icon.Star}" Width="14" Height="14" Stretch="Uniform" Fill="#FFD45D"/><TextBlock Text="{Binding LocalAverageLabel}" Foreground="#FFF0B0" FontSize="16" FontWeight="Bold" Margin="5,0,0,0"/></StackPanel></Grid>
+                                    <TextBlock Text="{Binding LocalReviewSummary}" Foreground="#C4D8EE" FontSize="11" TextWrapping="Wrap" LineHeight="17" MaxHeight="112"/>
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
                     </Grid>
                 </StackPanel>
             </ScrollViewer>
+        </Grid>
+
+        <Grid x:Name="ArtworkProjectorOverlay" Grid.ColumnSpan="2" Panel.ZIndex="200" Background="#E8020A1A" Visibility="Collapsed" Focusable="True" MouseLeftButtonDown="ArtworkProjectorBackdrop_Click">
+            <Border MaxWidth="1320" MaxHeight="860" Margin="70" Padding="22" CornerRadius="24" Background="#FA071B38" BorderBrush="#55D2FF" BorderThickness="2">
+                <Border.Effect><DropShadowEffect Color="#159CFF" BlurRadius="38" ShadowDepth="0" Opacity="0.5"/></Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <DockPanel Margin="4,0,4,17">
+                        <Button DockPanel.Dock="Right" Style="{StaticResource EpisodePlayButton}" Width="42" Height="42" Click="CloseArtworkProjector_Click" ToolTip="Fechar galeria"><Path Data="{StaticResource AniT.Icon.Close}" Width="17" Height="17" Stretch="Uniform" Fill="Transparent" Stroke="White" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/></Button>
+                        <Button x:Name="ArtworkLockButton" DockPanel.Dock="Right" Style="{StaticResource HomeOutlineButton}" Click="ToggleArtworkLock_Click" Margin="0,0,12,0" Padding="15,9"><StackPanel Orientation="Horizontal"><Path Data="{StaticResource AniT.Icon.Lock}" Width="15" Height="15" Stretch="Uniform" Fill="Transparent" Stroke="#8DE7FF" StrokeThickness="1.8"/><TextBlock x:Name="ArtworkLockLabel" Text="Bloquear esta arte" Margin="8,0,0,0"/></StackPanel></Button>
+                        <StackPanel><TextBlock Text="Projetor de artes" Foreground="White" FontSize="22" FontWeight="Bold"/><TextBlock Text="Use as setas, as miniaturas ou o teclado para navegar." Foreground="#9DBDDD" FontSize="11" Margin="0,4,0,0"/></StackPanel>
+                    </DockPanel>
+                    <Grid Grid.Row="1">
+                        <Border CornerRadius="18" Background="#020A18" BorderBrush="#2C6C9C" BorderThickness="1" ClipToBounds="True" SizeChanged="RoundedPanel_SizeChanged" Tag="18">
+                            <Image x:Name="ProjectorImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </Border>
+                        <Button Style="{StaticResource EpisodePlayButton}" Width="52" Height="52" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="18,0,0,0" Click="PreviousArtwork_Click" ToolTip="Arte anterior"><Path Data="{StaticResource AniT.Icon.ArrowLeft}" Width="21" Height="21" Stretch="Uniform" Fill="Transparent" Stroke="White" StrokeThickness="2.1" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/></Button>
+                        <Button Style="{StaticResource EpisodePlayButton}" Width="52" Height="52" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,18,0" Click="NextArtwork_Click" ToolTip="Próxima arte"><Path Data="{StaticResource AniT.Icon.ArrowRight}" Width="21" Height="21" Stretch="Uniform" Fill="Transparent" Stroke="White" StrokeThickness="2.1" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/></Button>
+                        <Border VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,15" Background="#D1071B37" BorderBrush="#3E81AF" BorderThickness="1" CornerRadius="13" Padding="13,7"><TextBlock x:Name="ProjectorCounterText" Foreground="#DDF5FF" FontSize="11" FontWeight="SemiBold"/></Border>
+                    </Grid>
+                    <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,17,0,0">
+                        <ItemsControl ItemsSource="{Binding ArtworkGallery}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" HorizontalAlignment="Center"/></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate><Button Style="{StaticResource ArtworkPreviewButton}" Tag="{Binding Index}" Click="ArtworkThumbnail_Click" Margin="0,0,10,0" ToolTip="{Binding Label}"><Border Width="132" Height="74" CornerRadius="11" BorderBrush="#3979AA" BorderThickness="1.5" ClipToBounds="True" SizeChanged="RoundedPanel_SizeChanged" Tag="11"><Image Source="{Binding Path}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/></Border></Button></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
         </Grid>
     </Grid>
 </Window>

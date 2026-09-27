@@ -1,9 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using AniT.Infrastructure;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace AniT.App;
@@ -15,13 +18,16 @@ public partial class AnimeDetailsWindow : Window
     private bool requestedEpisodeFocused;
     private bool isLoadingPage;
     private bool loadFailureShown;
+    private CancellationTokenSource? artworkGalleryCancellation;
+    private int projectorArtworkIndex;
     public ObservableCollection<EpisodeItem> Episodes { get; } = [];
+    public ObservableCollection<AnimeArtworkItem> ArtworkGallery { get; } = [];
     public string AnimeTitle { get; private set; } = string.Empty;
     public string EnglishTitleDisplay { get; private set; } = string.Empty;
     public string Initial { get; private set; } = "?";
     public string Summary { get; private set; } = string.Empty;
     public string EpisodeCountLabel { get; private set; } = string.Empty;
-    public string PlayNextLabel { get; private set; } = "▶  Assistir próximo episódio";
+    public string PlayNextLabel { get; private set; } = "Assistir próximo episódio";
     public bool CanPlayNext { get; private set; } = true;
     public string? CoverPath { get; private set; }
     public string? SynopsisArtworkPath { get; private set; }
@@ -29,6 +35,11 @@ public partial class AnimeDetailsWindow : Window
     public string CriticScoreLabel { get; private set; } = "—";
     public string CriticFiveLabel { get; private set; } = "—";
     public string WatchStateLabel { get; private set; } = "Na sua biblioteca";
+    public bool IsFavorite { get; private set; }
+    public string FavoriteLabel => IsFavorite ? "Favoritado" : "Favoritar";
+    public string FavoriteFill => IsFavorite ? "#FF67A9" : "Transparent";
+    public string FavoriteStroke => IsFavorite ? "#FFD0E4" : "#D2F0FF";
+    public string FavoriteToolTip => IsFavorite ? "Remover este anime dos favoritos" : "Adicionar este anime aos favoritos";
     public string LocalAverageLabel { get; private set; } = "—";
     public string RatedEpisodeCountLabel { get; private set; } = "Nenhum episódio avaliado";
     public string LocalReviewSummary { get; private set; } = "Você ainda não escreveu comentários sobre esta obra.";
@@ -89,15 +100,21 @@ public partial class AnimeDetailsWindow : Window
             .Include(item => item.Seasons)
             .ThenInclude(season => season.Episodes)
             .ThenInclude(episode => episode.MediaFiles)
+            .Include(item => item.Aliases)
             .AsNoTracking()
             .FirstOrDefaultAsync(item => item.Id == animeId);
         if (anime is null) return;
 
-        AnimeTitle = anime.Title;
+        var organizationSettings = global::AniT.Infrastructure.AniTSystemSettingsStore.Load();
+        var preferredTitle = global::AniT.Infrastructure.OrganizationPreferences.PreferredTitle(anime, organizationSettings.AnimeTitlePreference);
+        AnimeTitle = preferredTitle;
+        IsFavorite = anime.IsFavorite;
         EnglishTitleDisplay = FormatEnglishTitle(anime.EnglishTitle);
-        Initial = anime.Title[..1].ToUpperInvariant();
-        CoverPath = File.Exists(anime.CoverPath) ? anime.CoverPath : null;
-        SynopsisArtworkPath = App.GetCachedAnimeBannerPath(anime.Id) ?? CoverPath;
+        Initial = preferredTitle[..1].ToUpperInvariant();
+        var hasUsableCover = !string.IsNullOrWhiteSpace(anime.CoverPath) && File.Exists(anime.CoverPath);
+        CoverPath = hasUsableCover ? anime.CoverPath : App.UpdatingArtworkPath;
+        SynopsisArtworkPath = App.GetLockedArtworkPath(anime.Id) ?? App.GetCachedAnimeBannerPath(anime.Id) ?? CoverPath;
+        ReplaceArtworkGallery([SynopsisArtworkPath, CoverPath]);
         Synopsis = global::AniT.Infrastructure.AnimeCoverProvider.IsLikelyPortugueseSynopsis(anime.Synopsis)
             ? anime.Synopsis!
             : "Buscando a sinopse em português…";
@@ -122,10 +139,10 @@ public partial class AnimeDetailsWindow : Window
                 ? "Em andamento"
                 : "Na sua biblioteca";
         PlayNextLabel = watchSummary.IsCompleted
-            ? "✓  Anime concluído"
+            ? "Anime concluído"
             : watching > 0
-                ? "▶  Continuar assistindo"
-                : "▶  Assistir próximo episódio";
+                ? "Continuar assistindo"
+                : "Assistir próximo episódio";
         Episodes.Clear();
         foreach (var episode in allEpisodes)
         {
@@ -133,8 +150,8 @@ public partial class AnimeDetailsWindow : Window
             var percent = progress is { DurationSeconds: > 0 } ? progress.PositionSeconds / progress.DurationSeconds * 100 : 0;
             Episodes.Add(new EpisodeItem(
                 episode.Id,
-                episode.Number.ToString("00"),
-                episode.Title ?? $"Episódio {episode.Number}",
+                global::AniT.Infrastructure.OrganizationPreferences.EpisodeCode(episode.Season?.Number ?? 1, episode.Number, organizationSettings.EpisodeNumberDisplayFormat),
+                global::AniT.Core.EpisodeDisplayName.Format(preferredTitle, episode.Season?.Number ?? 1, episode.Number, organizationSettings.EpisodeNumberDisplayFormat.ToString()),
                 episode.Status,
                 percent,
                 episode.Rating,
@@ -160,7 +177,7 @@ public partial class AnimeDetailsWindow : Window
         DataContext = this;
         FocusRequestedEpisode();
 
-        if (CoverPath is null
+        if (!hasUsableCover
             || string.IsNullOrWhiteSpace(anime.EnglishTitle)
             || !global::AniT.Infrastructure.AnimeCoverProvider.IsLikelyPortugueseSynopsis(anime.Synopsis)
             || anime.CriticScore is null
@@ -177,8 +194,9 @@ public partial class AnimeDetailsWindow : Window
                     savedSynopsis: anime.Synopsis,
                     savedCriticScore: anime.CriticScore,
                     savedGenres: anime.Genres);
-                CoverPath = metadata.CoverPath;
-                SynopsisArtworkPath = metadata.BannerPath ?? CoverPath;
+                CoverPath = metadata.CoverPath ?? App.UpdatingArtworkPath;
+                SynopsisArtworkPath = App.GetLockedArtworkPath(anime.Id) ?? metadata.BannerPath ?? CoverPath;
+                ReplaceArtworkGallery([SynopsisArtworkPath, CoverPath]);
                 EnglishTitleDisplay = FormatEnglishTitle(metadata.EnglishTitle);
                 Synopsis = global::AniT.Infrastructure.AnimeCoverProvider.IsLikelyPortugueseSynopsis(metadata.Synopsis)
                     ? metadata.Synopsis!
@@ -193,9 +211,153 @@ public partial class AnimeDetailsWindow : Window
                 System.Diagnostics.Debug.WriteLine($"AniT could not load the anime cover: {exception}");
             }
         }
+
+        StartArtworkGalleryLoad(anime.Title);
     }
 
     private static string FormatEnglishTitle(string? title) => string.IsNullOrWhiteSpace(title) ? string.Empty : $"({title})";
+
+    private void StartArtworkGalleryLoad(string title)
+    {
+        artworkGalleryCancellation?.Cancel();
+        artworkGalleryCancellation = new CancellationTokenSource();
+        _ = LoadArtworkGalleryAsync(title, artworkGalleryCancellation.Token);
+    }
+
+    private async Task LoadArtworkGalleryAsync(string title, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var paths = await App.EnsureAnimeArtworkGalleryAsync(
+                animeId,
+                title,
+                CoverPath,
+                SynopsisArtworkPath,
+                cancellationToken);
+            if (cancellationToken.IsCancellationRequested || !IsLoaded) return;
+            ReplaceArtworkGallery(paths);
+        }
+        catch (OperationCanceledException)
+        {
+            // Closing or reloading the page cancels optional background artwork discovery.
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Debug.WriteLine($"AniT could not load the artwork gallery: {exception}");
+        }
+    }
+
+    private void ReplaceArtworkGallery(IEnumerable<string?> paths)
+    {
+        var unique = paths
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Select(path => path!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(5)
+            .ToArray();
+        ArtworkGallery.Clear();
+        for (var index = 0; index < unique.Length; index++)
+            ArtworkGallery.Add(new AnimeArtworkItem(index, unique[index], $"Arte {index + 1}"));
+
+        if (ArtworkCountText is not null)
+        {
+            ArtworkCountText.Text = unique.Length switch
+            {
+                0 => "Arte indisponível",
+                1 => "1 arte · clique para ampliar",
+                _ => $"{unique.Length} artes · clique para ampliar"
+            };
+        }
+    }
+
+    private void OpenArtworkProjector_Click(object sender, RoutedEventArgs e)
+    {
+        if (ArtworkGallery.Count == 0) return;
+        ShowArtwork(0);
+        ArtworkProjectorOverlay.Visibility = Visibility.Visible;
+        Keyboard.Focus(ArtworkProjectorOverlay);
+    }
+
+    private void ShowArtwork(int index)
+    {
+        if (ArtworkGallery.Count == 0) return;
+        projectorArtworkIndex = (index % ArtworkGallery.Count + ArtworkGallery.Count) % ArtworkGallery.Count;
+        var selectedPath = ArtworkGallery[projectorArtworkIndex].Path;
+        ProjectorImage.Source = LoadImageSource(selectedPath);
+        ApplyProjectorFraming();
+        ProjectorCounterText.Text = $"{projectorArtworkIndex + 1} de {ArtworkGallery.Count}";
+        var isLocked = string.Equals(App.GetLockedArtworkPath(animeId), selectedPath, StringComparison.OrdinalIgnoreCase);
+        ArtworkLockLabel.Text = isLocked ? "Desbloquear esta arte" : "Bloquear esta arte";
+    }
+
+    private void ApplyProjectorFraming()
+    {
+        var settings = AniTSystemSettingsStore.Load();
+        ProjectorImage.Stretch = settings.ArtworkStretchMode == ArtworkStretchMode.Uniform ? Stretch.Uniform : Stretch.UniformToFill;
+        ProjectorImage.RenderTransform = Transform.Identity;
+        ProjectorImage.RenderTransformOrigin = new Point(0.5, 0.5);
+        if (settings.ArtworkStretchMode != ArtworkStretchMode.Manual) return;
+        ProjectorImage.RenderTransformOrigin = new Point(settings.ArtworkFocusXPercent / 100d, settings.ArtworkFocusYPercent / 100d);
+        ProjectorImage.RenderTransform = new ScaleTransform(1.08, 1.08);
+    }
+
+    private void ToggleArtworkLock_Click(object sender, RoutedEventArgs e)
+    {
+        if (ArtworkGallery.Count == 0) return;
+        var selectedPath = ArtworkGallery[projectorArtworkIndex].Path;
+        var isLocked = string.Equals(App.GetLockedArtworkPath(animeId), selectedPath, StringComparison.OrdinalIgnoreCase);
+        App.SetArtworkLock(animeId, isLocked ? null : selectedPath);
+        SynopsisArtworkPath = isLocked ? App.GetCachedAnimeBannerPath(animeId) ?? CoverPath : selectedPath;
+        ArtworkLockLabel.Text = isLocked ? "Bloquear esta arte" : "Desbloquear esta arte";
+        DataContext = null;
+        DataContext = this;
+    }
+
+    private static ImageSource? LoadImageSource(string path)
+    {
+        try
+        {
+            var uri = Path.IsPathRooted(path)
+                ? new Uri(path, UriKind.Absolute)
+                : new Uri($"pack://application:,,,/{path.Replace('\\', '/')}", UriKind.Absolute);
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.UriSource = uri;
+            image.EndInit();
+            image.Freeze();
+            return image;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private void PreviousArtwork_Click(object sender, RoutedEventArgs e) => ShowArtwork(projectorArtworkIndex - 1);
+    private void NextArtwork_Click(object sender, RoutedEventArgs e) => ShowArtwork(projectorArtworkIndex + 1);
+    private void ArtworkThumbnail_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: int index }) ShowArtwork(index);
+    }
+    private void CloseArtworkProjector_Click(object sender, RoutedEventArgs e) => CloseArtworkProjector();
+    private void ArtworkProjectorBackdrop_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (ReferenceEquals(e.OriginalSource, ArtworkProjectorOverlay)) CloseArtworkProjector();
+    }
+    private void CloseArtworkProjector() => ArtworkProjectorOverlay.Visibility = Visibility.Collapsed;
+
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (ArtworkProjectorOverlay.Visibility != Visibility.Visible) return;
+        if (e.Key == Key.Escape) CloseArtworkProjector();
+        else if (e.Key == Key.Left) ShowArtwork(projectorArtworkIndex - 1);
+        else if (e.Key == Key.Right) ShowArtwork(projectorArtworkIndex + 1);
+        else return;
+        e.Handled = true;
+    }
+
+    private void Window_Closed(object? sender, EventArgs e) => artworkGalleryCancellation?.Cancel();
 
     private void FocusRequestedEpisode()
     {
@@ -317,6 +479,30 @@ public partial class AnimeDetailsWindow : Window
         {
             MessageBox.Show(exception.Message, "Não foi possível iniciar o player", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
+    }
+
+    private async void Favorite_Click(object sender, RoutedEventArgs e)
+    {
+        var button = sender as Button;
+        if (button is not null) button.IsEnabled = false;
+        try
+        {
+            var updated = await App.ToggleAnimeFavoriteAsync(animeId);
+            if (updated is not bool isFavorite) return;
+            IsFavorite = isFavorite;
+            DataContext = null;
+            DataContext = this;
+        }
+        finally
+        {
+            if (button is not null) button.IsEnabled = true;
+        }
+    }
+
+    private async void OrganizeAnime_Click(object sender, RoutedEventArgs e)
+    {
+        var window = new AnimeOrganizationWindow(animeId) { Owner = this };
+        if (window.ShowDialog() is true) await LoadSafelyAsync();
     }
 
     private void Back_Click(object sender, RoutedEventArgs e) => AppNavigation.Back(this);
@@ -445,9 +631,9 @@ public sealed class EpisodeItem(
 
     public string StatusLabel => Status switch
     {
-        global::AniT.Core.WatchStatus.Completed => "✓ Assistido",
-        global::AniT.Core.WatchStatus.Watching => "▶ Continuar",
-        _ => "▶ Assistir"
+        global::AniT.Core.WatchStatus.Completed => "Assistido",
+        global::AniT.Core.WatchStatus.Watching => "Continuar",
+        _ => "Assistir"
     };
 
     public string StatusColor => Status switch
@@ -460,7 +646,7 @@ public sealed class EpisodeItem(
     public string ProgressLabel => Status == global::AniT.Core.WatchStatus.Completed ? "Concluído" : ProgressPercent > 0 ? $"{ProgressPercent:0}% assistido" : "Não iniciado";
     public string WatchedActionLabel => Status == global::AniT.Core.WatchStatus.Completed ? "Remover assistido" : "Marcar visto";
     public bool HasEpisodeNote => !string.IsNullOrWhiteSpace(ReviewNotes);
-    public string EpisodeNoteActionLabel => HasEpisodeNote ? "✎ Editar nota" : "＋ Nota do episódio";
+    public string EpisodeNoteActionLabel => HasEpisodeNote ? "Editar nota" : "Nota do episódio";
     public string EpisodeNoteToolTip => HasEpisodeNote ? ReviewNotes! : "Adicionar uma nota opcional somente para este episódio";
     public double NormalizedRating => Rating is > 5 ? Rating.Value / 2 : Rating ?? 0;
     public bool IsRatingOne => Math.Round(NormalizedRating, MidpointRounding.AwayFromZero) == 1;
@@ -478,3 +664,5 @@ public sealed class EpisodeItem(
         }
     }
 }
+
+public sealed record AnimeArtworkItem(int Index, string Path, string Label);

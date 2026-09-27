@@ -23,11 +23,14 @@ public partial class MediaVersionsWindow : Window
     private async Task LoadAsync()
     {
         await using var context = App.OpenFreshDatabase();
-        var episode = await context.Episodes.AsNoTracking().Include(item => item.Season)!.ThenInclude(season => season!.Anime)
+        var episode = await context.Episodes.AsNoTracking().Include(item => item.Season)!.ThenInclude(season => season!.Anime)!.ThenInclude(anime => anime!.Aliases)
             .Include(item => item.MediaFiles).ThenInclude(file => file.LibraryRoot)
             .SingleOrDefaultAsync(item => item.Id == episodeId);
         if (episode is null) { Close(); return; }
-        TitleText.Text = $"{episode.Season?.Anime?.Title} · Episódio {episode.Number:00}";
+        var settings = global::AniT.Infrastructure.AniTSystemSettingsStore.Load();
+        var anime = episode.Season!.Anime!;
+        var preferredTitle = global::AniT.Infrastructure.OrganizationPreferences.PreferredTitle(anime, settings.AnimeTitlePreference);
+        TitleText.Text = $"{preferredTitle} · {(global::AniT.Infrastructure.OrganizationPreferences.EpisodeCode(episode.Season.Number, episode.Number, settings.EpisodeNumberDisplayFormat))}";
         Versions.Clear();
         foreach (var file in episode.MediaFiles.OrderByDescending(file => file.IsPreferred).ThenByDescending(file => file.Resolution))
         {

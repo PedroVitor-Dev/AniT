@@ -27,13 +27,34 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          global-json-file: global.json
 
       - name: Restore
-        run: dotnet restore AniT.slnx
+        run: dotnet restore AniT.slnx --locked-mode
+
+      - name: Audit NuGet dependencies
+        run: dotnet list AniT.slnx package --vulnerable --include-transitive
 
       - name: Build
         run: dotnet build AniT.slnx --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test AniT.slnx --configuration Release --no-build --logger "console;verbosity=normal"
+        run: dotnet test AniT.slnx --configuration Release --no-build --collect:"XPlat Code Coverage" --logger "console;verbosity=normal"
+
+      - name: Enforce coverage floor
+        shell: pwsh
+        run: |
+          $report = Get-ChildItem tests/AniT.Tests/TestResults -Recurse -Filter coverage.cobertura.xml | Select-Object -First 1
+          if (-not $report) { throw "Coverage report was not generated." }
+          [xml]$coverage = Get-Content $report.FullName
+          $lineRate = [double]::Parse($coverage.coverage.'line-rate', [Globalization.CultureInfo]::InvariantCulture)
+          if ($lineRate -lt 0.70) { throw "Line coverage $([math]::Round($lineRate * 100, 2))% is below the 70% release floor." }
+          Write-Host "Line coverage: $([math]::Round($lineRate * 100, 2))%"
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: tests/AniT.Tests/TestResults/**/coverage.cobertura.xml
+          if-no-files-found: error

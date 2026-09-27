@@ -41,15 +41,26 @@ internal static class AchievementNotificationQueue
         {
             while (Queue.TryDequeue(out var unlock))
             {
-                var settings = AchievementSettingsStore.Load();
-                if (settings.ShowNotifications)
+                var systemSettings = global::AniT.Infrastructure.AniTSystemSettingsStore.Load();
+                var achievementNotificationsEnabled = systemSettings.NotifyAchievements;
+                var quiet = global::AniT.Infrastructure.NotificationPreferences.IsQuietTime(systemSettings, DateTimeOffset.Now);
+                if (achievementNotificationsEnabled && !quiet)
                 {
-                    _ = Task.Run(() => AchievementSoundService.Play(unlock.Definition.Rarity, settings.Volume));
-                    var toast = new AchievementToastWindow(unlock, settings);
-                    await toast.ShowToastAsync();
-                    await Task.Delay(220);
+                    var settings = AchievementSettingsStore.Load();
+                    if (settings.ShowNotifications)
+                    {
+                        if (settings.PlaySound)
+                            _ = Task.Run(() => AchievementSoundService.Play(unlock.Definition.Rarity, settings.Volume));
+                        var toast = new AchievementToastWindow(unlock, settings);
+                        await toast.ShowToastAsync();
+                        await Task.Delay(220);
+                    }
+                    AniTNotificationService.NotifyAchievementWindows(
+                        "Conquista desbloqueada",
+                        $"{unlock.Definition.Name} · +{unlock.Points} AniPoints");
                 }
-                if (service is not null) await service.MarkPopupShownAsync(unlock.Definition.Id);
+                if (service is not null && (!achievementNotificationsEnabled || !quiet))
+                    await service.MarkPopupShownAsync(unlock.Definition.Id);
             }
         }
         finally

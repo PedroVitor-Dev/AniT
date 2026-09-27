@@ -15,7 +15,7 @@ public static class AnimeGenreCatalog
         new("Drama", "Drama"),
         new("Ecchi", "Ecchi"),
         new("Fantasy", "Fantasia"),
-        new("Horror", "Terror", "horror"),
+        new("Horror", "Horror", "terror"),
         new("Isekai", "Isekai", "outro mundo"),
         new("Mahou Shoujo", "Garotas mágicas", "mahou shoujo", "magical girl"),
         new("Mecha", "Mecha"),

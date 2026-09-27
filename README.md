@@ -27,10 +27,10 @@
 
 O **AniT** é um aplicativo desktop open source para Windows que transforma pastas de vídeos em uma biblioteca pessoal de animes. Ele identifica episódios, preserva o progresso local, encontra capas e metadados, destaca arquivos que precisam de revisão e integra a reprodução ao MPC-HC.
 
-O projeto é **local-first**: sua biblioteca, avaliações e histórico ficam no seu computador. A internet é usada apenas quando o AniT consulta metadados públicos no AniList.
+O projeto é **local-first**: sua biblioteca, avaliações e histórico ficam no seu computador. A internet é usada somente para os provedores de metadados, tradução e artes habilitados nas configurações.
 
 > [!IMPORTANT]
-> O AniT está em desenvolvimento ativo. A base funcional já existe, mas interfaces, banco local e fluxos de distribuição ainda podem evoluir antes da primeira versão estável.
+> O AniT está em desenvolvimento ativo e em preparação para o primeiro release estável. Consulte as notas da versão para conhecer limitações e mudanças de compatibilidade.
 
 ## ✨ Destaques
 
@@ -126,7 +126,7 @@ As dependências apontam para dentro: a interface coordena os casos de uso, a in
 - Diagnósticos: `%LOCALAPPDATA%\AniT\Data\*.log`
 - Backup de migração: criado ao lado do banco antes de alterações relevantes de esquema.
 
-O AniT não envia sua biblioteca para um servidor próprio. Consultas de metadados são feitas diretamente ao AniList. Leia a [política de privacidade local](docs/PRIVACY.md).
+O AniT não envia sua biblioteca para um servidor próprio. Consultas opcionais são feitas diretamente aos provedores descritos na [política de privacidade local](docs/PRIVACY.md).
 
 ## 📚 Documentação
 
@@ -155,11 +155,11 @@ Boas primeiras contribuições incluem novos casos de nomes de episódio, melhor
 
 ## 🗺️ Próximos passos
 
-O foco atual é consolidar a biblioteca inteligente, melhorar acessibilidade e preparar distribuição confiável. Busca real, calendário, perfil, favoritos avançados e empacotamento estão organizados no [roadmap público](docs/ROADMAP.md).
+O foco atual é validar o candidato 1.0.0, concluir o empacotamento reproduzível e ampliar testes de interface e acessibilidade. As próximas etapas estão no [roadmap público](docs/ROADMAP.md).
 
 ## 📜 Licença e avisos
 
-O código do AniT é distribuído sob a [GNU General Public License v3.0](LICENSE).
+O código do AniT é distribuído sob a [GNU General Public License v3.0](LICENSE). Dependências e componentes distribuídos estão relacionados em [Avisos de terceiros](THIRD_PARTY_NOTICES.md).
 
 AniT é um projeto independente e não é afiliado ao AniList, MPC-HC, estúdios, distribuidoras ou serviços de streaming. O usuário é responsável por utilizar apenas mídias às quais tenha acesso legítimo. Imagens e metadados de terceiros permanecem sujeitos aos termos de seus respectivos provedores.
 

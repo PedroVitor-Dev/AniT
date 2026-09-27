@@ -26,9 +26,17 @@ Arquivos padrão:
 
 ## Acesso à rede
 
-Ao atualizar metadados, o AniT envia ao endpoint GraphQL público do AniList um termo de busca derivado do título do anime. A resposta pode fornecer título em inglês, capa, sinopse e nota média.
+O AniT acessa a internet somente para recursos habilitados pelo usuário. Dependendo das configurações, um termo derivado do título do anime pode ser enviado diretamente aos seguintes provedores públicos:
 
-Consulte a política e os termos do AniList para entender como esse serviço processa requisições. O AniT não controla a infraestrutura do provedor.
+- AniList, para títulos, aliases, sinopse, gêneros, estúdio, notas e artes;
+- Jikan/MyAnimeList e Kitsu, para metadados e artes oficiais;
+- Wallhaven, Danbooru, Safebooru e Gelbooru, para pesquisa de artes;
+- MyMemory, para tradução opcional de sinopses;
+- fontes HTTPS personalizadas cadastradas pelo próprio usuário.
+
+Essas requisições revelam ao provedor o endereço IP normal da conexão, o termo pesquisado e informações técnicas usuais de uma requisição HTTP. O AniT não controla a infraestrutura nem as políticas desses serviços. Fontes personalizadas são limitadas a HTTPS público; endereços locais, loopback e redes reservadas são bloqueados.
+
+O modo totalmente offline impede essas consultas. Capas e metadados já presentes em cache continuam disponíveis.
 
 ## O que não é enviado pelo AniT
 
@@ -39,6 +47,8 @@ O aplicativo não possui backend próprio e não envia intencionalmente:
 - banco SQLite;
 - lista completa de caminhos locais;
 - logs de diagnóstico.
+
+Notificações do Windows são produzidas localmente. O AniT não utiliza um servidor de push próprio.
 
 Issues no GitHub são públicas. Revise logs e screenshots antes de anexar; eles podem conter nome de usuário, caminhos ou nomes de arquivos.
 

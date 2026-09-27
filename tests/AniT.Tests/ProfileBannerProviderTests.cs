@@ -68,6 +68,53 @@ public sealed class ProfileBannerProviderTests
         Assert.False(result.NetworkUnavailable);
     }
 
+    [Theory]
+    [InlineData(ProfileBannerSource.MyAnimeList, "MyAnimeList · Jikan")]
+    [InlineData(ProfileBannerSource.Kitsu, "Kitsu · arte oficial")]
+    [InlineData(ProfileBannerSource.Danbooru, "Danbooru · somente geral")]
+    [InlineData(ProfileBannerSource.Safebooru, "Safebooru · conteúdo seguro")]
+    [InlineData(ProfileBannerSource.Gelbooru, "Gelbooru · somente geral")]
+    public async Task SearchAsync_ParsesAdditionalBuiltInSources(ProfileBannerSource source, string expectedLabel)
+    {
+        Uri? requestedUri = null;
+        using var client = new HttpClient(new StubHandler(request =>
+        {
+            requestedUri = request.RequestUri;
+            return source switch
+            {
+                ProfileBannerSource.MyAnimeList => JsonResponse("""
+                    {"data":[{"mal_id":1,"url":"https://myanimelist.net/anime/1","title":"Anime","title_english":"Anime EN","images":{"jpg":{"image_url":"https://img.test/mal-preview.jpg","large_image_url":"https://img.test/mal.jpg"}}}]}
+                    """),
+                ProfileBannerSource.Kitsu => JsonResponse("""
+                    {"data":[{"id":"1","attributes":{"canonicalTitle":"Anime","slug":"anime","coverImage":{"small":"https://img.test/kitsu-preview.jpg","original":"https://img.test/kitsu.jpg"},"posterImage":null}}]}
+                    """),
+                ProfileBannerSource.Danbooru => JsonResponse("""
+                    [{"id":1,"file_url":"https://img.test/danbooru.jpg","preview_file_url":"https://img.test/danbooru-preview.jpg","image_width":2400,"image_height":1600}]
+                    """),
+                ProfileBannerSource.Safebooru => JsonResponse("""
+                    [{"id":"1","file_url":"https://img.test/safebooru.jpg","preview_url":"https://img.test/safebooru-preview.jpg","width":"2400","height":"1600"}]
+                    """),
+                ProfileBannerSource.Gelbooru => JsonResponse("""
+                    {"post":[{"id":1,"file_url":"https://img.test/gelbooru.jpg","preview_url":"https://img.test/gelbooru-preview.jpg","width":2400,"height":1600}]}
+                    """),
+                _ => throw new InvalidOperationException()
+            };
+        }));
+        var provider = new ProfileBannerProvider(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")), client);
+
+        var result = await provider.SearchAsync("Anime Example", source);
+
+        var candidate = Assert.Single(result.Items);
+        Assert.Equal(expectedLabel, candidate.Source);
+        Assert.Equal("https://img.test/", new Uri(candidate.DownloadUrl).GetLeftPart(UriPartial.Authority) + "/");
+        Assert.False(result.NetworkUnavailable);
+        Assert.NotNull(requestedUri);
+        var decodedQuery = Uri.UnescapeDataString(requestedUri!.Query);
+        if (source == ProfileBannerSource.MyAnimeList) Assert.Contains("sfw=true", decodedQuery, StringComparison.OrdinalIgnoreCase);
+        if (source == ProfileBannerSource.Danbooru || source == ProfileBannerSource.Gelbooru) Assert.Contains("rating:general", decodedQuery, StringComparison.OrdinalIgnoreCase);
+        if (source == ProfileBannerSource.Safebooru) Assert.Contains("rating:safe", decodedQuery, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Fact]
     public async Task CacheSelectedAsync_DownloadsOnlyOnce()
     {

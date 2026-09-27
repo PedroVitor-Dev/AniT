@@ -64,6 +64,7 @@ public partial class CalendarWindow : Window, INotifyPropertyChanged
             var episodes = await context.Episodes
                 .Include(episode => episode.Season)!
                 .ThenInclude(season => season!.Anime)
+                .ThenInclude(anime => anime!.Aliases)
                 .Include(episode => episode.PlaybackProgress)
                 .AsNoTracking()
                 .ToListAsync();
@@ -84,13 +85,16 @@ public partial class CalendarWindow : Window, INotifyPropertyChanged
                         ? Math.Clamp(position / duration * 100, 0, 100)
                         : 0;
 
+                var settings = global::AniT.Infrastructure.AniTSystemSettingsStore.Load();
+                var preferredTitle = global::AniT.Infrastructure.OrganizationPreferences.PreferredTitle(anime, settings.AnimeTitlePreference);
                 activities.Add(new CalendarActivityRecord(
                     activityAt.Value.LocalDateTime,
                     anime.Id,
                     episode.Id,
-                    anime.Title,
+                    preferredTitle,
+                    episode.Season.Number,
                     episode.Number,
-                    episode.Title ?? $"Episódio {episode.Number:00}",
+                    episode.Title ?? string.Empty,
                     IsUsableCover(anime.CoverPath) ? anime.CoverPath! : "Assets/Calendar/banner.png",
                     percent,
                     position,
@@ -131,7 +135,7 @@ public partial class CalendarWindow : Window, INotifyPropertyChanged
             var dayActivities = activities.Where(item => item.ActivityAt.Date == date.Date).OrderBy(item => item.ActivityAt).ToList();
             var markers = dayActivities
                 .Take(3)
-                .Select(item => new CalendarDayMarker(item.CoverPath, $"Ep. {item.EpisodeNumber:00}"))
+                .Select(item => new CalendarDayMarker(item.CoverPath, EpisodeCode(item.SeasonNumber, item.EpisodeNumber)))
                 .ToList();
             var isSelected = date.Date == selectedDate.Date;
             var belongsToMonth = date.Month == displayedMonth.Month && date.Year == displayedMonth.Year;
@@ -161,7 +165,9 @@ public partial class CalendarWindow : Window, INotifyPropertyChanged
                 item.AnimeId,
                 item.EpisodeId,
                 item.AnimeTitle,
-                $"Episódio {item.EpisodeNumber:00} · {item.EpisodeTitle}",
+                string.IsNullOrWhiteSpace(item.EpisodeTitle)
+                    ? EpisodeCode(item.SeasonNumber, item.EpisodeNumber)
+                    : $"{EpisodeCode(item.SeasonNumber, item.EpisodeNumber)} · {item.EpisodeTitle}",
                 item.CoverPath,
                 item.ProgressPercent,
                 item.ProgressPercent >= 99.5 ? "100% assistido" : $"{item.ProgressPercent:0}% assistido",
@@ -355,16 +361,34 @@ public partial class CalendarWindow : Window, INotifyPropertyChanged
     private static bool IsUsableCover(string? path) => !string.IsNullOrWhiteSpace(path) && File.Exists(path);
     private static string NoteKey(DateTime date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
     private static double NormalizeRating(double? rating) => rating is > 5 ? rating.Value / 2 : rating ?? 0;
-    private static string MoodAsset(double rating) => rating switch { <= 0 => "Assets/Calendar/3.png", <= 1 => "Assets/Calendar/5.png", <= 2 => "Assets/Calendar/1.png", <= 3 => "Assets/Calendar/2.png", <= 4 => "Assets/Calendar/4.png", _ => "Assets/Calendar/6.png" };
+    private static string EpisodeCode(int seasonNumber, int episodeNumber)
+    {
+        var settings = global::AniT.Infrastructure.AniTSystemSettingsStore.Load();
+        return global::AniT.Infrastructure.OrganizationPreferences.EpisodeCode(seasonNumber, episodeNumber, settings.EpisodeNumberDisplayFormat);
+    }
+    private static ImageSource MoodAsset(double rating)
+    {
+        var path = rating switch
+        {
+            <= 0 => "Assets/Calendar/3.png",
+            <= 1 => "Assets/Calendar/5.png",
+            <= 2 => "Assets/Calendar/1.png",
+            <= 3 => "Assets/Calendar/2.png",
+            <= 4 => "Assets/Calendar/4.png",
+            _ => "Assets/Calendar/6.png"
+        };
+
+        return ComfortableImageSource.Load(path, 128);
+    }
     private static string MoodLabel(double rating) => rating switch { <= 0 => "Sem nota", <= 1 => "Não curti", <= 2 => "Fraquinho", <= 3 => "Legal", <= 4 => "Muito bom", _ => "Excelente" };
     private static string FormatPlaybackTime(double position, double duration) => duration > 0 ? $"{FormatTime(position)} / {FormatTime(duration)}" : FormatTime(position);
     private static string FormatTime(double seconds) => $"{(int)TimeSpan.FromSeconds(Math.Max(0, seconds)).TotalMinutes:00}:{TimeSpan.FromSeconds(Math.Max(0, seconds)).Seconds:00}";
 }
 
-internal sealed record CalendarActivityRecord(DateTime ActivityAt, Guid AnimeId, Guid EpisodeId, string AnimeTitle, int EpisodeNumber, string EpisodeTitle, string CoverPath, double ProgressPercent, double PositionSeconds, double DurationSeconds, double? Rating);
+internal sealed record CalendarActivityRecord(DateTime ActivityAt, Guid AnimeId, Guid EpisodeId, string AnimeTitle, int SeasonNumber, int EpisodeNumber, string EpisodeTitle, string CoverPath, double ProgressPercent, double PositionSeconds, double DurationSeconds, double? Rating);
 public sealed record CalendarDayMarker(string CoverPath, string EpisodeLabel);
 public sealed record CalendarDayItem(DateTime Date, string DayNumber, IReadOnlyList<CalendarDayMarker> Markers, string OverflowLabel, double Opacity, bool IsSelected, string Background, string BorderBrush);
-public sealed record CalendarActivityItem(Guid AnimeId, Guid EpisodeId, string AnimeTitle, string EpisodeTitle, string CoverPath, double ProgressPercent, string ProgressLabel, string TimeLabel, string MoodAsset, string MoodLabel);
+public sealed record CalendarActivityItem(Guid AnimeId, Guid EpisodeId, string AnimeTitle, string EpisodeTitle, string CoverPath, double ProgressPercent, string ProgressLabel, string TimeLabel, ImageSource MoodAsset, string MoodLabel);
 
 internal static class CalendarNoteStore
 {

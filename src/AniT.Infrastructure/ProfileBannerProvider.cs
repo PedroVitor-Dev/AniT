@@ -11,7 +11,12 @@ public enum ProfileBannerSource
 {
     All,
     Wallhaven,
-    AniList
+    AniList,
+    MyAnimeList,
+    Kitsu,
+    Danbooru,
+    Safebooru,
+    Gelbooru
 }
 
 public sealed record ProfileBannerCandidate(
@@ -36,6 +41,11 @@ public sealed class ProfileBannerProvider
 {
     private const string WallhavenEndpoint = "https://wallhaven.cc/api/v1/search";
     private const string AniListEndpoint = "https://graphql.anilist.co";
+    private const string JikanEndpoint = "https://api.jikan.moe/v4/anime";
+    private const string KitsuEndpoint = "https://kitsu.io/api/edge/anime";
+    private const string DanbooruEndpoint = "https://danbooru.donmai.us/posts.json";
+    private const string SafebooruEndpoint = "https://safebooru.org/index.php";
+    private const string GelbooruEndpoint = "https://gelbooru.com/index.php";
     private const long MaximumDownloadBytes = 30 * 1024 * 1024;
     private const string AniListQuery = """
         query ($search: String) {
@@ -76,35 +86,42 @@ public sealed class ProfileBannerProvider
         Guid? selectedCustomSourceId,
         CancellationToken cancellationToken = default)
     {
+        var imageSettings = AniTSystemSettingsStore.Load();
         var normalizedQuery = string.IsNullOrWhiteSpace(query) ? "anime" : query.Trim();
         var items = new List<ProfileBannerCandidate>();
         var attemptedProviders = 0;
         var successfulProviders = 0;
-
-        if (selectedCustomSourceId is null && source is ProfileBannerSource.All or ProfileBannerSource.Wallhaven)
+        var builtInSearches = new List<Task<ProviderSearchResult>>();
+        if (selectedCustomSourceId is null)
         {
-            attemptedProviders++;
-            try
-            {
-                items.AddRange(await SearchWallhavenAsync(normalizedQuery, cancellationToken));
-                successfulProviders++;
-            }
-            catch (Exception exception) when (IsRecoverableNetworkFailure(exception, cancellationToken)) { }
+            AddBuiltInSearch(ProfileBannerSource.Wallhaven, SearchWallhavenAsync);
+            AddBuiltInSearch(ProfileBannerSource.AniList, SearchAniListAsync);
+            AddBuiltInSearch(ProfileBannerSource.MyAnimeList, SearchMyAnimeListAsync);
+            AddBuiltInSearch(ProfileBannerSource.Kitsu, SearchKitsuAsync);
+            AddBuiltInSearch(ProfileBannerSource.Danbooru, SearchDanbooruAsync);
+            AddBuiltInSearch(ProfileBannerSource.Safebooru, SearchSafebooruAsync);
+            AddBuiltInSearch(ProfileBannerSource.Gelbooru, SearchGelbooruAsync);
         }
 
-        if (selectedCustomSourceId is null && source is ProfileBannerSource.All or ProfileBannerSource.AniList)
+        void AddBuiltInSearch(
+            ProfileBannerSource providerSource,
+            Func<string, CancellationToken, Task<IReadOnlyList<ProfileBannerCandidate>>> search)
         {
-            attemptedProviders++;
-            try
-            {
-                items.AddRange(await SearchAniListAsync(normalizedQuery, cancellationToken));
-                successfulProviders++;
-            }
-            catch (Exception exception) when (IsRecoverableNetworkFailure(exception, cancellationToken)) { }
+            if (source is not ProfileBannerSource.All && source != providerSource) return;
+            builtInSearches.Add(TrySearchProviderAsync(search, normalizedQuery, cancellationToken));
+        }
+
+        if (builtInSearches.Count > 0)
+        {
+            var providerResults = await Task.WhenAll(builtInSearches);
+            attemptedProviders += providerResults.Length;
+            successfulProviders += providerResults.Count(result => result.Success);
+            AddInterleaved(items, providerResults.Select(result => result.Items));
         }
 
         var enabledCustomSources = (customSources ?? [])
             .Where(item => item.IsEnabled && item.UseForProfileBanners)
+            .Where(item => !imageSettings.OnlySfwArtwork || item.IsSfw)
             .Where(item => selectedCustomSourceId is null || item.Id == selectedCustomSourceId)
             .ToArray();
         foreach (var customSource in enabledCustomSources)
@@ -119,10 +136,15 @@ public sealed class ProfileBannerProvider
         }
 
         var uniqueItems = items
-            .Where(item => Uri.TryCreate(item.DownloadUrl, UriKind.Absolute, out _))
+            .Where(item => Uri.TryCreate(item.DownloadUrl, UriKind.Absolute, out var uri)
+                           && uri.Scheme == Uri.UriSchemeHttps
+                           && AniTNetworkSecurity.IsPotentiallyPublicUri(uri))
             .GroupBy(item => item.DownloadUrl, StringComparer.OrdinalIgnoreCase)
             .Select(group => group.First())
-            .Take(20)
+            .OrderBy(item => SourceRank(item, imageSettings.ArtworkSourcePriority))
+            .ThenByDescending(item => item.Width * (long)item.Height)
+            .Select(item => LimitCandidateQuality(item, imageSettings.ImageMaxDimension))
+            .Take(60)
             .ToList();
 
         if (successfulProviders == 0 && attemptedProviders > 0)
@@ -137,6 +159,25 @@ public sealed class ProfileBannerProvider
             uniqueItems,
             false,
             uniqueItems.Count == 0 ? "Nenhuma arte em formato de banner foi encontrada para essa busca." : null);
+    }
+
+    private static int SourceRank(ProfileBannerCandidate candidate, ArtworkSourcePriority priority)
+    {
+        var isAniList = candidate.Source.StartsWith("AniList", StringComparison.OrdinalIgnoreCase);
+        var isOfficial = isAniList || candidate.Source.StartsWith("MyAnimeList", StringComparison.OrdinalIgnoreCase) || candidate.Source.StartsWith("Kitsu", StringComparison.OrdinalIgnoreCase);
+        var isCustom = candidate.Source.Contains("personalizada", StringComparison.OrdinalIgnoreCase);
+        return priority switch
+        {
+            ArtworkSourcePriority.CustomFirst => isCustom ? 0 : isOfficial ? 1 : 2,
+            ArtworkSourcePriority.OfficialFirst => isOfficial && !isAniList ? 0 : isAniList ? 1 : isCustom ? 3 : 2,
+            _ => isAniList ? 0 : isOfficial ? 1 : isCustom ? 3 : 2
+        };
+    }
+
+    private static ProfileBannerCandidate LimitCandidateQuality(ProfileBannerCandidate candidate, int maxDimension)
+    {
+        if (maxDimension <= 0 || Math.Max(candidate.Width, candidate.Height) <= maxDimension || candidate.PreviewUrl == candidate.DownloadUrl) return candidate;
+        return candidate with { DownloadUrl = candidate.PreviewUrl };
     }
 
     public async Task<IReadOnlyList<ProfileBannerCandidate>> SearchCustomSourceAsync(
@@ -183,7 +224,9 @@ public sealed class ProfileBannerProvider
         if (!match.Success) return;
         var value = WebUtility.HtmlDecode(match.Groups["url"].Value.Trim());
         if (value.StartsWith("data:", StringComparison.OrdinalIgnoreCase)) return;
-        if (!Uri.TryCreate(baseUri, value, out var uri) || uri.Scheme is not ("http" or "https")) return;
+        if (!Uri.TryCreate(baseUri, value, out var uri)
+            || uri.Scheme != Uri.UriSchemeHttps
+            || !AniTNetworkSecurity.IsPotentiallyPublicUri(uri)) return;
         urls.Add(uri.AbsoluteUri);
     }
 
@@ -339,6 +382,224 @@ public sealed class ProfileBannerProvider
         return results;
     }
 
+    private async Task<IReadOnlyList<ProfileBannerCandidate>> SearchMyAnimeListAsync(string query, CancellationToken cancellationToken)
+    {
+        var uri = $"{JikanEndpoint}?q={Uri.EscapeDataString(query)}&limit=8&sfw=true&order_by=score&sort=desc";
+        using var response = await httpClient.GetAsync(uri, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+        if (!document.RootElement.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array) return [];
+
+        var results = new List<ProfileBannerCandidate>();
+        foreach (var item in data.EnumerateArray())
+        {
+            var id = ReadInt(item, "mal_id");
+            var pageUrl = ReadString(item, "url") ?? (id > 0 ? $"https://myanimelist.net/anime/{id}" : null);
+            var title = ReadString(item, "title_english") ?? ReadString(item, "title") ?? ReadString(item, "title_japanese");
+            string? previewUrl = null;
+            string? downloadUrl = null;
+            if (item.TryGetProperty("images", out var images) && images.TryGetProperty("jpg", out var jpg))
+            {
+                previewUrl = ReadString(jpg, "image_url") ?? ReadString(jpg, "small_image_url");
+                downloadUrl = ReadString(jpg, "large_image_url") ?? previewUrl;
+            }
+
+            if (id <= 0 || string.IsNullOrWhiteSpace(downloadUrl) || string.IsNullOrWhiteSpace(pageUrl)) continue;
+            results.Add(new ProfileBannerCandidate(
+                $"mal-{id}",
+                title ?? $"Anime #{id}",
+                "MyAnimeList · Jikan",
+                previewUrl ?? downloadUrl,
+                downloadUrl,
+                pageUrl,
+                0,
+                0));
+        }
+
+        return results;
+    }
+
+    private async Task<IReadOnlyList<ProfileBannerCandidate>> SearchKitsuAsync(string query, CancellationToken cancellationToken)
+    {
+        var uri = $"{KitsuEndpoint}?filter%5Btext%5D={Uri.EscapeDataString(query)}&page%5Blimit%5D=8";
+        using var response = await httpClient.GetAsync(uri, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+        if (!document.RootElement.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array) return [];
+
+        var results = new List<ProfileBannerCandidate>();
+        foreach (var item in data.EnumerateArray())
+        {
+            var id = ReadString(item, "id");
+            if (!item.TryGetProperty("attributes", out var attributes)) continue;
+            var title = ReadString(attributes, "canonicalTitle");
+            var slug = ReadString(attributes, "slug");
+            var image = attributes.TryGetProperty("coverImage", out var coverImage) && coverImage.ValueKind == JsonValueKind.Object
+                ? coverImage
+                : attributes.TryGetProperty("posterImage", out var posterImage) && posterImage.ValueKind == JsonValueKind.Object
+                    ? posterImage
+                    : default;
+            if (image.ValueKind != JsonValueKind.Object) continue;
+            var downloadUrl = ReadString(image, "original") ?? ReadString(image, "large") ?? ReadString(image, "medium");
+            var previewUrl = ReadString(image, "small") ?? ReadString(image, "medium") ?? downloadUrl;
+            if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(downloadUrl)) continue;
+
+            results.Add(new ProfileBannerCandidate(
+                $"kitsu-{id}",
+                title ?? $"Anime #{id}",
+                "Kitsu · arte oficial",
+                previewUrl ?? downloadUrl,
+                downloadUrl,
+                string.IsNullOrWhiteSpace(slug) ? $"https://kitsu.app/anime/{id}" : $"https://kitsu.app/anime/{slug}",
+                0,
+                0));
+        }
+
+        return results;
+    }
+
+    private async Task<IReadOnlyList<ProfileBannerCandidate>> SearchDanbooruAsync(string query, CancellationToken cancellationToken)
+    {
+        var tags = $"{ToBooruTag(query)} rating:general order:score";
+        var uri = $"{DanbooruEndpoint}?limit=8&tags={Uri.EscapeDataString(tags)}";
+        using var response = await httpClient.GetAsync(uri, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+        if (document.RootElement.ValueKind != JsonValueKind.Array) return [];
+
+        var results = new List<ProfileBannerCandidate>();
+        foreach (var item in document.RootElement.EnumerateArray())
+        {
+            var id = ReadInt(item, "id");
+            var downloadUrl = ReadString(item, "file_url") ?? ReadString(item, "large_file_url");
+            var previewUrl = ReadString(item, "preview_file_url") ?? ReadString(item, "large_file_url") ?? downloadUrl;
+            var width = ReadFlexibleInt(item, "image_width");
+            var height = ReadFlexibleInt(item, "image_height");
+            if (id <= 0 || string.IsNullOrWhiteSpace(downloadUrl)) continue;
+            results.Add(new ProfileBannerCandidate(
+                $"danbooru-{id}",
+                $"Fan art #{id}",
+                "Danbooru · somente geral",
+                previewUrl ?? downloadUrl,
+                downloadUrl,
+                $"https://danbooru.donmai.us/posts/{id}",
+                width,
+                height));
+        }
+
+        return results;
+    }
+
+    private Task<IReadOnlyList<ProfileBannerCandidate>> SearchSafebooruAsync(string query, CancellationToken cancellationToken) =>
+        SearchLegacyBooruAsync(
+            SafebooruEndpoint,
+            "safebooru",
+            "Safebooru · conteúdo seguro",
+            "https://safebooru.org/index.php?page=post&s=view&id=",
+            $"{ToBooruTag(query)} rating:safe",
+            cancellationToken);
+
+    private Task<IReadOnlyList<ProfileBannerCandidate>> SearchGelbooruAsync(string query, CancellationToken cancellationToken) =>
+        SearchLegacyBooruAsync(
+            GelbooruEndpoint,
+            "gelbooru",
+            "Gelbooru · somente geral",
+            "https://gelbooru.com/index.php?page=post&s=view&id=",
+            $"{ToBooruTag(query)} rating:general",
+            cancellationToken);
+
+    private async Task<IReadOnlyList<ProfileBannerCandidate>> SearchLegacyBooruAsync(
+        string endpoint,
+        string sourceKey,
+        string sourceLabel,
+        string postUrlPrefix,
+        string tags,
+        CancellationToken cancellationToken)
+    {
+        var uri = $"{endpoint}?page=dapi&s=post&q=index&json=1&limit=8&tags={Uri.EscapeDataString(tags)}";
+        using var response = await httpClient.GetAsync(uri, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+        var root = document.RootElement;
+        JsonElement posts;
+        if (root.ValueKind == JsonValueKind.Array) posts = root;
+        else if (!root.TryGetProperty("post", out posts) || posts.ValueKind != JsonValueKind.Array) return [];
+
+        var results = new List<ProfileBannerCandidate>();
+        foreach (var item in posts.EnumerateArray())
+        {
+            var id = ReadFlexibleInt(item, "id");
+            var downloadUrl = NormalizeImageUrl(ReadString(item, "file_url"), endpoint);
+            var previewUrl = NormalizeImageUrl(
+                ReadString(item, "preview_url") ?? ReadString(item, "sample_url"),
+                endpoint) ?? downloadUrl;
+            var width = ReadFlexibleInt(item, "width");
+            var height = ReadFlexibleInt(item, "height");
+            if (id <= 0 || string.IsNullOrWhiteSpace(downloadUrl)) continue;
+            results.Add(new ProfileBannerCandidate(
+                $"{sourceKey}-{id}",
+                $"Fan art #{id}",
+                sourceLabel,
+                previewUrl ?? downloadUrl,
+                downloadUrl,
+                postUrlPrefix + id,
+                width,
+                height));
+        }
+
+        return results;
+    }
+
+    private static async Task<ProviderSearchResult> TrySearchProviderAsync(
+        Func<string, CancellationToken, Task<IReadOnlyList<ProfileBannerCandidate>>> search,
+        string query,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return new ProviderSearchResult(true, await search(query, cancellationToken));
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            return new ProviderSearchResult(false, []);
+        }
+    }
+
+    private static void AddInterleaved(
+        List<ProfileBannerCandidate> destination,
+        IEnumerable<IReadOnlyList<ProfileBannerCandidate>> providerItems)
+    {
+        var sources = providerItems.ToArray();
+        var largest = sources.Length == 0 ? 0 : sources.Max(items => items.Count);
+        for (var index = 0; index < largest; index++)
+        {
+            foreach (var items in sources)
+            {
+                if (index < items.Count) destination.Add(items[index]);
+            }
+        }
+    }
+
+    private static string ToBooruTag(string query) =>
+        Regex.Replace(query.Trim().ToLowerInvariant(), @"[^\p{L}\p{Nd}]+", "_").Trim('_');
+
+    private static string? NormalizeImageUrl(string? value, string endpoint)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        if (value.StartsWith("//", StringComparison.Ordinal)) return "https:" + value;
+        return Uri.TryCreate(new Uri(endpoint), value, out var uri) && uri.Scheme is "http" or "https"
+            ? uri.AbsoluteUri
+            : null;
+    }
+
     private static string? ReadString(JsonElement element, string name) =>
         element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
             ? value.GetString()
@@ -348,6 +609,13 @@ public sealed class ProfileBannerProvider
         element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number)
             ? number
             : 0;
+
+    private static int ReadFlexibleInt(JsonElement element, string name)
+    {
+        if (!element.TryGetProperty(name, out var value)) return 0;
+        if (value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number)) return number;
+        return value.ValueKind == JsonValueKind.String && int.TryParse(value.GetString(), out number) ? number : 0;
+    }
 
     private static string GetSafeExtension(string url)
     {
@@ -367,8 +635,10 @@ public sealed class ProfileBannerProvider
 
     private static HttpClient CreateSharedClient()
     {
-        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(12) };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("AniT/0.1 (profile-banner-picker)");
+        var client = new HttpClient(new AniTOnlineRequestHandler()) { Timeout = Timeout.InfiniteTimeSpan };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("AniT/1.0 (profile-banner-picker)");
         return client;
     }
+
+    private sealed record ProviderSearchResult(bool Success, IReadOnlyList<ProfileBannerCandidate> Items);
 }

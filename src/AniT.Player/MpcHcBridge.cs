@@ -13,6 +13,8 @@ internal sealed class MpcHcBridge : IDisposable
     private const int CmdState = unchecked((int)0x50000001);
     private const int CmdPlayMode = unchecked((int)0x50000002);
     private const int CmdNowPlaying = unchecked((int)0x50000003);
+    private const int CmdListSubtitleTracks = unchecked((int)0x50000004);
+    private const int CmdListAudioTracks = unchecked((int)0x50000005);
     private const int CmdCurrentPosition = unchecked((int)0x50000007);
     private const int CmdNotifySeek = unchecked((int)0x50000008);
     private const int CmdEndOfStream = unchecked((int)0x50000009);
@@ -21,7 +23,13 @@ internal sealed class MpcHcBridge : IDisposable
     private const int CmdPlay = unchecked((int)0xA0000004);
     private const int CmdPause = unchecked((int)0xA0000005);
     private const int CmdSetPosition = unchecked((int)0xA0002000);
+    private const int CmdSetAudioTrack = unchecked((int)0xA0002004);
+    private const int CmdSetSubtitleTrack = unchecked((int)0xA0002005);
+    private const int CmdGetSubtitleTracks = unchecked((int)0xA0003000);
+    private const int CmdGetAudioTracks = unchecked((int)0xA0003001);
     private const int CmdGetCurrentPosition = unchecked((int)0xA0003004);
+    private const int CmdToggleFullscreen = unchecked((int)0xA0004000);
+    private const int CmdSetSpeed = unchecked((int)0xA0004008);
 
     private readonly HwndSource hostWindow;
     private TaskCompletionSource<IntPtr>? connection;
@@ -32,6 +40,9 @@ internal sealed class MpcHcBridge : IDisposable
     private bool resumeSeekReapplied;
     private TimeSpan? duration;
     private TimeSpan? lastPosition;
+    private MpcHcPlaybackOptions playbackOptions = MpcHcPlaybackOptions.Default;
+    private bool playbackOptionsApplied;
+    private bool fullscreenApplied;
 
     public event EventHandler<TimeSpan>? PositionReceived;
     public event EventHandler? EndOfStream;
@@ -70,13 +81,15 @@ internal sealed class MpcHcBridge : IDisposable
         Trace($"Conectado ao HWND {playerWindow}.");
     }
 
-    public void OpenFile(string path, TimeSpan? startPosition)
+    public void OpenFile(string path, TimeSpan? startPosition, MpcHcPlaybackOptions? options = null)
     {
         pendingStartPosition = startPosition;
         resumePosition = startPosition;
         resumeSeekReapplied = false;
         lastPosition = null;
         duration = null;
+        playbackOptions = options ?? MpcHcPlaybackOptions.Default;
+        playbackOptionsApplied = false;
         Trace($"Abrindo arquivo: {path}; posição para retomar: {startPosition?.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture) ?? "0"}s.");
         Send(CmdOpenFile, path);
     }
@@ -130,7 +143,14 @@ internal sealed class MpcHcBridge : IDisposable
                 if (parts.Length >= 5 && double.TryParse(parts[4], NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds)) duration = TimeSpan.FromSeconds(seconds);
                 Trace($"Arquivo carregado; duração: {duration?.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture) ?? "desconhecida"}s.");
                 ScheduleResumeSeekAfterGraphInitialization();
+                ApplyPlaybackOptions();
                 NowPlaying?.Invoke(this, payload);
+                break;
+            case CmdListAudioTracks:
+                SelectPreferredTrack(payload, playbackOptions.PreferredAudioLanguage, CmdSetAudioTrack, allowDisabled: false);
+                break;
+            case CmdListSubtitleTracks:
+                SelectPreferredTrack(payload, playbackOptions.PreferredSubtitleLanguage, CmdSetSubtitleTrack, allowDisabled: true);
                 break;
             case CmdCurrentPosition:
             case CmdNotifySeek:
@@ -151,9 +171,46 @@ internal sealed class MpcHcBridge : IDisposable
                 Disconnected?.Invoke(this, lastPosition);
                 playerWindow = IntPtr.Zero;
                 connection = null;
+                fullscreenApplied = false;
                 break;
         }
     }
+
+    private void ApplyPlaybackOptions()
+    {
+        if (playbackOptionsApplied) return;
+        playbackOptionsApplied = true;
+        Send(CmdSetSpeed, playbackOptions.Speed.ToString("0.##", CultureInfo.InvariantCulture));
+        if (playbackOptions.StartFullscreen && !fullscreenApplied)
+        {
+            Send(CmdToggleFullscreen);
+            fullscreenApplied = true;
+        }
+        if (!playbackOptions.PreferredAudioLanguage.Equals("auto", StringComparison.OrdinalIgnoreCase)) Send(CmdGetAudioTracks);
+        if (playbackOptions.PreferredSubtitleLanguage.Equals("off", StringComparison.OrdinalIgnoreCase)) Send(CmdSetSubtitleTrack, "-1");
+        else if (!playbackOptions.PreferredSubtitleLanguage.Equals("auto", StringComparison.OrdinalIgnoreCase)) Send(CmdGetSubtitleTracks);
+    }
+
+    private void SelectPreferredTrack(string payload, string language, int command, bool allowDisabled)
+    {
+        var parts = payload.Split('|');
+        if (parts.Length <= 1 || parts[0] is "-1" or "-2") return;
+        var trackCount = parts.Length - 1; // the final value is the active track index
+        var aliases = LanguageAliases(language);
+        var selected = Enumerable.Range(0, trackCount)
+            .FirstOrDefault(index => aliases.Any(alias => parts[index].Contains(alias, StringComparison.OrdinalIgnoreCase)), -1);
+        if (selected >= 0) Send(command, selected.ToString(CultureInfo.InvariantCulture));
+        else if (allowDisabled && language.Equals("off", StringComparison.OrdinalIgnoreCase)) Send(command, "-1");
+    }
+
+    private static string[] LanguageAliases(string language) => language.ToLowerInvariant() switch
+    {
+        "pt-br" => ["pt-br", "pt_br", "portuguese", "português", "brazil", "por"],
+        "ja" => ["japanese", "japonês", "jpn", "[ja]", "_ja"],
+        "en" => ["english", "inglês", "eng", "[en]", "_en"],
+        "es" => ["spanish", "español", "espanhol", "spa", "[es]", "_es"],
+        _ => [language]
+    };
 
     private void ApplyPendingSeek()
     {
