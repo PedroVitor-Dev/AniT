@@ -36,7 +36,7 @@ dotnet build AniT.slnx -c Release --no-restore
 dotnet test AniT.slnx -c Release --no-build --collect:"XPlat Code Coverage"
 ```
 
-O CI exige cobertura de linhas mínima de 70% e só envia o relatório quando ele foi produzido. A versão 1.0.1 foi publicada com 171 testes aprovados e 73% de cobertura de linhas.
+O CI exige cobertura de linhas mínima de 70% e só envia o relatório quando ele foi produzido. A preparação local da versão 1.0.2 concluiu 176 testes com 73,10% de cobertura de linhas; o commit da tag ainda deve repetir essas verificações no CI.
 
 Comandos úteis:
 
@@ -100,7 +100,7 @@ Testes de disco devem criar diretórios temporários isolados e limpá-los.
 
 ```powershell
 winget install --id JRSoftware.InnoSetup.7 -e --source winget
-.\scripts\Build-Installer.ps1 -Version 1.0.1
+.\scripts\Build-Installer.ps1 -Version 1.0.2
 ```
 
 Os artefatos ficam em `artifacts/installer/`. Consulte [Release](RELEASING.md) antes de distribuir.

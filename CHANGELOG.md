@@ -6,9 +6,20 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Não publicado]
 
-### Documentação
+## [1.0.2] - 2026-09-28
+
+### Alterado
 
 - Central de documentação revisada para instalação, perfis/PIN, configurações, backup, migração, arquitetura, privacidade, suporte e processo de release.
+- O catálogo agora acompanha os arquivos realmente presentes nas pastas monitoradas: títulos sem nenhum episódio local deixam as telas normais após a atualização, preservando histórico, progresso e avaliações para backup ou religação futura.
+- Raízes temporariamente indisponíveis, como discos externos desconectados, continuam protegidas contra remoção acidental do catálogo.
+
+### Corrigido
+
+- Episódios apagados não permanecem mais na página do anime, busca, Home, Explorar ou fila de reprodução após **Atualizar Títulos**.
+- O botão **Organizar** volta a abrir sua prévia sem falhar por recursos visuais ausentes.
+- Títulos técnicos antigos, como `[768p] V2`, são reparados durante a atualização do catálogo.
+- A reprodução e o próximo episódio ignoram versões cujo arquivo local não existe mais.
 
 ## [1.0.1] - 2026-09-27
 
@@ -59,5 +70,6 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 - Downloads de imagens sem limite de tamanho e exportações CSV interpretáveis como fórmula.
 - Validação de backups com manifesto duplicado, caminhos inseguros ou conteúdo adulterado.
 
-[Não publicado]: https://github.com/PedroVitor-Dev/AniT/compare/v1.0.1...HEAD
+[Não publicado]: https://github.com/PedroVitor-Dev/AniT/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/PedroVitor-Dev/AniT/releases/tag/v1.0.2
 [1.0.1]: https://github.com/PedroVitor-Dev/AniT/releases/tag/v1.0.1

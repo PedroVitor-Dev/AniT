@@ -31,16 +31,16 @@ O **AniT** é um aplicativo desktop open source para Windows que transforma past
 O projeto é **local-first**: perfis, biblioteca, conquistas, progresso e configurações ficam no seu computador. O acesso à internet é opcional e usado somente pelas fontes de metadados, tradução e artes habilitadas.
 
 > [!NOTE]
-> A versão estável atual é a **1.0.1**. O instalador é autossuficiente para Windows x64, não exige .NET instalado e ainda não possui assinatura digital. Confira o hash publicado antes de executar.
+> A versão estável atual é a **1.0.2**. O instalador é autossuficiente para Windows x64, não exige .NET instalado e ainda não possui assinatura digital. Confira o hash publicado antes de executar.
 
 ## Baixar e instalar
 
 1. Abra a [release mais recente](https://github.com/PedroVitor-Dev/AniT/releases/latest).
-2. Baixe `AniT-Setup-1.0.1-win-x64.exe` e `SHA256SUMS.txt`.
+2. Baixe `AniT-Setup-1.0.2-win-x64.exe` e `SHA256SUMS.txt`.
 3. Compare o SHA-256 do instalador:
 
 ```powershell
-Get-FileHash .\AniT-Setup-1.0.1-win-x64.exe -Algorithm SHA256
+Get-FileHash .\AniT-Setup-1.0.2-win-x64.exe -Algorithm SHA256
 ```
 
 4. Execute o instalador, escolha o idioma e, se quiser, crie um atalho na Área de Trabalho.
@@ -49,11 +49,11 @@ O AniT é instalado somente para o usuário atual em `%LOCALAPPDATA%\Programs\An
 
 Consulte o [guia de instalação, atualização e remoção](docs/INSTALLATION.md) para requisitos, SmartScreen e instalação silenciosa.
 
-## Destaques da versão 1.0.1
+## Destaques da versão 1.0.2
 
 | Recurso | Como ajuda |
 | --- | --- |
-| **Biblioteca inteligente** | Monitora várias pastas e subpastas, reconhece temporadas, episódios e especiais e mantém casos ambíguos em revisão. |
+| **Biblioteca sempre sincronizada** | Monitora pastas e subpastas, reconhece temporadas, episódios e especiais e retira da estante títulos cujos arquivos foram apagados sem perder a memória do usuário. |
 | **Busca e filtros completos** | Pesquisa títulos, aliases, episódios e gêneros e filtra por gênero, ano, status, estúdio e ordenação. |
 | **Perfis como na Netflix** | Escolha o perfil antes de entrar, mantenha jornadas separadas e proteja cada perfil com PIN numérico opcional. |
 | **Backup portátil** | Exporta um único arquivo `.anitbackup`, valida integridade antes de restaurar e ajuda a religar arquivos que mudaram de nome ou pasta. |

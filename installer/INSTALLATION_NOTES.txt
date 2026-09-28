@@ -1,6 +1,6 @@
-AniT 1.0.1 — ANTES DE INSTALAR
+AniT 1.0.2 — ANTES DE INSTALAR
 
-Bem-vindo à atualização 1.0.1 do AniT.
+Bem-vindo à atualização 1.0.2 do AniT.
 
 • A instalação é feita somente para o usuário atual e não exige permissão de administrador.
 • O AniT inclui o .NET 10 necessário para funcionar e o player MPC-HC portátil homologado.
@@ -10,5 +10,6 @@ Bem-vindo à atualização 1.0.1 do AniT.
   %LOCALAPPDATA%\AniT
 • Atualizar ou desinstalar o aplicativo não apaga esses dados pessoais.
 • Use Configurações → Dados e backup para criar um arquivo portátil antes de trocar de computador.
+• Ao atualizar a Biblioteca, títulos sem arquivos locais deixam a estante sem apagar seu histórico, progresso ou avaliações.
 
 O AniT é um projeto independente e não inclui episódios, capas ou fan arts de terceiros no instalador.

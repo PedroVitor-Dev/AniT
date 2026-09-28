@@ -1,6 +1,6 @@
 # Roadmap
 
-Este documento comunica direção, não datas garantidas. O ponto de partida é a versão estável **1.0.1**.
+Este documento comunica direção, não datas garantidas. O ponto de partida é a versão estável **1.0.2**.
 
 ## Entregue em 1.0.x
 

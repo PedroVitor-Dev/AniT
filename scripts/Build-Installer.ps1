@@ -1,10 +1,13 @@
 [CmdletBinding()]
 param(
-    [string] $Version = '1.0.1',
+    [string] $Version = '1.0.2',
     [string] $Configuration = 'Release',
     [string] $Runtime = 'win-x64',
     [string] $DotNetPath = 'dotnet',
-    [string] $InnoCompilerPath
+    [string] $InnoCompilerPath,
+    [string] $CertificateThumbprint,
+    [string] $SignToolPath,
+    [string] $TimestampUrl = 'https://timestamp.digicert.com'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -32,6 +35,43 @@ function Invoke-Checked([string] $executable, [string[]] $arguments) {
     if ($LASTEXITCODE -ne 0) {
         throw "Falha ao executar $executable (código $LASTEXITCODE)."
     }
+}
+
+function Resolve-SignTool([string] $explicitPath) {
+    if (-not [string]::IsNullOrWhiteSpace($explicitPath)) {
+        if (-not (Test-Path -LiteralPath $explicitPath)) {
+            throw "signtool.exe não encontrado no caminho informado: $explicitPath"
+        }
+        return [System.IO.Path]::GetFullPath($explicitPath)
+    }
+
+    $roots = @(
+        (Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin'),
+        (Join-Path $env:ProgramFiles 'Microsoft SDKs\ClickOnce\SignTool')
+    ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) -and (Test-Path -LiteralPath $_) }
+
+    $candidate = $roots |
+        ForEach-Object { Get-ChildItem -LiteralPath $_ -Filter 'signtool.exe' -File -Recurse -ErrorAction SilentlyContinue } |
+        Where-Object { $_.FullName -match '\\x64\\signtool\.exe$' -or $_.DirectoryName -notmatch '\\(arm|arm64|x86)\\' } |
+        Sort-Object FullName -Descending |
+        Select-Object -First 1
+
+    if (-not $candidate) {
+        throw 'signtool.exe não encontrado. Instale o Windows SDK ou informe -SignToolPath.'
+    }
+
+    return $candidate.FullName
+}
+
+function Invoke-AuthenticodeSign([string] $path, [string] $thumbprint, [string] $signTool) {
+    Invoke-Checked $signTool @(
+        'sign', '/sha1', $thumbprint,
+        '/fd', 'SHA256',
+        '/tr', $TimestampUrl,
+        '/td', 'SHA256',
+        $path
+    )
+    Invoke-Checked $signTool @('verify', '/pa', '/v', $path)
 }
 
 Reset-ArtifactDirectory $publishDirectory
@@ -70,6 +110,18 @@ foreach ($requiredFile in $requiredFiles) {
 Copy-Item -LiteralPath (Join-Path $repositoryRoot 'LICENSE') -Destination (Join-Path $publishDirectory 'LICENSE.txt')
 Copy-Item -LiteralPath (Join-Path $repositoryRoot 'THIRD_PARTY_NOTICES.md') -Destination (Join-Path $publishDirectory 'THIRD_PARTY_NOTICES.md')
 
+$signingEnabled = -not [string]::IsNullOrWhiteSpace($CertificateThumbprint)
+if ($signingEnabled) {
+    $CertificateThumbprint = ($CertificateThumbprint -replace '\s', '').ToUpperInvariant()
+    if ($CertificateThumbprint -notmatch '^[A-F0-9]{40,64}$') {
+        throw 'O thumbprint do certificado de assinatura possui formato inválido.'
+    }
+    $SignToolPath = Resolve-SignTool $SignToolPath
+    Invoke-AuthenticodeSign (Join-Path $publishDirectory 'AniT.exe') $CertificateThumbprint $SignToolPath
+} else {
+    Write-Warning 'Instalador sem assinatura Authenticode: o SmartScreen poderá exibir “Fornecedor desconhecido”.'
+}
+
 if ([string]::IsNullOrWhiteSpace($InnoCompilerPath)) {
     $candidates = @(
         (Join-Path $env:ProgramFiles 'Inno Setup 7\ISCC.exe'),
@@ -94,6 +146,10 @@ Invoke-Checked $InnoCompilerPath @(
 $installerPath = Join-Path $installerDirectory "AniT-Setup-$Version-win-x64.exe"
 if (-not (Test-Path -LiteralPath $installerPath)) {
     throw "O compilador não produziu o instalador esperado: $installerPath"
+}
+
+if ($signingEnabled) {
+    Invoke-AuthenticodeSign $installerPath $CertificateThumbprint $SignToolPath
 }
 
 $hash = Get-FileHash -LiteralPath $installerPath -Algorithm SHA256

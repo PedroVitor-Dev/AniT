@@ -4,8 +4,8 @@
 
 | Versão | Suporte |
 | --- | --- |
-| 1.0.1 | Sim |
-| 1.0.0 e anteriores | Atualize antes de relatar |
+| 1.0.2 | Sim |
+| 1.0.1 e anteriores | Atualize antes de relatar |
 | Builds não oficiais/modificados | Não garantido |
 
 Correções de segurança são preparadas em privado quando necessário, integradas à `main` e publicadas em uma nova versão suportada.
@@ -48,4 +48,4 @@ Não teste dados ou sistemas de terceiros sem autorização. Use mídia descart�
 
 ## Integridade de releases
 
-Releases oficiais ficam em `github.com/PedroVitor-Dev/AniT/releases` e incluem `SHA256SUMS.txt`. A versão 1.0.1 ainda não possui assinatura digital; o hash reduz o risco de corrupção, mas não substitui Authenticode. Não execute um instalador cujo hash divergir.
+Releases oficiais ficam em `github.com/PedroVitor-Dev/AniT/releases` e incluem `SHA256SUMS.txt`. A versão 1.0.2 ainda não possui assinatura digital; o hash reduz o risco de corrupção, mas não substitui Authenticode. Não execute um instalador cujo hash divergir.
