@@ -2,32 +2,31 @@
 
 ## Antes de pedir ajuda
 
-1. Consulte o [Manual de utilização](docs/USER_GUIDE.md).
-2. Veja [Solução de problemas](docs/TROUBLESHOOTING.md).
+1. Confirme se usa a [versão estável mais recente](https://github.com/PedroVitor-Dev/AniT/releases/latest).
+2. Consulte o [Manual](docs/USER_GUIDE.md), [Configurações](docs/SETTINGS.md) e [Solução de problemas](docs/TROUBLESHOOTING.md).
 3. Pesquise issues abertas e fechadas.
-4. Confirme se o problema ocorre no commit mais recente de `main`.
+4. Faça um `.anitbackup` antes de reparo, reset ou migração.
 
 ## Bug reproduzível
 
-Abra uma issue usando o formulário **Relatar um bug**. Inclua:
+Abra o formulário **Relatar um bug** e inclua:
 
-- versão/commit;
+- versão pública (por exemplo, 1.0.1) ou commit;
 - Windows, resolução e escala;
-- passos mínimos;
-- comportamento esperado e observado;
-- logs relevantes;
-- screenshot ou vídeo quando o problema for visual.
+- passos mínimos e resultado esperado/observado;
+- mensagem de erro e trecho relevante do log;
+- captura ou vídeo quando o problema for visual.
 
-Revise anexos antes de publicar. Caminhos podem revelar nome de usuário e arquivos pessoais.
+Revise anexos. Caminhos podem revelar o usuário e nomes de arquivos. Nunca publique banco, `profiles.json`, PIN ou `.anitbackup`.
 
 ## Ideia ou melhoria
 
-Use o formulário **Propor uma melhoria**. Explique o problema antes da solução e indique quem se beneficia. Consulte o [roadmap](docs/ROADMAP.md), mas lembre que estar no roadmap não significa que a implementação já está definida.
+Use **Propor uma melhoria** e explique o problema antes da solução. Consulte o [roadmap](docs/ROADMAP.md), lembrando que ele não garante implementação ou data.
 
 ## Segurança
 
-Vulnerabilidades não devem ser discutidas em issues públicas. Siga [SECURITY.md](SECURITY.md).
+Vulnerabilidades não devem ser discutidas em público. Siga [SECURITY.md](SECURITY.md).
 
-## Limites do suporte
+## Limites
 
-O projeto não fornece mídia, não orienta obtenção de conteúdo protegido e não garante compatibilidade com builds modificados de players ou do Windows. Respostas dependem da disponibilidade da comunidade.
+O projeto não fornece mídia, não orienta obtenção de conteúdo protegido e não garante builds modificados, players não homologados ou versões antigas. Respostas dependem da disponibilidade da comunidade.

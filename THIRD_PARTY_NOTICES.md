@@ -1,6 +1,6 @@
 # Avisos de terceiros
 
-O AniT é distribuído sob a GNU General Public License v3.0. O pacote pode incluir os componentes abaixo, que permanecem sujeitos às respectivas licenças e direitos autorais.
+O AniT é distribuído sob a GNU General Public License v3.0. O instalador oficial 1.0.1 inclui os componentes de execução abaixo, que permanecem sujeitos às respectivas licenças e direitos autorais.
 
 ## Componentes de execução
 

@@ -1,105 +1,73 @@
 # Contribuindo com o AniT
 
-Obrigado por querer melhorar o AniT. Contribuições são bem-vindas em código, design, documentação, testes, acessibilidade e triagem.
-
-Ao participar, você concorda com o [Código de Conduta](CODE_OF_CONDUCT.md).
+Contribuições em código, design, documentação, testes, acessibilidade e triagem são bem-vindas. Ao participar, você concorda com o [Código de Conduta](CODE_OF_CONDUCT.md).
 
 ## Antes de começar
 
-- Para dúvidas de uso, consulte [SUPPORT.md](SUPPORT.md).
-- Para vulnerabilidades, não abra issue pública; siga [SECURITY.md](SECURITY.md).
-- Procure issues e pull requests existentes para evitar trabalho duplicado.
-- Mudanças grandes devem começar com uma proposta de issue.
+- Dúvidas de uso: [SUPPORT.md](SUPPORT.md).
+- Vulnerabilidades: [SECURITY.md](SECURITY.md), nunca issue pública.
+- Pesquise issues e PRs existentes.
+- Discuta mudanças grandes antes de implementar.
+- Leia [Arquitetura](docs/ARCHITECTURE.md) e [Desenvolvimento](docs/DEVELOPMENT.md).
 
-## Encontrando uma contribuição
+## Fluxo
 
-Boas primeiras tarefas:
-
-- ampliar casos do parser de nomes;
-- adicionar testes de regressão;
-- corrigir documentação;
-- melhorar contraste, foco e navegação por teclado;
-- validar layout em diferentes resoluções e escalas;
-- tornar mensagens de erro mais acionáveis.
-
-Issues adequadas para iniciantes podem receber a label `good first issue`; tarefas que precisam de apoio podem usar `help wanted`.
-
-## Ambiente
-
-Siga [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). O ciclo básico é:
+1. Faça fork e crie uma branch a partir de `main`.
+2. Implemente uma alteração focada.
+3. Adicione testes de regressão proporcionais ao risco.
+4. Atualize manual, configurações, privacidade, changelog ou arquitetura quando afetados.
+5. Execute a validação em Release.
+6. Abra o PR com contexto, riscos e evidências.
 
 ```powershell
-dotnet restore AniT.slnx
+git switch -c feat/nome-curto
+dotnet restore AniT.slnx --locked-mode
 dotnet build AniT.slnx -c Release --no-restore
-dotnet test AniT.slnx -c Release --no-build
+dotnet test AniT.slnx -c Release --no-build --collect:"XPlat Code Coverage"
 ```
 
-## Fluxo de contribuição
+## Princípios
 
-1. Faça fork do repositório.
-2. Crie uma branch a partir de `main`:
+- Preserve o modelo local-first e o modo offline.
+- Não mova, renomeie ou exclua mídia sem prévia e confirmação.
+- Não sobrescreva destinos; mantenha rollback quando aplicável.
+- Valide qualquer conteúdo externo antes de usar.
+- Não adicione telemetria, conta ou nuvem sem discussão e consentimento.
+- Persistência de perfil, PIN e backup exige teste de reinicialização/recuperação.
+- Mudanças públicas exigem documentação no mesmo PR.
 
-   ```powershell
-   git switch -c feat/nome-curto
-   ```
+## Testes e segurança
 
-3. Implemente uma alteração focada.
-4. Adicione ou atualize testes.
-5. Atualize documentação afetada.
-6. Execute build e testes em Release.
-7. Faça commits claros.
-8. Abra um pull request preenchendo o template.
+O CI usa restore travado, auditoria de pacotes, build Release, testes e cobertura mínima de 70%. Scanner, banco, backup, perfis, fontes e organizador precisam cobrir caminho feliz e falhas relevantes. Use diretórios e bancos temporários; nunca a coleção pessoal.
 
-## Escopo e design
+Não inclua binários, instaladores, banco, perfil, capas baixadas, logs, backups, resultados de teste ou mídia pessoal no PR.
 
-- Resolva um problema por pull request.
-- Prefira evolução incremental a grandes reescritas.
-- Preserve o princípio local-first.
-- Não mova, renomeie ou exclua mídia sem confirmação e prévia.
-- Integrações externas devem falhar de forma segura e manter o modo offline.
-- Mudanças visuais precisam funcionar em resoluções e escalas diferentes.
-- Não adicione telemetria, conta ou envio de dados sem discussão explícita.
+## Interface
 
-## Testes esperados
+Inclua antes/depois e valide:
 
-Uma correção de bug deve incluir teste de regressão quando a lógica for testável. Recursos de scanner, banco ou organizador precisam cobrir o caminho feliz e os modos de falha relevantes.
-
-Para mudanças visuais, inclua:
-
-- antes/depois;
-- resolução e escala usadas;
-- estados normal, hover, foco e desabilitado quando aplicável;
-- confirmação de que conteúdo e bordas não são recortados.
+- 1280×720, 1920×1080 e 3440×1440;
+- escala 100%, 125% e 150%;
+- temas escuro, claro e automático;
+- estados normal, hover, foco, seleção e desabilitado;
+- teclado, contraste, redução de movimento e imagens sem corte.
 
 ## Commits
 
 Use Conventional Commits:
 
 ```text
-feat: add persistent favorites
-fix: avoid duplicate review entries
-docs: expand backup instructions
-test: cover offline library root
+feat: add library filter
+fix: persist removed profile pin
+docs: document backup migration
+test: cover malformed backup manifest
 chore: update CI action
 ```
 
-Evite commits genéricos como `changes`, `fix` ou `update`.
+## PR pronto para revisão
 
-## Pull request pronto para revisão
+O PR explica problema e solução, passa no CI, mantém escopo pequeno, inclui evidências, documenta migração/limitações e não altera dados reais. Mantenedores podem pedir divisão, testes ou alinhamento arquitetural.
 
-Um PR está pronto quando:
+## Licença
 
-- explica o problema e a solução;
-- mantém o escopo pequeno;
-- compila sem erros;
-- passa nos testes;
-- inclui evidência visual quando necessário;
-- atualiza documentação;
-- não inclui binários, banco local, capas baixadas, logs ou mídia pessoal;
-- informa riscos, migrações e limitações conhecidas.
-
-Mantenedores podem pedir divisão do PR, testes adicionais ou alinhamento de arquitetura. Feedback técnico deve discutir a mudança, nunca a pessoa.
-
-## Licença das contribuições
-
-Ao enviar uma contribuição, você concorda que ela será distribuída sob a licença [GPL-3.0](LICENSE) do projeto e declara ter direito de submetê-la.
+Contribuições são distribuídas sob [GPL-3.0](LICENSE). Ao enviar, você declara ter direito de contribuir com o material.

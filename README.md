@@ -8,16 +8,17 @@
 
 <p align="center">
   <a href="https://github.com/PedroVitor-Dev/AniT/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/PedroVitor-Dev/AniT/ci.yml?branch=main&style=for-the-badge&label=build" /></a>
+  <a href="https://github.com/PedroVitor-Dev/AniT/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/PedroVitor-Dev/AniT?style=for-the-badge&color=2FA7FF" /></a>
   <img alt="Windows" src="https://img.shields.io/badge/Windows-10%20%7C%2011-168BFF?style=for-the-badge&logo=windows11&logoColor=white" />
   <img alt=".NET 10" src="https://img.shields.io/badge/.NET-10-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" />
   <a href="LICENSE"><img alt="GPL-3.0" src="https://img.shields.io/github/license/PedroVitor-Dev/AniT?style=for-the-badge&color=2FA7FF" /></a>
 </p>
 
 <p align="center">
-  <a href="#-comece-aqui">Comece aqui</a> ·
+  <a href="https://github.com/PedroVitor-Dev/AniT/releases/latest"><strong>Baixar a versão mais recente</strong></a> ·
   <a href="docs/USER_GUIDE.md">Manual</a> ·
-  <a href="docs/ROADMAP.md">Roadmap</a> ·
-  <a href="CONTRIBUTING.md">Contribuir</a> ·
+  <a href="docs/SETTINGS.md">Configurações</a> ·
+  <a href="docs/BACKUP_AND_MIGRATION.md">Backup</a> ·
   <a href="SUPPORT.md">Suporte</a>
 </p>
 
@@ -25,144 +26,145 @@
 
 ## O que é o AniT?
 
-O **AniT** é um aplicativo desktop open source para Windows que transforma pastas de vídeos em uma biblioteca pessoal de animes. Ele identifica episódios, preserva o progresso local, encontra capas e metadados, destaca arquivos que precisam de revisão e integra a reprodução ao MPC-HC.
+O **AniT** é um aplicativo desktop open source para Windows que transforma pastas de vídeos em uma biblioteca pessoal de animes. Ele identifica episódios, organiza títulos, preserva histórico e avaliações, encontra capas e metadados e integra a reprodução ao MPC-HC.
 
-O projeto é **local-first**: sua biblioteca, avaliações e histórico ficam no seu computador. A internet é usada somente para os provedores de metadados, tradução e artes habilitados nas configurações.
+O projeto é **local-first**: perfis, biblioteca, conquistas, progresso e configurações ficam no seu computador. O acesso à internet é opcional e usado somente pelas fontes de metadados, tradução e artes habilitadas.
 
-> [!IMPORTANT]
-> O AniT está em desenvolvimento ativo e em preparação para o primeiro release estável. Consulte as notas da versão para conhecer limitações e mudanças de compatibilidade.
+> [!NOTE]
+> A versão estável atual é a **1.0.1**. O instalador é autossuficiente para Windows x64, não exige .NET instalado e ainda não possui assinatura digital. Confira o hash publicado antes de executar.
 
-## ✨ Destaques
+## Baixar e instalar
+
+1. Abra a [release mais recente](https://github.com/PedroVitor-Dev/AniT/releases/latest).
+2. Baixe `AniT-Setup-1.0.1-win-x64.exe` e `SHA256SUMS.txt`.
+3. Compare o SHA-256 do instalador:
+
+```powershell
+Get-FileHash .\AniT-Setup-1.0.1-win-x64.exe -Algorithm SHA256
+```
+
+4. Execute o instalador, escolha o idioma e, se quiser, crie um atalho na Área de Trabalho.
+
+O AniT é instalado somente para o usuário atual em `%LOCALAPPDATA%\Programs\AniT`. A desinstalação preserva os dados em `%LOCALAPPDATA%\AniT`; seus vídeos nunca são incluídos nem removidos pelo instalador.
+
+Consulte o [guia de instalação, atualização e remoção](docs/INSTALLATION.md) para requisitos, SmartScreen e instalação silenciosa.
+
+## Destaques da versão 1.0.1
 
 | Recurso | Como ajuda |
 | --- | --- |
-| **Biblioteca inteligente** | Escaneia vídeos em subpastas e oferece pesquisa instantânea por título principal ou em inglês. |
-| **Reconhecimento seguro** | Interpreta nomes comuns de episódios e envia casos ambíguos para revisão em vez de adivinhar silenciosamente. |
-| **Capas e metadados** | Consulta título em inglês, capa, sinopse e nota pública no AniList, mantendo cache local e fallback visual. |
-| **Progresso local** | Salva posição, status e conclusão por episódio em SQLite. |
-| **Página do anime** | Reúne episódios, sinopse, nota pública e avaliações pessoais por episódio. |
-| **Conquistas e AniPoints** | Transforma uso real em 100 marcos persistentes, cadeias de progressão e conquistas secretas do Baki-Pi. |
-| **Arquivos resilientes** | Reconhece arquivos movidos, diferencia versões e duplicatas físicas e preserva dados quando um disco fica offline. |
-| **Organização opcional** | Gera uma prévia antes de mover vídeos e legendas sidecar; conflitos não são sobrescritos. |
-| **Player integrado** | Usa uma distribuição portátil homologada do MPC-HC para reprodução e retomada. |
+| **Biblioteca inteligente** | Monitora várias pastas e subpastas, reconhece temporadas, episódios e especiais e mantém casos ambíguos em revisão. |
+| **Busca e filtros completos** | Pesquisa títulos, aliases, episódios e gêneros e filtra por gênero, ano, status, estúdio e ordenação. |
+| **Perfis como na Netflix** | Escolha o perfil antes de entrar, mantenha jornadas separadas e proteja cada perfil com PIN numérico opcional. |
+| **Backup portátil** | Exporta um único arquivo `.anitbackup`, valida integridade antes de restaurar e ajuda a religar arquivos que mudaram de nome ou pasta. |
+| **Progresso e histórico** | Salva posição, conclusão, avaliações e comentários por episódio em SQLite local. |
+| **Explorar e artes** | Organiza gêneros em mundos visuais, oferece múltiplas fontes de arte, conteúdo SFW, cache e bloqueio de uma arte escolhida. |
+| **Calendário e conquistas** | Exibe atividade por dia e transforma o uso real em 100 conquistas persistentes e AniPoints. |
+| **Personalização ampla** | Tema escuro, claro ou automático, escala, brilho, cards, mascotes, Home reordenável, notificações e atalhos. |
+| **Player integrado** | Inclui MPC-HC portátil, retomada, checkpoints, limiar de conclusão, velocidade, tela cheia e próximo episódio. |
+| **Operação segura** | Scan não move vídeos; organização e renomeação exigem prévia e confirmação e nunca sobrescrevem destinos. |
 
-## 🔄 Como funciona
+## Como funciona
 
 ```mermaid
 flowchart LR
-    A[Pastas escolhidas] --> B[Scanner local]
+    A[Pastas monitoradas] --> B[Scanner local]
     B --> C{Identificação segura?}
-    C -->|Sim| D[Biblioteca SQLite]
+    C -->|Sim| D[Biblioteca SQLite do perfil]
     C -->|Ambígua| E[Fila de revisão]
     E --> D
-    D --> F[Metadados AniList]
-    F --> G[Capas em cache]
-    D --> H[Home e página do anime]
-    H --> I[MPC-HC]
-    I --> J[Progresso local]
+    D --> F[Metadados e artes opcionais]
+    F --> G[Cache local]
+    D --> H[Home, Explorar e Biblioteca]
+    H --> I[MPC-HC integrado]
+    I --> J[Progresso, histórico e conquistas]
     J --> D
+    D --> K[Backup .anitbackup]
 ```
 
-Nenhum arquivo é movido ou renomeado durante uma atualização comum. A organização física é um fluxo separado, opcional e precedido por uma prévia.
+Nenhum arquivo é movido ou renomeado durante uma atualização comum. Organização física e renomeação são fluxos separados, opcionais e precedidos por uma prévia.
 
-## 🚀 Comece aqui
+## Primeiros passos
+
+1. Abra o AniT e escolha ou crie seu perfil; configure um PIN se desejar.
+2. Adicione uma ou mais pastas em **Configurações → Biblioteca**.
+3. Use **Biblioteca → Atualizar Títulos** para montar o catálogo.
+4. Confira **Revisão** quando um arquivo não puder ser associado com segurança.
+5. Abra um anime e reproduza um episódio para começar seu histórico.
+6. Em **Configurações → Dados e backup**, gere seu primeiro `.anitbackup`.
+
+O [manual de utilização](docs/USER_GUIDE.md) detalha as telas e o fluxo completo. A [referência de configurações](docs/SETTINGS.md) descreve todas as opções.
+
+## Desenvolvimento
 
 ### Requisitos
 
-- Windows 10 ou 11, em arquitetura x64;
-- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) para desenvolvimento;
+- Windows 10 build 17763 ou posterior, ou Windows 11, x64;
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0);
 - Git;
-- MPC-HC portátil em `Player/MPC-HC/mpc-hc64.exe` para usar o player integrado.
-
-### Executar a partir do código
+- MPC-HC 2.8.2 portátil em `Player/MPC-HC/mpc-hc64.exe` para reprodução integrada.
 
 ```powershell
 git clone https://github.com/PedroVitor-Dev/AniT.git
 cd AniT
-dotnet restore AniT.slnx
+dotnet restore AniT.slnx --locked-mode
+dotnet build AniT.slnx -c Release --no-restore
+dotnet test AniT.slnx -c Release --no-build --collect:"XPlat Code Coverage"
 dotnet run --project src/AniT.App/AniT.App.csproj
 ```
 
-Na primeira abertura, selecione a pasta onde seus animes estão armazenados. Depois, use **Biblioteca → Atualizar Títulos** para iniciar a identificação e baixar os metadados disponíveis.
+Para preparar o player homologado, consulte [Player/README.md](Player/README.md). Para gerar o instalador, veja [Processo de release](docs/RELEASING.md).
 
-Para configurar o player durante o desenvolvimento, consulte [Player/README.md](Player/README.md).
-
-### Validar o projeto
-
-```powershell
-dotnet build AniT.slnx -c Release
-dotnet test AniT.slnx -c Release --no-build
-```
-
-## 🧭 Fluxo de uso
-
-1. Adicione uma ou mais pastas à estante.
-2. Atualize os títulos e acompanhe o progresso da varredura.
-3. Abra **Revisão** quando um nome de arquivo for ambíguo.
-4. Entre na página do anime para acompanhar episódios, sinopse e avaliações.
-5. Continue assistindo pelo player integrado; o progresso volta para a biblioteca.
-6. Se quiser reorganizar os arquivos, gere e confira a prévia antes de executar.
-
-O [manual de utilização](docs/USER_GUIDE.md) detalha cada etapa, os formatos de nome reconhecidos, backup e recuperação.
-
-## 🧱 Arquitetura
+## Arquitetura
 
 ```text
 src/
 ├── AniT.App             Interface WPF e composição dos fluxos
 ├── AniT.Core            Domínio, parsing, matching e contratos
-├── AniT.Infrastructure  SQLite, scanner, metadados e organização
+├── AniT.Infrastructure  SQLite, scanner, backups, metadados e organização
 └── AniT.Player          Integração com o MPC-HC
 tests/
-└── AniT.Tests           Testes de domínio e infraestrutura
+└── AniT.Tests           Testes de domínio, infraestrutura e regressão
 ```
 
-As dependências apontam para dentro: a interface coordena os casos de uso, a infraestrutura implementa persistência e integrações, e o domínio permanece independente. Veja [Arquitetura](docs/ARCHITECTURE.md) para os fluxos, entidades e decisões técnicas.
+As dependências apontam para dentro: a interface coordena casos de uso, a infraestrutura implementa persistência e integrações e o domínio permanece independente. Veja [Arquitetura](docs/ARCHITECTURE.md).
 
-## 🔐 Dados e privacidade
+## Dados e privacidade
 
-- Banco local: `%LOCALAPPDATA%\AniT\Data\anit.db`
-- Capas em cache: `%LOCALAPPDATA%\AniT\Covers`
-- Diagnósticos: `%LOCALAPPDATA%\AniT\Data\*.log`
-- Backup de migração: criado ao lado do banco antes de alterações relevantes de esquema.
+- Dados principais: `%LOCALAPPDATA%\AniT\Data`
+- Banco ativo: `%LOCALAPPDATA%\AniT\Data\anit.db`
+- Bancos por perfil: `%LOCALAPPDATA%\AniT\Data\Profiles\<id>\anit.db`
+- Capas: `%LOCALAPPDATA%\AniT\Covers`
+- Cache: `%LOCALAPPDATA%\AniT\Cache`
+- Backups automáticos padrão: `%USERPROFILE%\Documents\AniT Backups`
 
-O AniT não envia sua biblioteca para um servidor próprio. Consultas opcionais são feitas diretamente aos provedores descritos na [política de privacidade local](docs/PRIVACY.md).
+O AniT não possui backend próprio e não envia biblioteca, vídeos, histórico, PIN ou avaliações para um servidor AniT. Leia [Privacidade e dados locais](docs/PRIVACY.md) e [Backup e migração](docs/BACKUP_AND_MIGRATION.md).
 
-## 📚 Documentação
+## Documentação
 
 | Documento | Conteúdo |
 | --- | --- |
-| [Central de documentação](docs/README.md) | Índice de todos os guias |
-| [Manual de utilização](docs/USER_GUIDE.md) | Instalação, biblioteca, player e avaliações |
-| [Arquitetura](docs/ARCHITECTURE.md) | Camadas, dados e fluxos internos |
-| [Sistema de conquistas](docs/ACHIEVEMENTS.md) | 100 conquistas, AniPoints, regras, eventos e persistência |
-| [Ambiente de desenvolvimento](docs/DEVELOPMENT.md) | Setup, comandos, padrões e testes |
-| [Roadmap](docs/ROADMAP.md) | Direção do produto e prioridades |
+| [Central de documentação](docs/README.md) | Índice completo e versão documentada |
+| [Instalação](docs/INSTALLATION.md) | Download, hash, atualização, remoção e instalação silenciosa |
+| [Manual de utilização](docs/USER_GUIDE.md) | Perfis, biblioteca, reprodução, histórico e organização |
+| [Configurações](docs/SETTINGS.md) | Referência das onze categorias de configuração |
+| [Backup e migração](docs/BACKUP_AND_MIGRATION.md) | Conteúdo, importação, integridade e religação no novo PC |
 | [Solução de problemas](docs/TROUBLESHOOTING.md) | Diagnóstico e recuperação |
-| [Processo de release](docs/RELEASING.md) | Checklist de versionamento e publicação |
-| [Governança](GOVERNANCE.md) | Papéis, decisões e manutenção |
+| [Privacidade](docs/PRIVACY.md) | Dados locais, PIN, rede e exclusão |
+| [Arquitetura](docs/ARCHITECTURE.md) | Camadas, persistência e integrações |
+| [Conquistas](docs/ACHIEVEMENTS.md) | 100 conquistas, AniPoints e persistência |
+| [Desenvolvimento](docs/DEVELOPMENT.md) | Ambiente, comandos, testes e padrões |
+| [Roadmap](docs/ROADMAP.md) | Entregas atuais e direção futura |
+| [Release](docs/RELEASING.md) | Validação, instalador, publicação e hotfix |
 
-## 🤝 Contribua
+## Contribua
 
-Contribuições de código, design, documentação, testes e pesquisa de experiência são bem-vindas.
+Contribuições de código, design, documentação e testes são bem-vindas. Leia o [guia de contribuição](CONTRIBUTING.md), o [Código de Conduta](CODE_OF_CONDUCT.md) e a [política de segurança](SECURITY.md). Faça alterações pequenas, focadas e acompanhadas de testes proporcionais ao risco.
 
-1. Leia o [guia de contribuição](CONTRIBUTING.md) e o [Código de Conduta](CODE_OF_CONDUCT.md).
-2. Procure uma issue existente ou abra uma usando os formulários do repositório.
-3. Faça uma alteração pequena e focada, com testes proporcionais ao risco.
-4. Abra um pull request preenchendo contexto, evidências e checklist.
-
-Boas primeiras contribuições incluem novos casos de nomes de episódio, melhorias de acessibilidade, testes de scanner, documentação e refinamentos responsivos de WPF.
-
-## 🗺️ Próximos passos
-
-O foco atual é validar o candidato 1.0.1, concluir o empacotamento reproduzível e ampliar testes de interface e acessibilidade. As próximas etapas estão no [roadmap público](docs/ROADMAP.md).
-
-## 📜 Licença e avisos
+## Licença e avisos
 
 O código do AniT é distribuído sob a [GNU General Public License v3.0](LICENSE). Dependências e componentes distribuídos estão relacionados em [Avisos de terceiros](THIRD_PARTY_NOTICES.md).
 
-AniT é um projeto independente e não é afiliado ao AniList, MPC-HC, estúdios, distribuidoras ou serviços de streaming. O usuário é responsável por utilizar apenas mídias às quais tenha acesso legítimo. Imagens e metadados de terceiros permanecem sujeitos aos termos de seus respectivos provedores.
+AniT é um projeto independente e não é afiliado ao AniList, MPC-HC, estúdios, distribuidoras ou serviços de streaming. O usuário é responsável por utilizar apenas mídias às quais tenha acesso legítimo. Imagens e metadados de terceiros permanecem sujeitos aos termos de seus provedores.
 
-<p align="center">
-  Feito com 💙, código aberto e carinho por boas histórias.
-</p>
+<p align="center">Feito com 💙, código aberto e carinho por boas histórias.</p>

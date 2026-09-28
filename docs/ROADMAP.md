@@ -1,60 +1,49 @@
 # Roadmap
 
-Este documento comunica direção, não datas garantidas. Prioridades podem mudar conforme feedback, bugs e disponibilidade de contribuidores.
+Este documento comunica direção, não datas garantidas. O ponto de partida é a versão estável **1.0.1**.
 
-## Agora — fundação confiável
+## Entregue em 1.0.x
 
-- [x] Biblioteca local com SQLite.
-- [x] Scanner incremental de vídeos e subpastas.
-- [x] Parsing de nomes comuns e fila de revisão.
-- [x] Reconhecimento de arquivos movidos e duplicatas físicas.
-- [x] Capas, sinopse e nota pública via AniList com cache local.
-- [x] Progresso de reprodução e conclusão por episódio.
-- [x] Avaliação e comentário por episódio.
-- [x] Organizador com prévia, sidecars e prevenção de sobrescrita.
-- [x] Busca instantânea por título principal e título em inglês.
-- [x] Eliminar testes placeholder e ampliar cobertura de domínio/infraestrutura.
-- [ ] Adicionar automação de interface WPF para os fluxos críticos.
-- [ ] Auditoria de acessibilidade, navegação por teclado e contraste.
-- [x] Logs rotativos e diagnóstico exportável com controles de privacidade.
-- [ ] Empacotamento reproduzível para Windows x64.
+- [x] Instalador Windows x64 autossuficiente, personalizado e por usuário.
+- [x] Biblioteca SQLite com múltiplas pastas, scan incremental e subpastas.
+- [x] Parsing configurável, revisão, duplicatas, versões e arquivos indisponíveis.
+- [x] Busca por títulos, aliases, episódios e gêneros; filtros combinados.
+- [x] Metadados e artes de múltiplas fontes, cache, SFW e modo offline.
+- [x] Home configurável, Explorar por gêneros, calendário e histórico.
+- [x] MPC-HC integrado, retomada, checkpoints e conclusão configurável.
+- [x] Favoritos, tags, coleções, avaliações e 100 conquistas.
+- [x] Temas escuro/claro/automático, escala, mascotes e redução de movimento.
+- [x] Múltiplos perfis locais com seletor inicial e PIN opcional.
+- [x] Backup `.anitbackup`, importação validada e religação no novo PC.
+- [x] Central de configurações com onze categorias.
+- [x] CI com restore travado, auditoria de dependências, testes e cobertura mínima.
 
-## Próximo — experiência de biblioteca
+## Próximas correções e qualidade
 
-- [x] Expandir a busca para episódios, aliases e filtros combinados.
-- [x] Filtros por gênero, ano, status, estúdio e ordenação.
-- [x] Favoritos persistentes, tags e coleções personalizadas atribuíveis e filtráveis.
-- [x] Calendário local de episódios e atividade.
-- [x] Histórico navegável com retomada e comentários.
-- [x] Edição, mesclagem e separação manual de títulos e episódios.
-- [x] Importação/exportação de backup pela interface.
-- [x] Scans incrementais na inicialização e em segundo plano.
+- [ ] Assinar digitalmente instalador e executáveis quando houver certificado.
+- [ ] Ampliar automação de interface WPF para fluxos críticos.
+- [ ] Realizar auditoria externa de acessibilidade e navegação por teclado.
+- [ ] Testar matriz maior de GPUs, escalas e versões do Windows.
+- [ ] Adicionar atualização segura dentro do aplicativo, com confirmação do usuário.
+- [ ] Melhorar diagnóstico guiado para banco, player e fontes online.
 
-## Depois — distribuição e ecossistema
+## Evolução de produto
 
-- [ ] Instalador e atualização segura com canal estável.
-- [ ] Build portátil documentado.
-- [ ] Localização da interface e documentação em inglês.
-- [x] Temas e opções de acessibilidade visual.
-- [ ] Contrato estável para novos provedores de metadados.
-- [ ] Suporte configurável a players externos.
-- [ ] Telemetria somente se for opcional, transparente e aprovada pela comunidade.
+- [ ] Build portátil oficial além do instalador.
+- [ ] Localização completa da interface e documentação em inglês.
+- [ ] Contrato estável para provedores de metadados e artes.
+- [ ] Mais players externos com capacidades declaradas.
+- [ ] Sincronização opcional e criptografada entre computadores, sem abandonar o modo local-first.
+- [ ] Melhorias contínuas no matching e na religação de bibliotecas migradas.
 
-## Fora de escopo por enquanto
+## Fora de escopo
 
-- Streaming ou hospedagem de mídia.
-- Download de conteúdo protegido.
-- Sincronização obrigatória em nuvem.
-- Exclusão automática de arquivos duplicados.
-- Reorganização silenciosa da biblioteca.
+- streaming, hospedagem ou download de mídia protegida;
+- sincronização obrigatória em nuvem;
+- telemetria sem consentimento explícito;
+- exclusão automática de duplicatas;
+- reorganização silenciosa de arquivos.
 
 ## Como propor algo
 
-Antes de implementar uma funcionalidade grande:
-
-1. abra uma issue de proposta;
-2. descreva problema, público afetado e alternativa mínima;
-3. indique impacto em privacidade, arquivos locais e compatibilidade;
-4. aguarde alinhamento sobre escopo e arquitetura.
-
-Uma ideia no roadmap não dispensa esse alinhamento. Pull requests menores, testáveis e incrementais têm mais chance de revisão rápida.
+Abra uma issue de proposta, descreva o problema e o público, indique impacto em privacidade/arquivos/compatibilidade e apresente a menor solução útil. Uma ideia no roadmap não dispensa alinhamento de escopo e arquitetura.

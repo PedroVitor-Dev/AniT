@@ -2,60 +2,78 @@
 
 ## Resumo
 
-O AniT é local-first. Não existe conta AniT, servidor próprio ou sincronização obrigatória. Sua biblioteca é mantida no computador onde o aplicativo é executado.
+O AniT é local-first. Não existe conta AniT, servidor próprio, telemetria obrigatória ou sincronização automática em nuvem. Biblioteca, perfis, histórico e preferências permanecem no computador.
 
 ## Dados armazenados
 
-O banco SQLite pode conter:
+O SQLite e os arquivos de configuração podem conter:
 
-- títulos e aliases;
-- pastas configuradas e caminhos de arquivos;
-- temporadas, episódios, versões e disponibilidade;
-- posição e status de reprodução;
-- avaliações e comentários pessoais;
-- referências a capas e metadados públicos;
-- itens pendentes de revisão.
+- títulos, aliases, gêneros, estúdio e metadados públicos;
+- pastas, caminhos de arquivos, temporadas, episódios, versões e disponibilidade;
+- posição, sessões, status e conclusão de reprodução;
+- favoritos, tags, coleções, avaliações e comentários;
+- conquistas, AniPoints, notificações e preferências;
+- perfis locais, avatar, capa, nome, frase, título e opções de privacidade;
+- itens pendentes de revisão e vínculos manuais.
 
-Arquivos padrão:
+Locais principais:
 
 ```text
 %LOCALAPPDATA%\AniT\Data\anit.db
-%LOCALAPPDATA%\AniT\Data\*.log
-%LOCALAPPDATA%\AniT\Covers\*.jpg
+%LOCALAPPDATA%\AniT\Data\Profiles\<id>\anit.db
+%LOCALAPPDATA%\AniT\Data\profiles.json
+%LOCALAPPDATA%\AniT\Data\system-settings.json
+%LOCALAPPDATA%\AniT\Data\Profile\
+%LOCALAPPDATA%\AniT\Covers\
+%LOCALAPPDATA%\AniT\Cache\
 ```
+
+Arquivos `.bak`, logs e arquivos `-wal`/`-shm` podem existir durante recuperação e uso normal do SQLite.
+
+## PIN dos perfis
+
+O PIN opcional é armazenado como derivação PBKDF2 com salt, não como texto puro. Ele limita o acesso casual pela interface, mas não criptografa o banco, imagens ou backups. Uma pessoa com acesso ao usuário do Windows e aos arquivos locais pode copiá-los; use os controles de sessão e disco do Windows para proteção forte.
 
 ## Acesso à rede
 
-O AniT acessa a internet somente para recursos habilitados pelo usuário. Dependendo das configurações, um termo derivado do título do anime pode ser enviado diretamente aos seguintes provedores públicos:
+Conforme as opções habilitadas, termos derivados do título podem ser enviados diretamente a:
 
-- AniList, para títulos, aliases, sinopse, gêneros, estúdio, notas e artes;
-- Jikan/MyAnimeList e Kitsu, para metadados e artes oficiais;
-- Wallhaven, Danbooru, Safebooru e Gelbooru, para pesquisa de artes;
-- MyMemory, para tradução opcional de sinopses;
-- fontes HTTPS personalizadas cadastradas pelo próprio usuário.
+- AniList;
+- Jikan/MyAnimeList e Kitsu;
+- Wallhaven, Danbooru, Safebooru e Gelbooru;
+- MyMemory para tradução opcional;
+- fontes HTTPS personalizadas cadastradas pelo usuário.
 
-Essas requisições revelam ao provedor o endereço IP normal da conexão, o termo pesquisado e informações técnicas usuais de uma requisição HTTP. O AniT não controla a infraestrutura nem as políticas desses serviços. Fontes personalizadas são limitadas a HTTPS público; endereços locais, loopback e redes reservadas são bloqueados.
+O provedor recebe o IP normal da conexão, o termo e dados técnicos usuais de HTTP. O AniT não controla suas políticas. Fontes personalizadas aceitam somente HTTPS público; loopback, redes locais e endereços reservados são bloqueados. O modo totalmente offline impede consultas integradas.
 
-O modo totalmente offline impede essas consultas. Capas e metadados já presentes em cache continuam disponíveis.
+## O que não é enviado ao AniT
 
-## O que não é enviado pelo AniT
+O projeto não possui backend e não recebe intencionalmente:
 
-O aplicativo não possui backend próprio e não envia intencionalmente:
+- vídeos ou legendas;
+- biblioteca, banco ou backup;
+- progresso, avaliações, PIN ou lista de perfis;
+- caminhos locais e logs;
+- notificações do Windows.
 
-- arquivos de vídeo;
-- progresso ou avaliações pessoais;
-- banco SQLite;
-- lista completa de caminhos locais;
-- logs de diagnóstico.
+Issues no GitHub são públicas. Revise anexos: screenshots, logs, banco, `profiles.json` e backups podem conter dados pessoais.
 
-Notificações do Windows são produzidas localmente. O AniT não utiliza um servidor de push próprio.
+## Backups e exportações
 
-Issues no GitHub são públicas. Revise logs e screenshots antes de anexar; eles podem conter nome de usuário, caminhos ou nomes de arquivos.
+O `.anitbackup` pode conter praticamente todos os dados pessoais acima e caches de perfil, mas não vídeos. Ele é criado localmente; salvar em pendrive ou nuvem é uma escolha do usuário. Trate-o como arquivo privado.
+
+JSON e CSV são exportações legíveis e podem expor histórico e avaliações. CSVs exportados são protegidos contra interpretação de fórmulas, mas ainda devem ser armazenados com cuidado.
 
 ## Controle e exclusão
 
-Você pode operar offline depois que os dados necessários estiverem em cache. Para excluir todos os dados do AniT, feche o aplicativo e remova `%LOCALAPPDATA%\AniT`. Isso não remove sua mídia original.
+- Oculte histórico, notas ou favoritos nas preferências do perfil.
+- Limpe o histórico sem remover a Biblioteca pela interface.
+- Exporte seus dados pessoais ou um backup completo.
+- Exclua um perfil local pela tela de perfis.
+- Para remover tudo, desinstale o app, feche-o e apague `%LOCALAPPDATA%\AniT`.
+
+Apagar dados do AniT não remove seus vídeos originais.
 
 ## Futuras integrações
 
-Qualquer proposta de conta, nuvem ou telemetria deve ser opcional, documentada e discutida publicamente antes da implementação. Esta página deverá ser atualizada no mesmo pull request.
+Conta, sincronização, atualização automática ou telemetria deverão ser opcionais, documentadas e discutidas publicamente antes de qualquer implementação.
