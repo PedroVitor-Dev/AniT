@@ -1,28 +1,35 @@
 # Manual de utilização
 
-Este guia apresenta o fluxo completo do AniT, desde a primeira pasta até a reprodução e a manutenção da biblioteca.
+Este guia descreve o fluxo do AniT 1.0.1, da escolha do perfil ao backup da biblioteca.
 
-## 1. Antes de começar
+## 1. Instalação
 
-O AniT funciona no Windows 10 e 11. Durante a fase atual do projeto, a forma suportada de execução é pelo código-fonte. Releases instaláveis serão publicadas quando o empacotamento estiver estabilizado.
+Baixe o instalador na [página oficial de releases](https://github.com/PedroVitor-Dev/AniT/releases/latest), confira o SHA-256 e execute-o. O pacote já inclui o .NET e o MPC-HC necessários. Consulte [Instalação e atualização](INSTALLATION.md) para o passo a passo.
 
-Para reproduzir vídeos, o executável portátil `mpc-hc64.exe` deve estar em `Player/MPC-HC/` durante o desenvolvimento ou em `Player/MPC-HC/` ao lado do aplicativo publicado.
+## 2. Perfis e PIN
 
-## 2. Primeira abertura
+Ao abrir o AniT, escolha quem está assistindo. Cada perfil mantém separadamente biblioteca, progresso, histórico, avaliações e preferências.
 
-Na primeira execução, o AniT pede uma pasta para compor a estante. Você pode escolher a pasta principal e permitir a leitura de subpastas.
+- Clique em um perfil para entrar.
+- Crie ou edite perfis em **Configurações → Perfil e privacidade**.
+- Avatar, capa, nome, frase, título e enquadramento são personalizáveis.
+- O PIN opcional aceita de 4 a 6 dígitos e é solicitado antes de abrir o perfil.
+- Cinco tentativas incorretas bloqueiam novas tentativas por 30 segundos.
+- Para remover o PIN, use **Remover PIN** e confirme a operação.
 
-O aplicativo procura estes formatos:
+O PIN é uma proteção local contra acesso casual; ele não criptografa os arquivos nem substitui a conta do Windows.
+
+## 3. Montar a estante
+
+Abra **Configurações → Biblioteca** e adicione uma ou mais pastas. Cada raiz pode incluir ou ignorar subpastas. O scan aceita, por padrão:
 
 ```text
 .mkv  .mp4  .avi  .mov  .webm  .m4v  .wmv
 ```
 
-O scan apenas lê os arquivos e atualiza o banco local. Ele não move, renomeia nem exclui vídeos.
+Use **Biblioteca → Atualizar Títulos**. O scan lê os arquivos e atualiza o catálogo; não move, renomeia nem exclui mídia.
 
-## 3. Nomes de arquivo
-
-O parser reconhece padrões comuns, por exemplo:
+Nomes reconhecidos incluem:
 
 ```text
 Sousou no Frieren - 17.mkv
@@ -31,106 +38,87 @@ Sousou no Frieren S01E17.mkv
 Anime Name - 03v2 [PT-BR].mkv
 ```
 
-Quando o nome contém episódio decimal, múltiplos episódios, especiais ou informação insuficiente, o AniT prefere enviar o arquivo para **Revisão**. Isso evita associações silenciosas incorretas.
+As regras de temporada, episódio, OVA e especiais podem ser ajustadas em Configurações. Casos ambíguos são enviados para **Revisão** em vez de serem associados silenciosamente.
 
 ## 4. Biblioteca
 
-Abra **Biblioteca** no menu principal.
+### Títulos e busca
 
-### Títulos
+A aba **Títulos** mostra capa, nome, episódios, status e progresso. A busca global e a busca da Biblioteca encontram títulos, aliases, gêneros e números de episódio — pesquisar `01`, por exemplo, também retorna episódios 01.
 
-Exibe os animes identificados, quantidade de episódios, nome alternativo, status e progresso. O botão **Página do Anime** abre os detalhes da obra.
-
-Use o campo de pesquisa no canto superior para filtrar pelo título principal ou pelo título em inglês. A busca é instantânea, ignora maiúsculas, acentos e pontuação e aceita várias palavras em qualquer ordem. Pressione `Ctrl+F` para focar, `Esc` ou `×` para limpar.
+Os filtros combinam gênero, ano, status, estúdio e ordem. É possível recolher o painel para liberar espaço.
 
 ### Pastas
 
-Gerencia as raízes monitoradas. Cada pasta pode:
+Gerencie raízes monitoradas, subpastas e disponibilidade. Desativar uma raiz não apaga seu histórico. Se um disco externo sair do ar, os itens permanecem cadastrados como indisponíveis.
 
-- incluir ou ignorar subpastas;
-- ser ativada ou desativada sem apagar dados;
-- ficar temporariamente indisponível sem perder o histórico.
+### Revisão, duplicatas e versões
 
-### Atualizar Títulos
+- **Revisão:** confirme anime, temporada e episódio quando a identificação não for segura.
+- **Duplicatas:** compare cópias e versões físicas sem apagar automaticamente.
+- **Indisponíveis:** localize itens cujo arquivo não está acessível.
+- **Correção de catálogo:** mescle ou separe títulos associados incorretamente.
 
-Executa duas etapas:
+Uma correção manual pode criar um alias útil para scans futuros. O AniT usa caminho, tamanho, metadados e impressão rápida para diferenciar arquivo movido, cópia física e versão alternativa.
 
-1. varredura dos vídeos e reconciliação com a biblioteca;
-2. atualização opcional de títulos, capas, sinopses e notas via AniList.
+### Organizar e renomear
 
-O progresso aparece na tela. Se a rede falhar, a biblioteca local continua utilizável e os metadados já salvos são preservados.
+O organizador é opcional. Ele mostra uma prévia com origem, destino e legendas sidecar (`.srt`, `.ass`, `.ssa`, `.vtt`, `.sub`). Somente itens confirmados são processados e destinos existentes nunca são sobrescritos.
 
-### Revisão
+## 5. Home e Explorar
 
-Arquivos ambíguos ficam em uma fila. Confira o anime, temporada e episódio sugeridos antes de confirmar. Uma correção manual pode criar um alias aprendido para os próximos scans.
+A Home reúne banner, Continuar assistindo, novidades, favoritos e bem avaliados. Em **Configurações → Página inicial**, você pode mostrar, ocultar, ordenar e dimensionar essas seções e definir o comportamento do botão Continuar.
 
-### Duplicatas e versões
+**Explorar** organiza a coleção por Ação, Romance, Fantasia, Drama, Slice of Life, Mistério, Comédia, Isekai, Ecchi, Horror, Aventura e Esportes. As artes respeitam fontes, prioridade, SFW, cache e bloqueios configurados.
 
-O AniT usa caminho, tamanho, metadados e uma impressão rápida do conteúdo para distinguir:
+## 6. Página do anime
 
-- o mesmo arquivo movido;
-- duas cópias físicas do mesmo conteúdo;
-- versões diferentes do mesmo episódio.
+A página reúne títulos, capa, sinopse, gêneros, estúdio, nota pública, arquivos e progresso. Nela você pode:
 
-Marcar uma versão preferida não apaga as demais nem altera o progresso do episódio.
+- iniciar ou retomar um episódio;
+- favoritar;
+- avaliar e comentar episódios;
+- aplicar tags e coleções;
+- escolher versões quando houver duplicatas;
+- abrir ações de organização e correção.
 
-### Indisponíveis
+Quando todos os episódios locais são assistidos, o título pode ser marcado como concluído.
 
-Se um arquivo ou disco sumir, o item é marcado como indisponível. Um disco desconectado não é tratado como exclusão definitiva.
+## 7. Reprodução
 
-### Organizar
+O MPC-HC integrado permite posição salva, checkpoints, retomada, conclusão automática e próximo episódio. O limiar de “assistido”, intervalo de salvamento, velocidade, tela cheia e idiomas preferenciais são configuráveis.
 
-O organizador é opcional. Primeiro ele gera uma prévia com origem, destino e legendas sidecar (`.srt`, `.ass`, `.ssa`, `.vtt`, `.sub`). Somente operações selecionadas e sem conflito são executadas. Destinos existentes nunca são sobrescritos.
+Pular abertura e encerramento depende de um arquivo `.anit-segments.json` válido ao lado do episódio. Se você selecionar o aplicativo padrão do Windows, o AniT abre o vídeo, mas não consegue observar sua posição.
 
-## 5. Página do anime
+## 8. Calendário, histórico e conquistas
 
-A página reúne:
+- **Calendário:** mostra episódios assistidos por dia, notas e resumo mensal.
+- **Histórico:** filtra sessões por período e anime e permite registrar avaliação ou comentário.
+- **Conquistas:** contém 100 marcos persistentes, cadeias de progressão, segredos e AniPoints.
+- **Perfil:** resume estatísticas, favoritos, Top 5, atividade e jornada de conquistas.
 
-- título principal e título alternativo;
-- capa, sinopse e nota pública quando disponíveis;
-- lista local de episódios;
-- progresso e status de cada episódio;
-- avaliação e comentário pessoal por episódio.
+## 9. Aparência, notificações e acessibilidade
 
-Ao marcar todos os episódios disponíveis como assistidos, o anime passa a ser exibido como concluído.
+O AniT inicia em modo escuro em instalações novas. Também oferece tema claro e automático, cor principal, brilho, tamanho de cards, arredondamento, escala da interface e texto, redução de movimento e mascote por página. A preferência persiste e vale para todas as telas.
 
-## 6. Reprodução e progresso
+Notificações podem avisar sobre novos episódios, metadados, conquistas e resumo semanal, somente dentro do AniT ou também no Windows. Horários silenciosos evitam avisos no período definido.
 
-Use **Continuar assistindo** ou abra um episódio. O AniT inicia o MPC-HC, acompanha a posição e cria checkpoints periódicos. Ao concluir o episódio, o status e a posição final são persistidos no SQLite.
+## 10. Imagens e modo offline
 
-Se você escolher **Aplicativo padrão do Windows** em Configurações › Reprodução, o arquivo será aberto no player associado pelo sistema, mas o AniT não consegue observar sua posição. Retomada, checkpoints e conclusão automática exigem o **MPC-HC integrado**.
+O AniT pode consultar AniList, fontes oficiais e sites de arte habilitados. Imagens locais têm prioridade opcional; conteúdo SFW é o padrão. Capas e banners ficam em cache para uso offline.
 
-Tags e coleções são cadastradas em Configurações › Organização, atribuídas pelo botão **Organizar** na página do anime e podem ser usadas na busca e nos filtros da Biblioteca.
+O modo totalmente offline bloqueia consultas integradas. Biblioteca, histórico, avaliações, vídeos e imagens já armazenadas continuam funcionando.
 
-Se o player for fechado inesperadamente, o aplicativo tenta salvar o último ponto conhecido.
+## 11. Backup e troca de computador
 
-## 7. Capas e modo offline
+Em **Configurações → Dados e backup**, exporte um único `.anitbackup`. Ele preserva perfis, configurações, bancos, histórico, avaliações, conquistas e caches aceitos — mas não inclui vídeos.
 
-As capas baixadas ficam em `%LOCALAPPDATA%\AniT\Covers`. Depois do primeiro download, elas são reutilizadas localmente. Quando uma capa não existe, o AniT usa o Baki-Pi como fallback visual.
+Ao migrar, importe o backup, configure as pastas onde os vídeos estão no novo PC e use a religação/revisão manual quando arquivos vierem com outro nome, fansub ou formato. Veja [Backup e migração](BACKUP_AND_MIGRATION.md).
 
-Sem internet:
+## 12. Remover dados locais
 
-- vídeos, histórico e avaliações continuam disponíveis;
-- capas em cache continuam funcionando;
-- novos metadados do AniList aguardam uma atualização futura.
+Desinstalar o aplicativo preserva `%LOCALAPPDATA%\AniT`. Para apagar tudo, exporte um backup se necessário, feche o AniT e remova essa pasta manualmente. Seus vídeos originais ficam fora dela.
 
-## 8. Backup e restauração
+## 13. Precisa de ajuda?
 
-Feche o AniT antes de copiar os dados.
-
-Faça backup de:
-
-```text
-%LOCALAPPDATA%\AniT\Data
-%LOCALAPPDATA%\AniT\Covers
-```
-
-Para restaurar, feche o aplicativo e recoloque as pastas no mesmo local. O arquivo `anit.db.pre-smart-library.bak`, quando presente, é um backup automático criado antes de uma migração relevante do banco.
-
-## 9. Remover dados locais
-
-Feche o AniT e remova `%LOCALAPPDATA%\AniT`. Essa ação apaga banco, capas e logs, mas não toca nos vídeos originais. Faça backup antes se quiser preservar progresso ou avaliações.
-
-## 10. Precisa de ajuda?
-
-Consulte [Solução de problemas](TROUBLESHOOTING.md). Se o comportamento persistir, abra uma issue usando o formulário de bug e anexe apenas logs revisados, sem caminhos ou informações que você não queira publicar.
+Consulte [Solução de problemas](TROUBLESHOOTING.md). Ao abrir uma issue, informe a versão, o Windows e os passos mínimos, mas revise logs e capturas para não publicar caminhos ou dados pessoais.

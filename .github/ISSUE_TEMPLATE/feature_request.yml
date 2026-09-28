@@ -39,11 +39,16 @@ body:
     attributes:
       label: Área principal
       options:
+        - Perfis, PIN e privacidade
         - Biblioteca e scanner
         - Player e progresso
-        - Metadados e capas
+        - Backup e migração
+        - Metadados, capas e artes
         - Interface e acessibilidade
+        - Histórico, calendário e conquistas
+        - Configurações e notificações
         - Organização de arquivos
+        - Instalador e atualização
         - Documentação
         - Infraestrutura e testes
         - Outra

@@ -6,6 +6,10 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Não publicado]
 
+### Documentação
+
+- Central de documentação revisada para instalação, perfis/PIN, configurações, backup, migração, arquitetura, privacidade, suporte e processo de release.
+
 ## [1.0.1] - 2026-09-27
 
 ### Alterado
@@ -17,7 +21,7 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 - Remover o PIN de um perfil agora persiste corretamente após salvar configurações e reiniciar o AniT.
 - Alterações comuns do perfil não podem mais restaurar um PIN removido nem apagar um PIN recém-criado por meio de um rascunho antigo.
 
-## [1.0.0] - 2026-09-27
+## 1.0.0 - 2026-09-27
 
 ### Adicionado
 
@@ -54,3 +58,6 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 - Operações explícitas de reprocessamento podiam informar sucesso após falha de leitura.
 - Downloads de imagens sem limite de tamanho e exportações CSV interpretáveis como fórmula.
 - Validação de backups com manifesto duplicado, caminhos inseguros ou conteúdo adulterado.
+
+[Não publicado]: https://github.com/PedroVitor-Dev/AniT/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/PedroVitor-Dev/AniT/releases/tag/v1.0.1

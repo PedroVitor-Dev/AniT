@@ -16,7 +16,7 @@
 
 ## Riscos e compatibilidade
 
-<!-- Banco, arquivos locais, player, rede, migração ou comportamento offline. -->
+<!-- Banco, perfis/PIN, backup, arquivos locais, player, rede, migração, instalador ou comportamento offline. -->
 
 ## Checklist
 
@@ -27,4 +27,5 @@
 - [ ] Atualizei a documentação afetada.
 - [ ] Não incluí mídia pessoal, banco local, capas baixadas, logs ou binários.
 - [ ] Validei que nenhuma operação pode sobrescrever ou excluir arquivos sem confirmação.
-- [ ] Para UI, conferi teclado, contraste, 1280×720 e pelo menos uma escala diferente de 100%.
+- [ ] Para persistência, conferi salvar, reiniciar, migração e recuperação quando aplicável.
+- [ ] Para UI, conferi teclado, temas claro/escuro, contraste, 1280×720 e pelo menos uma escala diferente de 100%.
