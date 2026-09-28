@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#020817">
+  <meta name="description" content="Conheça o Baki-Pi e transforme sua coleção local de animes em uma jornada viva com o AniT.">
+  <title>AniT — Sua jornada vive aqui</title>
+  <link rel="icon" href="./assets/anit.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <canvas id="starfield" aria-hidden="true"></canvas>
+  <div class="cursor-glow" aria-hidden="true"></div>
+  <div class="page-noise" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="brand" href="#inicio" aria-label="AniT — início">
+      <img src="./assets/anit-logo.png" alt="AniT">
+    </a>
+    <nav aria-label="Navegação principal">
+      <a href="#baki-pi">Baki-Pi</a>
+      <a href="#anit">AniT</a>
+      <a href="#demos">Demos</a>
+      <a class="nav-download release-link" href="https://github.com/PedroVitor-Dev/AniT/releases/latest">
+        Baixar <span class="nav-version">agora</span>
+      </a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" id="inicio">
+      <div class="hero-backdrop" aria-hidden="true"></div>
+      <div class="hero-aurora aurora-one" aria-hidden="true"></div>
+      <div class="hero-aurora aurora-two" aria-hidden="true"></div>
+
+      <div class="hero-copy reveal">
+        <p class="eyebrow"><span></span> Sua coleção. Sua memória.</p>
+        <h1>Sua própria<br><em>biblioteca de animes</em><br>no PC.</h1>
+        <p class="hero-intro">O AniT transforma seus animes no PC em uma jornada viva — organizada, bonita e inteiramente sua.</p>
+
+        <div class="hero-actions">
+          <a class="download-button release-link magnetic" href="https://github.com/PedroVitor-Dev/AniT/releases/latest">
+            <span class="button-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></svg>
+            </span>
+            <span>
+              <strong>Baixar AniT</strong>
+              <small class="release-meta">Buscando a versão mais recente…</small>
+            </span>
+            <span class="button-arrow" aria-hidden="true">↗</span>
+          </a>
+          <a class="ghost-link" href="https://github.com/PedroVitor-Dev/AniT" target="_blank" rel="noreferrer">
+            Ver no GitHub
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>
+          </a>
+        </div>
+
+        <div class="trust-line" aria-label="Informações do aplicativo">
+          <span>Windows 10 e 11</span>
+          <span>Gratuito</span>
+          <span>Open source</span>
+        </div>
+      </div>
+
+      <div class="hero-character reveal" data-delay="1">
+        <div class="orbit orbit-outer" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="orbit orbit-inner" aria-hidden="true"></div>
+        <div class="portal-glow" aria-hidden="true"></div>
+        <img class="baki-hero" src="./assets/baki-happy.png" alt="Baki-Pi sorrindo e segurando um controle remoto">
+        <div class="character-tag tag-name"><span>●</span> Baki-Pi</div>
+        <div class="character-tag tag-role">Guardião das memórias</div>
+        <div class="floating-spark spark-one" aria-hidden="true">✦</div>
+        <div class="floating-spark spark-two" aria-hidden="true">✧</div>
+        <div class="floating-spark spark-three" aria-hidden="true">✦</div>
+      </div>
+
+      <a class="scroll-cue" href="#baki-pi" aria-label="Conheça o Baki-Pi">
+        <span>desça para conhecer</span>
+        <i></i>
+      </a>
+    </section>
+
+    <section class="baki-section" id="baki-pi">
+      <div class="section-index" aria-hidden="true">01 / 03</div>
+      <div class="baki-stage reveal">
+        <div class="baki-halo" aria-hidden="true"></div>
+        <div class="expression-shell">
+          <img id="bakiExpression" src="./assets/baki-normal.png" alt="Baki-Pi">
+        </div>
+        <div class="expression-picker" role="group" aria-label="Humor do Baki-Pi">
+          <button class="mood active" data-mood="normal" data-label="Pronto para a próxima história">Calmo</button>
+          <button class="mood" data-mood="happy" data-label="Essa vai para os favoritos!">Feliz</button>
+          <button class="mood" data-mood="focused" data-label="Maratona detectada.">Focado</button>
+          <button class="mood" data-mood="sleepy" data-label="Só mais um episódio…">Sonolento</button>
+        </div>
+      </div>
+
+      <div class="baki-copy reveal">
+        <p class="eyebrow"><span></span> Conheça o Baki-Pi</p>
+        <h2>Um pequeno espírito.<br><em>Mil histórias guardadas.</em></h2>
+        <p>Ele acompanha cada episódio, comemora suas conquistas e protege as lembranças que você criou pelo caminho.</p>
+        <blockquote id="bakiLine">“Pronto para a próxima história.”</blockquote>
+        <p class="microcopy">Escolha um humor e veja o Baki-Pi reagir.</p>
+      </div>
+    </section>
+
+    <section class="anit-section" id="anit">
+      <div class="section-index" aria-hidden="true">02 / 03</div>
+      <div class="anit-copy reveal">
+        <p class="eyebrow"><span></span> Isto é AniT</p>
+        <h2>Seu universo,<br><em>sem sair do seu PC.</em></h2>
+        <p>Biblioteca, progresso, calendário, histórico e conquistas em um só lugar. Seus arquivos continuam seus. Sua jornada também.</p>
+      </div>
+
+      <div class="memory-orbit reveal" aria-label="Recursos do AniT">
+        <div class="core-mark">
+          <img src="./assets/anit-mark.png" alt="">
+        </div>
+        <div class="memory-card card-library">
+          <span class="card-number">01</span>
+          <strong>Biblioteca</strong>
+          <small>tudo no lugar certo</small>
+        </div>
+        <div class="memory-card card-history">
+          <span class="card-number">02</span>
+          <strong>Memórias</strong>
+          <small>nenhum episódio esquecido</small>
+        </div>
+        <div class="memory-card card-achievements">
+          <span class="card-number">03</span>
+          <strong>Conquistas</strong>
+          <small>sua jornada tem história</small>
+        </div>
+        <svg class="orbit-lines" viewBox="0 0 760 520" aria-hidden="true">
+          <path d="M380 260 C215 35 56 120 116 257 S290 468 380 260"/>
+          <path d="M380 260 C557 45 733 126 654 268 S477 454 380 260"/>
+          <path d="M380 260 C201 353 256 504 414 472 S577 337 380 260"/>
+        </svg>
+      </div>
+    </section>
+
+    <section class="demo-section" id="demos" aria-labelledby="demoTitle">
+      <div class="section-index" aria-hidden="true">03 / 03</div>
+      <div class="demo-heading reveal">
+        <div>
+          <p class="eyebrow"><span></span> Veja em movimento</p>
+          <h2 id="demoTitle">O AniT<br><em>em ação.</em></h2>
+        </div>
+        <p>Três momentos da experiência real: sua coleção organizada, o próximo episódio sempre à mão e cada memória registrada.</p>
+      </div>
+
+      <div class="demo-showcase reveal" data-delay="1">
+        <div class="demo-player-frame">
+          <video id="demoPlayer" controls playsinline preload="metadata" poster="./assets/world.png" aria-label="Demonstração: Organização da biblioteca">
+            <source src="./assets/demo/demo-organizacao.mp4" type="video/mp4">
+            Seu navegador não oferece suporte à reprodução deste vídeo.
+          </video>
+          <div class="demo-now-playing">
+            <span id="demoNumber">01</span>
+            <div>
+              <strong id="demoName">Organização da biblioteca</strong>
+              <small id="demoDescription">Mesmo com nomes em japonês, inglês ou padrões diferentes de fansubs, o AniT reconhece os arquivos e organiza episódios e temporadas automaticamente na ordem certa.</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-selector" role="group" aria-label="Escolher demonstração">
+          <button class="demo-choice active" type="button" aria-pressed="true" data-video="./assets/demo/demo-organizacao.mp4" data-number="01" data-title="Organização da biblioteca" data-description="Mesmo com nomes em japonês, inglês ou padrões diferentes de fansubs, o AniT reconhece os arquivos e organiza episódios e temporadas automaticamente na ordem certa.">
+            <span class="demo-choice-number">01</span>
+            <span><strong>Organização</strong><small>Nomes diferentes, tudo em ordem</small></span>
+            <span class="demo-play" aria-hidden="true">▶</span>
+          </button>
+          <button class="demo-choice" type="button" aria-pressed="false" data-video="./assets/demo/demo-continuar-assistindo.mp4" data-number="02" data-title="Continuar assistindo" data-description="Retome exatamente do ponto onde sua história parou.">
+            <span class="demo-choice-number">02</span>
+            <span><strong>Continuar assistindo</strong><small>Progresso sempre salvo</small></span>
+            <span class="demo-play" aria-hidden="true">▶</span>
+          </button>
+          <button class="demo-choice" type="button" aria-pressed="false" data-video="./assets/demo/demo-calendario-historico.mp4" data-number="03" data-title="Calendário e histórico" data-description="Sua jornada organizada por dia, episódio e memória.">
+            <span class="demo-choice-number">03</span>
+            <span><strong>Calendário e histórico</strong><small>Cada memória registrada</small></span>
+            <span class="demo-play" aria-hidden="true">▶</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="finale">
+      <div class="finale-aura" aria-hidden="true"></div>
+      <img class="finale-baki reveal" src="./assets/baki-happy.png" alt="Baki-Pi feliz">
+      <div class="finale-copy reveal">
+        <p class="eyebrow centered"><span></span> Sua próxima história começa aqui <span></span></p>
+        <h2>Acenda sua<br><em>jornada.</em></h2>
+        <a class="download-button finale-button release-link magnetic" href="https://github.com/PedroVitor-Dev/AniT/releases/latest">
+          <span class="button-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></svg>
+          </span>
+          <span>
+            <strong>Baixar para Windows</strong>
+            <small class="release-meta">Versão mais recente</small>
+          </span>
+          <span class="button-arrow" aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="donation-section" aria-labelledby="donationTitle">
+      <div class="donation-glow" aria-hidden="true"></div>
+      <div class="donation-character reveal">
+        <span class="donation-orbit" aria-hidden="true"></span>
+        <img src="./assets/baki-donation.png" alt="Baki-Pi abraçando uma moeda de Bitcoin">
+      </div>
+
+      <div class="donation-copy reveal" data-delay="1">
+        <p class="eyebrow"><span></span> Apoie o AniT</p>
+        <h2 id="donationTitle">Ajude essa chama<br><em>a continuar.</em></h2>
+        <p>O AniT é gratuito e open source. Se ele fez parte da sua jornada, você pode apoiar o desenvolvimento com Bitcoin pela Lightning.</p>
+
+        <div class="lightning-card">
+          <div class="qr-shell">
+            <img src="./assets/lightning-qr.png" alt="QR Code para doar Bitcoin pela Lightning">
+            <span aria-hidden="true">⚡</span>
+          </div>
+          <div class="lightning-details">
+            <div class="lightning-label"><span aria-hidden="true">⚡</span> Lightning Network</div>
+            <strong>Escaneie ou copie a invoice</strong>
+            <code id="lightningInvoice">lnbc1p4t54n0pp59pqz8ess6lmsurd6u6kdwqnp6zmksgnn47qap7nhuhrvymmxye5qcqzyssp57jwavv5kppr60c3celam2p3zmav5g587uj026pjdxcwknjgsrauq9q7sqqqqqqqqqqqqqqqqqqqsqqqqqysgqdqqmqz9gxqyjw5qrzjqwryaup9lh50kkranzgcdnn2fgvx390wgj5jd07rwr3vxeje0glcllevtpamsld9suqqqqlgqqqqqeqqjqa6056jys72g0d9wj5nfuea9xatqarsnfsga7wl65d7jx79xn86lrplhga0zl45lzjetq0jj87j6kqtn6xh7erxcmvyktmsetd69p2hcqa5y5rg</code>
+            <div class="lightning-actions">
+              <button class="copy-invoice magnetic" type="button" id="copyInvoice">
+                <span aria-hidden="true">⧉</span> Copiar invoice
+              </button>
+              <a class="wallet-link" id="openLightningWallet" href="#">Abrir na carteira <span aria-hidden="true">↗</span></a>
+            </div>
+            <p class="copy-status" id="copyStatus" role="status" aria-live="polite">Doação opcional · rápida · sem cadastro</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <img src="./assets/anit-logo.png" alt="AniT">
+    <p>Feito com código aberto e carinho por boas histórias.</p>
+    <a href="https://github.com/PedroVitor-Dev/AniT" target="_blank" rel="noreferrer">GitHub <span>↗</span></a>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>
