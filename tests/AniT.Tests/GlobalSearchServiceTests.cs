@@ -56,7 +56,21 @@ public sealed class GlobalSearchServiceTests
                                         }
                                     }
                                 },
-                                new Episode { Number = 10, Title = "Novo mundo" }
+                                new Episode
+                                {
+                                    Number = 10,
+                                    Title = "Novo mundo",
+                                    MediaFiles =
+                                    {
+                                        new MediaFile
+                                        {
+                                            LibraryRootId = libraryRootId,
+                                            RelativePath = "Magical Destroyers 10.mkv",
+                                            FileName = "Magical Destroyers 10.mkv",
+                                            Extension = ".mkv"
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

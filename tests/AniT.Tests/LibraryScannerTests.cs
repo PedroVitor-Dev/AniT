@@ -119,7 +119,7 @@ public sealed class LibraryScannerTests
                 .SingleAsync();
 
             Assert.True(LibraryCatalogPresence.IsPresent(anime));
-            Assert.Single(anime.Seasons.SelectMany(season => season.Episodes).Where(LibraryCatalogPresence.IsPresent));
+            Assert.Single(anime.Seasons.SelectMany(season => season.Episodes), LibraryCatalogPresence.IsPresent);
         });
     }
 
