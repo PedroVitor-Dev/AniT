@@ -56,6 +56,17 @@ public partial class App : Application
     public static global::AniT.Infrastructure.AniTDbContext OpenFreshDatabase() => global::AniT.Infrastructure.AniTDatabase.Create(databasePath);
     public static string DataRootPath => dataRootPath;
     public static string DatabasePath => databasePath;
+    public static string VersionNumber
+    {
+        get
+        {
+            var version = Assembly.GetEntryAssembly()?.GetName().Version;
+            return version is null
+                ? "desconhecida"
+                : $"{version.Major}.{version.Minor}.{Math.Max(0, version.Build)}";
+        }
+    }
+    public static string DisplayVersion => $"Versão {VersionNumber}";
 
     public static Task<global::AniT.Infrastructure.AniTBackupManifest> ExportBackupAsync(string destinationPath, CancellationToken cancellationToken = default) =>
         backupService.ExportAsync(dataRootPath, databasePath, destinationPath, CurrentVersion, cancellationToken);
@@ -119,7 +130,7 @@ public partial class App : Application
         Current.Shutdown();
     }
 
-    private static string CurrentVersion => Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "desconhecida";
+    private static string CurrentVersion => VersionNumber;
 
     public static bool NeedsLibraryRelinkAfterRestore()
     {
@@ -427,6 +438,32 @@ public partial class App : Application
         dataRootPath = global::System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AniT");
         var dataDirectory = global::System.IO.Path.Combine(dataRootPath, "Data");
         databasePath = global::System.IO.Path.Combine(dataDirectory, "anit.db");
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        AppearanceManager.Initialize(this);
+
+        var profileSelection = new ProfileSelectionWindow();
+        MainWindow = profileSelection;
+        if (profileSelection.ShowDialog() != true || profileSelection.SelectedProfileId == Guid.Empty)
+        {
+            Shutdown();
+            return;
+        }
+
+        try
+        {
+            ActivateProfileForStartup(profileSelection.SelectedProfileId);
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(
+                $"Não foi possível abrir este perfil. Seus dados continuam preservados.\n\n{exception.Message}",
+                "Perfil indisponível · AniT",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            Shutdown();
+            return;
+        }
+
         Database = global::AniT.Infrastructure.AniTDatabase.Create(databasePath);
         Achievements = new global::AniT.Infrastructure.Achievements.AchievementService(OpenFreshDatabase);
         AchievementNotificationQueue.Initialize(Achievements);
@@ -437,12 +474,12 @@ public partial class App : Application
         InitializeMediaPlayer();
         ConfigureLibraryBackgroundScan(settings);
         ConfigureAutomaticBackup(settings);
-        AppearanceManager.Initialize(this);
         ShortcutManager.Initialize();
         global::AniT.Infrastructure.AniTDiagnostics.Write("APP", $"AniT {CurrentVersion} iniciado · perfil {ProfileSettingsStore.ActiveProfileId:N}");
 
         var dashboard = new DashboardWindow();
         MainWindow = dashboard;
+        ShutdownMode = ShutdownMode.OnMainWindowClose;
         dashboard.ContentRendered += (_, _) =>
         {
             if (!Database.LibraryRoots.Any() || NeedsLibraryRelinkAfterRestore()) AppNavigation.Settings(dashboard, SettingsSection.Shelf);
@@ -452,6 +489,27 @@ public partial class App : Application
         _ = InitializeAchievementsAsync();
         _ = InitializeWeeklySummaryAsync();
         _ = RunAutomaticBackupSafelyAsync();
+    }
+
+    private static void ActivateProfileForStartup(Guid selectedProfileId)
+    {
+        var activeProfileId = ProfileSettingsStore.ActiveProfileId;
+        if (selectedProfileId == activeProfileId) return;
+        if (!ProfileSettingsStore.GetProfiles().Any(profile => profile.ProfileId == selectedProfileId))
+            throw new InvalidOperationException("O perfil escolhido não existe mais.");
+
+        if (File.Exists(databasePath))
+            CopyDatabase(databasePath, ProfileSettingsStore.GetDatabaseSnapshotPath(activeProfileId));
+
+        var selectedDatabase = ProfileSettingsStore.GetDatabaseSnapshotPath(selectedProfileId);
+        if (!File.Exists(selectedDatabase))
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(selectedDatabase)!);
+            using var emptyProfileDatabase = global::AniT.Infrastructure.AniTDatabase.Create(selectedDatabase);
+        }
+        CopyDatabase(selectedDatabase, databasePath);
+        if (!ProfileSettingsStore.SetActive(selectedProfileId))
+            throw new InvalidOperationException("Não foi possível ativar o perfil escolhido.");
     }
 
     private static async Task RunAutomaticBackupSafelyAsync()

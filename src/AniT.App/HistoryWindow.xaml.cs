@@ -396,7 +396,7 @@ public partial class HistoryWindow : Window, INotifyPropertyChanged
     }
     private static string RatingImagePath(double rating) => rating switch
     {
-        <= 0 => "Assets/normal-sf.png",
+        <= 0 => "Assets/ask.png",
         <= 1 => "Assets/angry-sf.png",
         <= 2 => "Assets/sad-sf.png",
         <= 3 => "Assets/boring-sf.png",

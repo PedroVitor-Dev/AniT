@@ -52,7 +52,9 @@ jobs:
           Write-Host "Line coverage: $([math]::Round($lineRate * 100, 2))%"
 
       - name: Upload coverage report
-        if: always()
+        # A falha de restore/build não produz cobertura. Nesse caso, preserve o
+        # erro original em vez de criar uma segunda falha de "arquivo ausente".
+        if: ${{ always() && hashFiles('tests/AniT.Tests/TestResults/**/coverage.cobertura.xml') != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: coverage

@@ -142,7 +142,10 @@ internal static class AppearanceManager
     {
         var original = TextSizes.GetValue(text, item => new OriginalText(item.FontSize));
         text.FontSize = original.FontSize * settings.TextScalePercent / 100d;
-        if (Equals(text.Tag, "ThemeManaged")) return;
+        // Settings uses an intentionally dark workspace in both application themes.
+        // Its carefully selected foregrounds must not be reinterpreted against a
+        // translucent ancestor, otherwise white labels can become nearly black.
+        if (Equals(text.Tag, "ThemeManaged") || Window.GetWindow(text) is SystemSettingsWindow) return;
         ApplyReadableForeground(text, TextBlock.ForegroundProperty);
     }
 
