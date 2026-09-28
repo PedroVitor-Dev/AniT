@@ -24,6 +24,7 @@
     <nav aria-label="Navegação principal">
       <a href="#baki-pi">Baki-Pi</a>
       <a href="#anit">AniT</a>
+      <a href="#demos">Demos</a>
       <a class="nav-download release-link" href="https://github.com/PedroVitor-Dev/AniT/releases/latest">
         Baixar <span class="nav-version">agora</span>
       </a>
@@ -84,7 +85,7 @@
     </section>
 
     <section class="baki-section" id="baki-pi">
-      <div class="section-index" aria-hidden="true">01 / 02</div>
+      <div class="section-index" aria-hidden="true">01 / 03</div>
       <div class="baki-stage reveal">
         <div class="baki-halo" aria-hidden="true"></div>
         <div class="expression-shell">
@@ -108,7 +109,7 @@
     </section>
 
     <section class="anit-section" id="anit">
-      <div class="section-index" aria-hidden="true">02 / 02</div>
+      <div class="section-index" aria-hidden="true">02 / 03</div>
       <div class="anit-copy reveal">
         <p class="eyebrow"><span></span> Isto é AniT</p>
         <h2>Seu universo,<br><em>sem sair do seu PC.</em></h2>
@@ -139,6 +140,51 @@
           <path d="M380 260 C557 45 733 126 654 268 S477 454 380 260"/>
           <path d="M380 260 C201 353 256 504 414 472 S577 337 380 260"/>
         </svg>
+      </div>
+    </section>
+
+    <section class="demo-section" id="demos" aria-labelledby="demoTitle">
+      <div class="section-index" aria-hidden="true">03 / 03</div>
+      <div class="demo-heading reveal">
+        <div>
+          <p class="eyebrow"><span></span> Veja em movimento</p>
+          <h2 id="demoTitle">O AniT<br><em>em ação.</em></h2>
+        </div>
+        <p>Três momentos da experiência real: sua coleção organizada, o próximo episódio sempre à mão e cada memória registrada.</p>
+      </div>
+
+      <div class="demo-showcase reveal" data-delay="1">
+        <div class="demo-player-frame">
+          <video id="demoPlayer" controls playsinline preload="metadata" poster="./assets/world.png" aria-label="Demonstração: Organização da biblioteca">
+            <source src="./assets/demo/demo-organizacao.mp4" type="video/mp4">
+            Seu navegador não oferece suporte à reprodução deste vídeo.
+          </video>
+          <div class="demo-now-playing">
+            <span id="demoNumber">01</span>
+            <div>
+              <strong id="demoName">Organização da biblioteca</strong>
+              <small id="demoDescription">Tudo no lugar certo, desde o primeiro arquivo.</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-selector" role="group" aria-label="Escolher demonstração">
+          <button class="demo-choice active" type="button" aria-pressed="true" data-video="./assets/demo/demo-organizacao.mp4" data-number="01" data-title="Organização da biblioteca" data-description="Tudo no lugar certo, desde o primeiro arquivo.">
+            <span class="demo-choice-number">01</span>
+            <span><strong>Organização</strong><small>Biblioteca e coleções</small></span>
+            <span class="demo-play" aria-hidden="true">▶</span>
+          </button>
+          <button class="demo-choice" type="button" aria-pressed="false" data-video="./assets/demo/demo-continuar-assistindo.mp4" data-number="02" data-title="Continuar assistindo" data-description="Retome exatamente do ponto onde sua história parou.">
+            <span class="demo-choice-number">02</span>
+            <span><strong>Continuar assistindo</strong><small>Progresso sempre salvo</small></span>
+            <span class="demo-play" aria-hidden="true">▶</span>
+          </button>
+          <button class="demo-choice" type="button" aria-pressed="false" data-video="./assets/demo/demo-calendario-historico.mp4" data-number="03" data-title="Calendário e histórico" data-description="Sua jornada organizada por dia, episódio e memória.">
+            <span class="demo-choice-number">03</span>
+            <span><strong>Calendário e histórico</strong><small>Cada memória registrada</small></span>
+            <span class="demo-play" aria-hidden="true">▶</span>
+          </button>
+        </div>
       </div>
     </section>
 

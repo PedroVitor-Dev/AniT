@@ -58,6 +58,35 @@ copyInvoice?.addEventListener('click', async () => {
   }
 });
 
+const demoPlayer = document.querySelector('#demoPlayer');
+const demoNumber = document.querySelector('#demoNumber');
+const demoName = document.querySelector('#demoName');
+const demoDescription = document.querySelector('#demoDescription');
+
+document.querySelectorAll('.demo-choice').forEach(button => {
+  button.addEventListener('click', () => {
+    const nextVideo = button.dataset.video;
+    if (!demoPlayer || !nextVideo) return;
+
+    document.querySelectorAll('.demo-choice').forEach(choice => {
+      const selected = choice === button;
+      choice.classList.toggle('active', selected);
+      choice.setAttribute('aria-pressed', String(selected));
+    });
+
+    if (demoNumber) demoNumber.textContent = button.dataset.number || '';
+    if (demoName) demoName.textContent = button.dataset.title || '';
+    if (demoDescription) demoDescription.textContent = button.dataset.description || '';
+    demoPlayer.setAttribute('aria-label', `Demonstração: ${button.dataset.title || 'AniT'}`);
+
+    if (!demoPlayer.currentSrc.endsWith(nextVideo.replace('./', '/'))) {
+      demoPlayer.src = nextVideo;
+      demoPlayer.load();
+    }
+    demoPlayer.play().catch(() => {});
+  });
+});
+
 const observer = new IntersectionObserver(entries => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
