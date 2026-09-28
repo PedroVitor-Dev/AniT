@@ -9,6 +9,9 @@ namespace AniT.Core;
 /// </summary>
 public static class LibraryCatalogPresence
 {
+    public static Expression<Func<Episode, bool>> EpisodeFilter { get; } = episode =>
+        episode.MediaFiles.Any(file => file.Availability != MediaFileAvailability.Missing);
+
     public static Expression<Func<Anime, bool>> AnimeFilter { get; } = anime =>
         anime.Seasons.Any(season => season.Episodes.Any(episode => episode.MediaFiles.Any(file =>
             file.Availability != MediaFileAvailability.Missing)));

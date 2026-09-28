@@ -94,6 +94,13 @@ public static partial class EpisodeFileNameParser
 
     public static ParsedMediaFile Parse(string filePath, string libraryRoot) => Parse(filePath, libraryRoot, EpisodeParsingOptions.Default);
 
+    public static string? CleanEpisodeTitle(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var cleaned = RemoveNoise(value, ExtractReleaseGroup(value));
+        return string.IsNullOrWhiteSpace(cleaned) ? null : cleaned;
+    }
+
     public static ParsedMediaFile Parse(string filePath, string libraryRoot, EpisodeParsingOptions options)
     {
         var originalFileName = Path.GetFileName(filePath);
@@ -153,7 +160,7 @@ public static partial class EpisodeFileNameParser
 
         var fileTitle = match.Success ? ExtractTitle(working, match) : CleanupSeparators(working);
         var candidateTitle = ChooseCandidateTitle(fileTitle, folderTitle);
-        var episodeTitle = match.Success ? ExtractEpisodeTitle(working, match) : null;
+        var episodeTitle = match.Success ? CleanEpisodeTitle(ExtractEpisodeTitle(working, match)) : null;
         return new ParsedMediaFile(
             originalFileName,
             candidateTitle,

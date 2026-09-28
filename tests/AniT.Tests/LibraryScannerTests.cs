@@ -124,6 +124,29 @@ public sealed class LibraryScannerTests
     }
 
     [Fact]
+    public async Task ScanAsync_RepairsLegacyTechnicalEpisodeTitleEvenWhenFileIsUnchanged()
+    {
+        await WithLibraryAsync(async (context, root, libraryPath) =>
+        {
+            var animePath = Path.Combine(libraryPath, "Cutey Honey");
+            Directory.CreateDirectory(animePath);
+            var episodePath = Path.Combine(animePath, "Cutey Honey 01 [768p] V2.mkv");
+            await File.WriteAllBytesAsync(episodePath, [1, 2, 3]);
+            var scanner = new LibraryScanner(context);
+            await scanner.ScanAsync(root);
+
+            var episode = await context.Episodes.SingleAsync();
+            episode.Title = "[768p] V2";
+            await context.SaveChangesAsync();
+
+            var result = await scanner.ScanAsync(root);
+
+            Assert.Equal(1, result.FilesSkipped);
+            Assert.Null((await context.Episodes.SingleAsync()).Title);
+        });
+    }
+
+    [Fact]
     public async Task ScanAsync_MatchesAnimeTitleInsideNoisyTopLevelFileName()
     {
         await WithLibraryAsync(async (context, root, libraryPath) =>

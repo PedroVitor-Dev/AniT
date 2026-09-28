@@ -135,6 +135,7 @@ public sealed class LibraryScanner
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var info = new FileInfo(path);
+                var parsed = EpisodeFileNameParser.Parse(path, trackedRoot.Path, parsingOptions);
                 if (existingByPath.TryGetValue(relativePath, out var knownFile)
                     && knownFile.SizeInBytes == info.Length
                     && knownFile.LastModifiedAt.UtcDateTime == info.LastWriteTimeUtc
@@ -142,12 +143,12 @@ public sealed class LibraryScanner
                     && !string.IsNullOrWhiteSpace(knownFile.FileName))
                 {
                     MarkAvailable(knownFile, scanStartedAt);
+                    ReconcileEpisodeTitle(knownFile.Episode, parsed.EpisodeTitle);
                     skipped++;
                     continue;
                 }
 
                 var fingerprint = await fingerprintService.ComputeQuickFingerprintAsync(path, cancellationToken);
-                var parsed = EpisodeFileNameParser.Parse(path, trackedRoot.Path, parsingOptions);
 
                 if (knownFile is not null)
                 {
@@ -155,6 +156,7 @@ public sealed class LibraryScanner
                         && existingByFingerprint.TryGetValue(FingerprintKey(knownFile.SizeInBytes, knownFile.QuickHash), out var oldGroup))
                         oldGroup.Remove(knownFile);
                     UpdatePhysicalMetadata(knownFile, info, relativePath, fingerprint, parsed, scanStartedAt);
+                    ReconcileEpisodeTitle(knownFile.Episode, parsed.EpisodeTitle);
                     var knownKey = FingerprintKey(info.Length, fingerprint);
                     if (!existingByFingerprint.TryGetValue(knownKey, out var knownGroup)) existingByFingerprint[knownKey] = [knownFile];
                     else if (!knownGroup.Contains(knownFile)) knownGroup.Add(knownFile);
@@ -288,7 +290,7 @@ public sealed class LibraryScanner
                         SeasonId = season.Id,
                         Season = season,
                         Number = episodeNumber,
-                        Title = parsed.EpisodeTitle
+                        Title = EpisodeFileNameParser.CleanEpisodeTitle(parsed.EpisodeTitle)
                     };
                     episodes.Add(episode);
                     database.Episodes.Add(episode);
@@ -453,6 +455,22 @@ public sealed class LibraryScanner
         file.LastSeenAt = seenAt;
         file.MissingSince = null;
         file.Availability = MediaFileAvailability.Available;
+    }
+
+    private static void ReconcileEpisodeTitle(Episode? episode, string? parsedTitle)
+    {
+        if (episode is null) return;
+
+        var cleanedStoredTitle = EpisodeFileNameParser.CleanEpisodeTitle(episode.Title);
+        var cleanedParsedTitle = EpisodeFileNameParser.CleanEpisodeTitle(parsedTitle);
+        if (string.IsNullOrWhiteSpace(cleanedStoredTitle))
+        {
+            episode.Title = cleanedParsedTitle;
+            return;
+        }
+
+        if (!string.Equals(episode.Title, cleanedStoredTitle, StringComparison.Ordinal))
+            episode.Title = cleanedStoredTitle;
     }
 
     private static string NormalizeRelativePath(string path) => path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
