@@ -138,6 +138,7 @@ public sealed class GlobalSearchService(Func<AniTDbContext> contextFactory)
 
             await using var context = contextFactory();
             var entities = await context.Anime
+                .Where(LibraryCatalogPresence.AnimeFilter)
                 .Include(item => item.Aliases)
                 .Include(item => item.Seasons)
                 .ThenInclude(item => item.Episodes)
@@ -154,12 +155,15 @@ public sealed class GlobalSearchService(Func<AniTDbContext> contextFactory)
                     item.OriginalTitle,
                     item.Genres,
                     item.Aliases.Select(alias => alias.Alias).ToArray(),
-                    item.Seasons.SelectMany(season => season.Episodes.Select(episode => new SearchEpisode(
+                    item.Seasons.SelectMany(season => season.Episodes
+                        .Where(LibraryCatalogPresence.IsPresent)
+                        .Select(episode => new SearchEpisode(
                             episode.Id,
                             season.Number,
                             episode.Number,
                             episode.Title,
                             episode.MediaFiles
+                                .Where(file => file.Availability != MediaFileAvailability.Missing)
                                 .Select(file => file.FileName)
                                 .Where(fileName => !string.IsNullOrWhiteSpace(fileName))
                                 .ToArray())))

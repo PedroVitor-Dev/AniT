@@ -120,11 +120,17 @@ public partial class AnimeDetailsWindow : Window
             : "Buscando a sinopse em português…";
         CriticScoreLabel = anime.CriticScore is { } criticScore ? $"{criticScore:0}/100" : "—";
         CriticFiveLabel = anime.CriticScore is { } publicScore ? $"{publicScore / 20d:0.0}" : "—";
-        var allEpisodes = anime.Seasons.SelectMany(season => season.Episodes).OrderBy(episode => episode.Season!.Number).ThenBy(episode => episode.Number).ToList();
+        var allEpisodes = anime.Seasons.SelectMany(season => season.Episodes)
+            .Where(global::AniT.Core.LibraryCatalogPresence.IsPresent)
+            .OrderBy(episode => episode.Season!.Number)
+            .ThenBy(episode => episode.Number)
+            .ToList();
         var watchSummary = global::AniT.Core.AnimeWatchSummary.Create(allEpisodes);
         var watched = watchSummary.CompletedEpisodes;
         var watching = watchSummary.InProgressEpisodes;
-        Summary = watchSummary.IsCompleted
+        Summary = allEpisodes.Count == 0
+            ? "Nenhum episódio disponível na estante"
+            : watchSummary.IsCompleted
             ? $"Concluído · {watched} de {allEpisodes.Count} episódios assistidos"
             : watching > 0
                 ? $"{watching} episódio{(watching == 1 ? string.Empty : "s")} em andamento"
@@ -132,13 +138,17 @@ public partial class AnimeDetailsWindow : Window
                     ? "Ainda não iniciado"
                     : $"{watched} de {allEpisodes.Count} episódios assistidos";
         EpisodeCountLabel = $"{allEpisodes.Count} episódios";
-        CanPlayNext = !watchSummary.IsCompleted;
-        WatchStateLabel = watchSummary.IsCompleted
+        CanPlayNext = allEpisodes.Count > 0 && !watchSummary.IsCompleted;
+        WatchStateLabel = allEpisodes.Count == 0
+            ? "Indisponível"
+            : watchSummary.IsCompleted
             ? "Concluído"
             : watching > 0
                 ? "Em andamento"
                 : "Na sua biblioteca";
-        PlayNextLabel = watchSummary.IsCompleted
+        PlayNextLabel = allEpisodes.Count == 0
+            ? "Nenhum episódio disponível"
+            : watchSummary.IsCompleted
             ? "Anime concluído"
             : watching > 0
                 ? "Continuar assistindo"
@@ -461,6 +471,7 @@ public partial class AnimeDetailsWindow : Window
         await using var context = App.OpenFreshDatabase();
         var nextEpisode = await context.Episodes
             .Where(episode => episode.Season!.AnimeId == animeId && episode.Status != global::AniT.Core.WatchStatus.Completed)
+            .Where(global::AniT.Core.LibraryCatalogPresence.EpisodeFilter)
             .OrderBy(episode => episode.Season!.Number)
             .ThenBy(episode => episode.Number)
             .AsNoTracking()
@@ -501,8 +512,20 @@ public partial class AnimeDetailsWindow : Window
 
     private async void OrganizeAnime_Click(object sender, RoutedEventArgs e)
     {
-        var window = new AnimeOrganizationWindow(animeId) { Owner = this };
-        if (window.ShowDialog() is true) await LoadSafelyAsync();
+        try
+        {
+            var window = new AnimeOrganizationWindow(animeId) { Owner = this };
+            if (window.ShowDialog() is true) await LoadSafelyAsync();
+        }
+        catch (Exception exception)
+        {
+            global::AniT.Infrastructure.AniTDiagnostics.Write("ORGANIZACAO", "Não foi possível abrir a organização do anime.", exception);
+            MessageBox.Show(
+                "Não foi possível abrir a organização deste anime. Os detalhes foram registrados no diagnóstico do AniT.",
+                "Organização indisponível · AniT",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
     }
 
     private void Back_Click(object sender, RoutedEventArgs e) => AppNavigation.Back(this);

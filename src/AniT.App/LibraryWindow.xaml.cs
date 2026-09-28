@@ -147,6 +147,7 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
         coverLoadingCancellation = new CancellationTokenSource();
         await using var context = App.OpenFreshDatabase();
         var anime = await context.Anime
+            .Where(global::AniT.Core.LibraryCatalogPresence.AnimeFilter)
             .AsNoTracking()
             .Include(item => item.Seasons)
             .ThenInclude(season => season.Episodes)
@@ -180,7 +181,9 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
         {
             var preferredTitle = global::AniT.Infrastructure.OrganizationPreferences.PreferredTitle(item, organizationSettings.AnimeTitlePreference);
             var hasUsableCover = !string.IsNullOrWhiteSpace(item.CoverPath) && File.Exists(item.CoverPath);
-            var episodes = item.Seasons.SelectMany(season => season.Episodes).ToList();
+            var episodes = item.Seasons.SelectMany(season => season.Episodes)
+                .Where(global::AniT.Core.LibraryCatalogPresence.IsPresent)
+                .ToList();
             var watchSummary = global::AniT.Core.AnimeWatchSummary.Create(episodes);
             var watched = watchSummary.CompletedEpisodes;
             var current = episodes
@@ -596,6 +599,7 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
         try
         {
             var scanSummary = await ScanLibraryRootsAsync(cancellationToken);
+            GlobalSearchController.InvalidateIndex();
             var metadataUpdated = await RefreshMetadataAsync(cancellationToken);
             await LoadAsync();
             ShowRefreshOverlay(
@@ -671,6 +675,7 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
         await using (var context = App.OpenFreshDatabase())
         {
             anime = await context.Anime
+                .Where(global::AniT.Core.LibraryCatalogPresence.AnimeFilter)
                 .AsNoTracking()
                 .OrderBy(item => item.Title)
                 .Select(item => new AnimeMetadataItem(

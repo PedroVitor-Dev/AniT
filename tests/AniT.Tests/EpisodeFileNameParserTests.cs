@@ -80,6 +80,13 @@ public sealed class EpisodeFileNameParserTests
     }
 
     [Fact]
+    public void Cleans_legacy_episode_title_that_only_contains_technical_tags()
+    {
+        Assert.Null(EpisodeFileNameParser.CleanEpisodeTitle("[768p] V2"));
+        Assert.Equal("Uma nova aventura", EpisodeFileNameParser.CleanEpisodeTitle("Uma nova aventura [1080p] V2"));
+    }
+
+    [Fact]
     public void Formats_episode_display_name_with_two_digits()
     {
         Assert.Equal("Cutey Honey 01", EpisodeDisplayName.Format(" Cutey Honey ", 1));

@@ -13,6 +13,8 @@ internal static class GlobalSearchController
     private static readonly GlobalSearchService SearchService = new(App.OpenFreshDatabase);
     private static readonly ConditionalWeakTable<TextBox, SearchState> States = new();
 
+    public static void InvalidateIndex() => SearchService.Invalidate();
+
     public static void Attach(Window owner, TextBox textBox, TextBlock hint, FrameworkElement placementTarget)
     {
         if (States.TryGetValue(textBox, out _)) return;

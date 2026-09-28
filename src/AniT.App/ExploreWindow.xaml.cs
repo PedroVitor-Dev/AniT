@@ -92,6 +92,7 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
     {
         await using var context = App.OpenFreshDatabase();
         var anime = await context.Anime
+            .Where(global::AniT.Core.LibraryCatalogPresence.AnimeFilter)
             .Include(item => item.Seasons)
             .ThenInclude(season => season.Episodes)
             .ThenInclude(episode => episode.PlaybackProgress)
@@ -105,7 +106,9 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
         var now = DateTimeOffset.UtcNow;
         foreach (var item in anime)
         {
-            var episodes = item.Seasons.SelectMany(season => season.Episodes).ToList();
+            var episodes = item.Seasons.SelectMany(season => season.Episodes)
+                .Where(global::AniT.Core.LibraryCatalogPresence.IsPresent)
+                .ToList();
             var localRatings = episodes.Where(episode => episode.Rating is > 0).Select(episode => episode.Rating!.Value).ToList();
             var score = localRatings.Count > 0
                 ? localRatings.Average()

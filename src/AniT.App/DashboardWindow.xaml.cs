@@ -80,6 +80,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
         ApplyHomeSectionLayout();
         await using var context = App.OpenFreshDatabase();
         var anime = await context.Anime
+            .Where(global::AniT.Core.LibraryCatalogPresence.AnimeFilter)
             .Include(item => item.Seasons)
             .ThenInclude(season => season.Episodes)
             .ThenInclude(episode => episode.PlaybackProgress)
@@ -98,8 +99,9 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
 
         var watching = anime
             .SelectMany(item => item.Seasons.SelectMany(season => season.Episodes.Select(episode => new { Anime = item, Episode = episode })))
-            .Where(item => item.Episode.Status == global::AniT.Core.WatchStatus.Watching ||
-                           (!homeSettings.HideCompletedFromContinue && item.Episode.Status == global::AniT.Core.WatchStatus.Completed))
+            .Where(item => global::AniT.Core.LibraryCatalogPresence.IsPresent(item.Episode)
+                           && (item.Episode.Status == global::AniT.Core.WatchStatus.Watching
+                               || (!homeSettings.HideCompletedFromContinue && item.Episode.Status == global::AniT.Core.WatchStatus.Completed)))
             .OrderByDescending(item => item.Episode.PlaybackProgress?.LastPlayedAt)
             .ToList();
 
@@ -133,7 +135,8 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
             {
                 Anime = item,
                 Episode = item.Seasons.SelectMany(season => season.Episodes)
-                    .Where(episode => episode.Status != global::AniT.Core.WatchStatus.Completed)
+                    .Where(episode => global::AniT.Core.LibraryCatalogPresence.IsPresent(episode)
+                                      && episode.Status != global::AniT.Core.WatchStatus.Completed)
                     .OrderBy(episode => episode.Number)
                     .FirstOrDefault()
             })
@@ -145,7 +148,9 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
             CalendarItems.Add(new DashboardCalendarItem("LOCAL", item.Anime.Title, $"Ep. {item.Episode!.Number}"));
         }
 
-        var allEpisodes = anime.SelectMany(item => item.Seasons).SelectMany(season => season.Episodes).ToList();
+        var allEpisodes = anime.SelectMany(item => item.Seasons).SelectMany(season => season.Episodes)
+            .Where(global::AniT.Core.LibraryCatalogPresence.IsPresent)
+            .ToList();
         LibraryAnimeCount = anime.Count.ToString();
         LibraryEpisodeCount = allEpisodes.Count.ToString();
         LibraryCompletedCount = allEpisodes.Count(episode => episode.Status == global::AniT.Core.WatchStatus.Completed).ToString();
@@ -176,7 +181,8 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
                 Anime = item,
                 Episode = item.Seasons
                     .SelectMany(season => season.Episodes)
-                    .Where(episode => episode.PlaybackProgress is not null)
+                    .Where(episode => global::AniT.Core.LibraryCatalogPresence.IsPresent(episode)
+                                      && episode.PlaybackProgress is not null)
                     .OrderByDescending(episode => episode.PlaybackProgress!.LastPlayedAt)
                     .FirstOrDefault()
             })
@@ -321,7 +327,8 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
     {
         var settings = AniTSystemSettingsStore.Load();
         var preferredTitle = OrganizationPreferences.PreferredTitle(anime, settings.AnimeTitlePreference);
-        var episodeCount = anime.Seasons.Sum(season => season.Episodes.Count);
+        var episodeCount = anime.Seasons.SelectMany(season => season.Episodes)
+            .Count(global::AniT.Core.LibraryCatalogPresence.IsPresent);
         return new DashboardCard(anime.Id, null, preferredTitle, string.Empty, anime.EnglishTitle ?? $"{episodeCount} episódio{(episodeCount == 1 ? string.Empty : "s")}", IsUsableCover(anime.CoverPath) ? anime.CoverPath! : App.UpdatingArtworkPath, 0, string.Empty, scoreLabel, global::AniT.Core.LibraryFreshness.IsNew(anime, DateTimeOffset.UtcNow));
     }
 
