@@ -1,6 +1,6 @@
 # MPC-HC integrado
 
-O AniT 1.0.1 homologa o pacote portátil **MPC-HC 2.8.2 x64** de `clsid2/mpc-hc`.
+O AniT 1.0.2 homologa o pacote portátil **MPC-HC 2.8.2 x64** de `clsid2/mpc-hc`.
 
 ## Desenvolvimento
 

@@ -1,6 +1,6 @@
 # Processo de release
 
-Este processo foi validado na publicação da versão 1.0.1.
+Este processo foi validado na preparação da versão 1.0.2.
 
 ## Versionamento
 
@@ -10,7 +10,7 @@ Use [Versionamento Semântico](https://semver.org/lang/pt-BR/):
 - `MINOR`: funcionalidade compatível;
 - `PATCH`: correção compatível.
 
-A versão pública usa três componentes (`1.0.1`). Metadados internos do Windows podem representar `FileVersion` com quatro componentes (`1.0.1.0`) sem alterar o nome público.
+A versão pública usa três componentes (`1.0.2`). Metadados internos do Windows podem representar `FileVersion` com quatro componentes (`1.0.2.0`) sem alterar o nome público.
 
 ## Preparação
 
@@ -52,13 +52,21 @@ O CI em `.github/workflows/ci.yml` executa restore travado, auditoria NuGet, bui
 Instale Inno Setup 7 e execute:
 
 ```powershell
-.\scripts\Build-Installer.ps1 -Version 1.0.1
+.\scripts\Build-Installer.ps1 -Version 1.0.2
 ```
+
+Quando houver certificado Authenticode válido no repositório do usuário, gere a distribuição assinada para que o Windows consiga identificar o fornecedor:
+
+```powershell
+.\scripts\Build-Installer.ps1 -Version 1.0.2 -CertificateThumbprint SEU_THUMBPRINT
+```
+
+O script assina e verifica `AniT.exe` e o instalador antes de calcular o hash. Não coloque senha, chave privada ou arquivo `.pfx` no repositório.
 
 O script publica `win-x64` autossuficiente, prepara assets, inclui o MPC-HC homologado e compila:
 
 ```text
-artifacts\installer\AniT-Setup-1.0.1-win-x64.exe
+artifacts\installer\AniT-Setup-1.0.2-win-x64.exe
 artifacts\installer\SHA256SUMS.txt
 ```
 
@@ -86,4 +94,4 @@ Quando houver suporte de assinatura, prefira tag anotada/assinada e assinatura A
 
 ## Hotfix
 
-Parta do estado afetado, adicione teste de regressão, incremente `PATCH` e devolva a correção para `main`. Não misture funcionalidades novas. A 1.0.1 é exemplo: corrigiu a persistência da remoção do PIN e a arte de episódio sem avaliação.
+Parta do estado afetado, adicione teste de regressão, incremente `PATCH` e devolva a correção para `main`. Não misture funcionalidades novas. A 1.0.2 é exemplo: sincroniza o catálogo com arquivos removidos, protege raízes indisponíveis e repara o fluxo de organização.

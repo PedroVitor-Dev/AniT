@@ -278,7 +278,7 @@
       "anit.infrastructure": {
         "type": "Project",
         "dependencies": {
-          "AniT.Core": "[1.0.1, )",
+          "AniT.Core": "[1.0.2, )",
           "Microsoft.EntityFrameworkCore.Sqlite": "[10.0.12, )"
         }
       }

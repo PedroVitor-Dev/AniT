@@ -1,6 +1,6 @@
 # Central de documentação
 
-Esta documentação descreve o **AniT 1.0.1**, publicado para Windows x64. Quando houver divergência, o código e os testes da tag da versão são a fonte da verdade.
+Esta documentação descreve o **AniT 1.0.2**, publicado para Windows x64. Quando houver divergência, o código e os testes da tag da versão são a fonte da verdade.
 
 ## Para quem usa
 

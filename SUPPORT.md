@@ -11,7 +11,7 @@
 
 Abra o formulário **Relatar um bug** e inclua:
 
-- versão pública (por exemplo, 1.0.1) ou commit;
+- versão pública (por exemplo, 1.0.2) ou commit;
 - Windows, resolução e escala;
 - passos mínimos e resultado esperado/observado;
 - mensagem de erro e trecho relevante do log;

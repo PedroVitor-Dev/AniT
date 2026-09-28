@@ -4,7 +4,7 @@ Antes de alterar arquivos, exporte um `.anitbackup` ou copie `%LOCALAPPDATA%\Ani
 
 ## O instalador foi bloqueado pelo Windows
 
-A versão 1.0.1 não é assinada digitalmente. Baixe somente da [release oficial](https://github.com/PedroVitor-Dev/AniT/releases/latest), compare o SHA-256 com `SHA256SUMS.txt` e use **Mais informações → Executar assim mesmo** apenas se coincidir. Veja [Instalação](INSTALLATION.md).
+A versão 1.0.2 não é assinada digitalmente. Baixe somente da [release oficial](https://github.com/PedroVitor-Dev/AniT/releases/latest), compare o SHA-256 com `SHA256SUMS.txt` e use **Mais informações → Executar assim mesmo** apenas se coincidir. Veja [Instalação](INSTALLATION.md).
 
 ## O AniT não abre ou fica no carregamento
 
@@ -16,7 +16,7 @@ A versão 1.0.1 não é assinada digitalmente. Baixe somente da [release oficial
 
 ## O PIN continua sendo solicitado
 
-Na versão 1.0.1, remover o PIN persiste após reiniciar. Confirme a versão no rodapé de **Configurações**. Em **Perfil e privacidade**, selecione o perfil correto, clique em **Remover PIN** e confirme. Se estiver em 1.0.0, atualize primeiro.
+Desde a versão 1.0.1, remover o PIN persiste após reiniciar. Confirme a versão no rodapé de **Configurações**. Em **Perfil e privacidade**, selecione o perfil correto, clique em **Remover PIN** e confirme. Se estiver em 1.0.0, atualize primeiro.
 
 Depois de cinco tentativas incorretas, aguarde 30 segundos. O PIN não possui recuperação remota; não publique `profiles.json` nem seu backup em uma issue.
 
@@ -31,7 +31,11 @@ Depois de cinco tentativas incorretas, aguarde 30 segundos. O PIN não possui re
 
 ## A busca por número não encontra o episódio
 
-A busca global pesquisa episódios na versão 1.0.1. Tente `01`, `E01` ou `S01E01` conforme sua configuração. Se a associação do arquivo estiver pendente, conclua primeiro a Revisão.
+A busca global pesquisa episódios desde a versão 1.0.1. Tente `01`, `E01` ou `S01E01` conforme sua configuração. Se a associação do arquivo estiver pendente, conclua primeiro a Revisão.
+
+## Um anime ou episódio apagado continua aparecendo
+
+Atualize para a versão 1.0.2 ou posterior e use **Biblioteca → Atualizar Títulos**. Quando a pasta monitorada está acessível, episódios ausentes deixam as telas normais e um título sem nenhum arquivo local deixa a estante. Histórico, progresso e avaliações são preservados. Se a raiz estiver em disco externo ou unidade de rede desconectada, o AniT mantém os itens como indisponíveis para evitar remoção acidental; reconecte a unidade e atualize novamente.
 
 ## Um disco externo foi desconectado
 

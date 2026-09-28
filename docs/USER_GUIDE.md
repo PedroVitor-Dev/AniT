@@ -1,6 +1,6 @@
 # Manual de utilização
 
-Este guia descreve o fluxo do AniT 1.0.1, da escolha do perfil ao backup da biblioteca.
+Este guia descreve o fluxo do AniT 1.0.2, da escolha do perfil ao backup da biblioteca.
 
 ## 1. Instalação
 
@@ -27,7 +27,7 @@ Abra **Configurações → Biblioteca** e adicione uma ou mais pastas. Cada raiz
 .mkv  .mp4  .avi  .mov  .webm  .m4v  .wmv
 ```
 
-Use **Biblioteca → Atualizar Títulos**. O scan lê os arquivos e atualiza o catálogo; não move, renomeia nem exclui mídia.
+Use **Biblioteca → Atualizar Títulos**. O scan lê os arquivos e atualiza o catálogo; não move, renomeia nem exclui mídia. Se todos os episódios de um título tiverem sido apagados do disco, ele deixa a Biblioteca, Home, Explorar e busca após a atualização, enquanto histórico, progresso e avaliações permanecem preservados para backup ou religação futura.
 
 Nomes reconhecidos incluem:
 
@@ -38,7 +38,7 @@ Sousou no Frieren S01E17.mkv
 Anime Name - 03v2 [PT-BR].mkv
 ```
 
-As regras de temporada, episódio, OVA e especiais podem ser ajustadas em Configurações. Casos ambíguos são enviados para **Revisão** em vez de serem associados silenciosamente.
+As regras de temporada, episódio, OVA e especiais podem ser ajustadas em Configurações. Casos ambíguos são enviados para **Revisão** em vez de serem associados silenciosamente. Nomes técnicos antigos, como `[768p] V2`, são reparados quando o arquivo ainda permite identificar o episódio corretamente.
 
 ## 4. Biblioteca
 
@@ -50,7 +50,7 @@ Os filtros combinam gênero, ano, status, estúdio e ordem. É possível recolhe
 
 ### Pastas
 
-Gerencie raízes monitoradas, subpastas e disponibilidade. Desativar uma raiz não apaga seu histórico. Se um disco externo sair do ar, os itens permanecem cadastrados como indisponíveis.
+Gerencie raízes monitoradas, subpastas e disponibilidade. Desativar uma raiz não apaga seu histórico. Se um disco externo ou unidade de rede sair do ar, os itens permanecem protegidos como indisponíveis; a limpeza automática só ocorre quando a raiz acessível confirma que os arquivos não existem mais.
 
 ### Revisão, duplicatas e versões
 
