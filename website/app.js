@@ -31,6 +31,33 @@ async function resolveLatestRelease() {
 
 resolveLatestRelease();
 
+const lightningInvoice = document.querySelector('#lightningInvoice')?.textContent.trim() || '';
+const copyInvoice = document.querySelector('#copyInvoice');
+const copyStatus = document.querySelector('#copyStatus');
+const openLightningWallet = document.querySelector('#openLightningWallet');
+
+if (openLightningWallet && lightningInvoice) {
+  openLightningWallet.href = `lightning:${lightningInvoice}`;
+}
+
+copyInvoice?.addEventListener('click', async () => {
+  if (!lightningInvoice) return;
+  try {
+    await navigator.clipboard.writeText(lightningInvoice);
+    copyInvoice.innerHTML = '<span aria-hidden="true">✓</span> Invoice copiada';
+    if (copyStatus) copyStatus.textContent = 'Pronto! Agora é só colar na sua carteira Lightning.';
+  } catch {
+    const selection = window.getSelection();
+    const range = document.createRange();
+    const invoiceElement = document.querySelector('#lightningInvoice');
+    if (!selection || !invoiceElement) return;
+    range.selectNodeContents(invoiceElement);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    if (copyStatus) copyStatus.textContent = 'Invoice selecionada. Use Ctrl+C para copiar.';
+  }
+});
+
 const observer = new IntersectionObserver(entries => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {

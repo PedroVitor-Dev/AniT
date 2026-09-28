@@ -160,6 +160,39 @@
         </a>
       </div>
     </section>
+
+    <section class="donation-section" aria-labelledby="donationTitle">
+      <div class="donation-glow" aria-hidden="true"></div>
+      <div class="donation-character reveal">
+        <span class="donation-orbit" aria-hidden="true"></span>
+        <img src="./assets/baki-donation.png" alt="Baki-Pi abraçando uma moeda de Bitcoin">
+      </div>
+
+      <div class="donation-copy reveal" data-delay="1">
+        <p class="eyebrow"><span></span> Apoie o AniT</p>
+        <h2 id="donationTitle">Ajude essa chama<br><em>a continuar.</em></h2>
+        <p>O AniT é gratuito e open source. Se ele fez parte da sua jornada, você pode apoiar o desenvolvimento com Bitcoin pela Lightning.</p>
+
+        <div class="lightning-card">
+          <div class="qr-shell">
+            <img src="./assets/lightning-qr.png" alt="QR Code para doar Bitcoin pela Lightning">
+            <span aria-hidden="true">⚡</span>
+          </div>
+          <div class="lightning-details">
+            <div class="lightning-label"><span aria-hidden="true">⚡</span> Lightning Network</div>
+            <strong>Escaneie ou copie a invoice</strong>
+            <code id="lightningInvoice">lnbc1p4t54n0pp59pqz8ess6lmsurd6u6kdwqnp6zmksgnn47qap7nhuhrvymmxye5qcqzyssp57jwavv5kppr60c3celam2p3zmav5g587uj026pjdxcwknjgsrauq9q7sqqqqqqqqqqqqqqqqqqqsqqqqqysgqdqqmqz9gxqyjw5qrzjqwryaup9lh50kkranzgcdnn2fgvx390wgj5jd07rwr3vxeje0glcllevtpamsld9suqqqqlgqqqqqeqqjqa6056jys72g0d9wj5nfuea9xatqarsnfsga7wl65d7jx79xn86lrplhga0zl45lzjetq0jj87j6kqtn6xh7erxcmvyktmsetd69p2hcqa5y5rg</code>
+            <div class="lightning-actions">
+              <button class="copy-invoice magnetic" type="button" id="copyInvoice">
+                <span aria-hidden="true">⧉</span> Copiar invoice
+              </button>
+              <a class="wallet-link" id="openLightningWallet" href="#">Abrir na carteira <span aria-hidden="true">↗</span></a>
+            </div>
+            <p class="copy-status" id="copyStatus" role="status" aria-live="polite">Doação opcional · rápida · sem cadastro</p>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer>

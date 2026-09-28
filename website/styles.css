@@ -348,6 +348,54 @@ blockquote { position: relative; margin: 2rem 0 .8rem; padding: 1.25rem 1.4rem 1
 .finale h2 { font-size: clamp(4.5rem, 10vw, 10rem); }
 .finale-button { margin-top: 3rem; text-align: left; }
 
+.donation-section {
+  position: relative;
+  min-height: 100svh;
+  padding: clamp(7rem, 10vw, 11rem) clamp(1.5rem, 8vw, 9rem);
+  display: grid;
+  grid-template-columns: minmax(20rem, .85fr) minmax(0, 1.15fr);
+  align-items: center;
+  gap: clamp(3rem, 8vw, 9rem);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 22% 48%, rgba(38, 155, 255, .15), transparent 31rem),
+    radial-gradient(circle at 82% 48%, rgba(255, 184, 37, .1), transparent 30rem),
+    linear-gradient(180deg, #020817, #04122d 48%, #020817);
+}
+.donation-section::before {
+  content: "";
+  position: absolute;
+  inset: 7% 4%;
+  border: 1px solid rgba(95, 193, 255, .1);
+  border-radius: 3rem;
+  background: linear-gradient(135deg, rgba(9, 35, 76, .46), rgba(4, 15, 38, .2));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+}
+.donation-glow { position: absolute; width: 38rem; aspect-ratio: 1; left: -9rem; top: 20%; border-radius: 50%; background: radial-gradient(circle, rgba(35, 166, 255, .2), transparent 67%); filter: blur(18px); }
+.donation-character { position: relative; z-index: 2; display: grid; place-items: center; min-width: 0; }
+.donation-character img { position: relative; z-index: 2; width: min(38rem, 100%); filter: drop-shadow(0 35px 40px rgba(0, 18, 58, .58)) drop-shadow(0 0 22px rgba(60, 194, 255, .15)); animation: float 5.4s ease-in-out infinite; }
+.donation-orbit { position: absolute; width: min(34rem, 92%); aspect-ratio: 1; border: 1px dashed rgba(74, 201, 255, .25); border-radius: 50%; animation: spin 28s linear infinite; }
+.donation-orbit::before, .donation-orbit::after { content: ""; position: absolute; width: .7rem; aspect-ratio: 1; border-radius: 50%; background: #ffc54d; box-shadow: 0 0 22px 6px rgba(255, 184, 42, .42); }
+.donation-orbit::before { left: 9%; top: 20%; }
+.donation-orbit::after { right: 8%; bottom: 21%; }
+.donation-copy { position: relative; z-index: 2; min-width: 0; }
+.donation-copy h2 { max-width: 11ch; }
+.donation-copy > p { max-width: 43rem; margin: 2rem 0; color: var(--muted); font-size: clamp(1rem, 1.2vw, 1.18rem); line-height: 1.8; }
+.lightning-card { max-width: 52rem; padding: 1rem; display: grid; grid-template-columns: 12.5rem minmax(0, 1fr); gap: 1.25rem; border: 1px solid rgba(255, 198, 76, .28); border-radius: 1.7rem; background: linear-gradient(135deg, rgba(14, 41, 81, .9), rgba(6, 20, 47, .92)); box-shadow: 0 28px 80px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.05); backdrop-filter: blur(22px); }
+.qr-shell { position: relative; align-self: stretch; min-height: 12.5rem; display: grid; place-items: center; padding: .75rem; overflow: hidden; border-radius: 1.15rem; background: white; box-shadow: 0 0 0 1px rgba(255,255,255,.28), 0 16px 38px rgba(0,0,0,.22); }
+.qr-shell img { width: 100%; image-rendering: pixelated; }
+.qr-shell > span { position: absolute; right: .55rem; bottom: .55rem; width: 2.2rem; aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%; background: #ffba26; color: #251400; box-shadow: 0 5px 18px rgba(255, 174, 25, .42); }
+.lightning-details { min-width: 0; padding: .35rem .35rem .35rem 0; display: flex; flex-direction: column; justify-content: center; }
+.lightning-label { margin-bottom: .7rem; color: #ffd36d; font-size: .7rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.lightning-details > strong { font-family: var(--display); font-size: clamp(1.2rem, 1.8vw, 1.65rem); letter-spacing: -.03em; }
+.lightning-details code { display: block; margin: 1rem 0; padding: .85rem 1rem; overflow: hidden; border: 1px solid rgba(118, 202, 255, .14); border-radius: .8rem; background: rgba(2, 10, 26, .58); color: #8eaac6; font: 600 .68rem/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: nowrap; text-overflow: ellipsis; }
+.lightning-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .8rem 1rem; }
+.copy-invoice { padding: .85rem 1.1rem; border: 1px solid rgba(255, 209, 112, .56); border-radius: .85rem; background: linear-gradient(120deg, #ffb51c, #ffe07a); color: #261700; font-weight: 850; cursor: pointer; box-shadow: 0 12px 30px rgba(255, 177, 25, .16); transition: transform .2s ease, box-shadow .2s ease; }
+.copy-invoice:hover, .copy-invoice:focus-visible { box-shadow: 0 15px 38px rgba(255, 177, 25, .26); }
+.wallet-link { color: #bcd8ef; font-size: .82rem; font-weight: 750; }
+.wallet-link span { color: #ffd36d; }
+.copy-status { margin: .9rem 0 0; color: #6988a7; font-size: .7rem; }
+
 footer { min-height: 7rem; padding: 2rem clamp(1.5rem, 6vw, 7rem); display: flex; align-items: center; justify-content: space-between; gap: 2rem; border-top: 1px solid var(--line); background: rgba(1, 7, 19, .8); }
 footer img { width: 6.8rem; }
 footer p { color: #6885a3; font-size: .78rem; }
@@ -382,6 +430,11 @@ footer a span { color: var(--cyan); }
   .baki-copy { order: 1; }
   .memory-orbit { min-height: 36rem; }
   .anit-section { padding-bottom: 8rem; }
+  .donation-section { grid-template-columns: minmax(0, 1fr); text-align: center; }
+  .donation-character { width: min(34rem, 88vw); margin: 0 auto -3rem; }
+  .donation-copy { display: flex; flex-direction: column; align-items: center; }
+  .donation-copy h2, .donation-copy > p { max-width: 43rem; }
+  .lightning-card { width: min(100%, 46rem); text-align: left; }
 }
 
 @media (max-width: 680px) {
@@ -415,6 +468,15 @@ footer a span { color: var(--cyan); }
   .finale-copy { width: 100%; min-width: 0; }
   .finale h2 { max-width: 100%; font-size: clamp(3.2rem, 16vw, 4.5rem); }
   .finale .eyebrow span { width: 1.2rem; }
+  .donation-section { padding: 7rem 1.1rem; }
+  .donation-section::before { inset: 3% .6rem; border-radius: 2rem; }
+  .donation-character { width: min(27rem, 96vw); margin-bottom: -1rem; }
+  .donation-copy h2 { width: 100%; font-size: clamp(2.75rem, 13vw, 4rem); }
+  .lightning-card { grid-template-columns: 1fr; padding: .8rem; border-radius: 1.35rem; }
+  .qr-shell { width: min(18rem, 100%); min-height: auto; aspect-ratio: 1; margin: 0 auto; }
+  .lightning-details { padding: .5rem .2rem .4rem; text-align: center; }
+  .lightning-actions { justify-content: center; }
+  .lightning-details code { text-align: left; }
   footer { flex-direction: column; text-align: center; }
 }
 
