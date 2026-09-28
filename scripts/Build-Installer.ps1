@@ -49,6 +49,10 @@ Invoke-Checked $DotNetPath @(
     '-p:PublishTrimmed=false',
     '-p:DebugType=None',
     '-p:DebugSymbols=false',
+    # A publicação por RID precisa de um grafo de dependências diferente do
+    # restore comum do CI. Grave esse lock transitório em obj/ para não alterar
+    # os packages.lock.json versionados da solução.
+    '-p:NuGetLockFilePath=obj\packages.publish.lock.json',
     "-p:Version=$Version"
 )
 
