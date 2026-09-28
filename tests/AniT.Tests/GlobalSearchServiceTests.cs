@@ -83,4 +83,59 @@ public sealed class GlobalSearchServiceTests
             if (Directory.Exists(directory)) Directory.Delete(directory, true);
         }
     }
+
+    [Fact]
+    public async Task Search_DoesNotReturnAnimeWhoseOnlyFileIsMissing()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "AniT.Tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var databasePath = Path.Combine(directory, "search.db");
+
+        try
+        {
+            using (var context = AniTDatabase.Create(databasePath))
+            {
+                var root = new LibraryRoot { Path = directory };
+                context.LibraryRoots.Add(root);
+                context.Anime.Add(new Anime
+                {
+                    Title = "Anime removido",
+                    Seasons =
+                    {
+                        new Season
+                        {
+                            Number = 1,
+                            Episodes =
+                            {
+                                new Episode
+                                {
+                                    Number = 1,
+                                    MediaFiles =
+                                    {
+                                        new MediaFile
+                                        {
+                                            LibraryRootId = root.Id,
+                                            RelativePath = "Anime removido - 01.mkv",
+                                            FileName = "Anime removido - 01.mkv",
+                                            Availability = MediaFileAvailability.Missing
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                context.SaveChanges();
+            }
+
+            var service = new GlobalSearchService(() => AniTDatabase.Create(databasePath));
+
+            Assert.Empty(await service.SearchAsync("anime removido"));
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
 }

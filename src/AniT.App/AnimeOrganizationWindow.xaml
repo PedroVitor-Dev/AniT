@@ -4,6 +4,13 @@
         Title="Organizar anime · AniT" Width="680" Height="610"
         WindowStartupLocation="CenterOwner" ResizeMode="CanResizeWithGrip"
         Background="#06172E" Foreground="White" Loaded="Window_Loaded">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Styles/HomeTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
     <Grid Margin="24">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <StackPanel>

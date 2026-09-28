@@ -616,6 +616,8 @@ public partial class App : Application
                 if (result.Errors > 0 || result.RootUnavailable) failedRoots.Add(root.DisplayName);
             }
 
+            GlobalSearchController.InvalidateIndex();
+
             if (reportFailures && failedRoots.Count > 0)
                 throw new InvalidOperationException($"Não foi possível atualizar: {string.Join(", ", failedRoots.Distinct(StringComparer.OrdinalIgnoreCase))}.");
 
@@ -652,7 +654,11 @@ public partial class App : Application
             List<global::AniT.Core.Anime> pending;
             await using (var context = OpenFreshDatabase())
             {
-                var anime = await context.Anime.AsNoTracking().OrderBy(item => item.Title).ToListAsync();
+                var anime = await context.Anime
+                    .Where(global::AniT.Core.LibraryCatalogPresence.AnimeFilter)
+                    .AsNoTracking()
+                    .OrderBy(item => item.Title)
+                    .ToListAsync();
                 pending = anime
                     .Where(item => string.IsNullOrWhiteSpace(item.CoverPath)
                         || !global::System.IO.File.Exists(item.CoverPath)
@@ -938,7 +944,11 @@ public partial class App : Application
 
         List<global::AniT.Core.Anime> anime;
         await using (var context = OpenFreshDatabase())
-            anime = await context.Anime.AsNoTracking().OrderBy(item => item.Title).ToListAsync(cancellationToken);
+            anime = await context.Anime
+                .Where(global::AniT.Core.LibraryCatalogPresence.AnimeFilter)
+                .AsNoTracking()
+                .OrderBy(item => item.Title)
+                .ToListAsync(cancellationToken);
         if (target == AdvancedReprocessTarget.Images)
             await ClearArtworkCacheAsync(rebuild: true, cancellationToken);
 

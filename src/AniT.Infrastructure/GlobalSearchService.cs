@@ -138,6 +138,7 @@ public sealed class GlobalSearchService(Func<AniTDbContext> contextFactory)
 
             await using var context = contextFactory();
             var entities = await context.Anime
+                .Where(LibraryCatalogPresence.AnimeFilter)
                 .Include(item => item.Aliases)
                 .Include(item => item.Seasons)
                 .ThenInclude(item => item.Episodes)

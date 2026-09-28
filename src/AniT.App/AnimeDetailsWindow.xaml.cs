@@ -501,8 +501,20 @@ public partial class AnimeDetailsWindow : Window
 
     private async void OrganizeAnime_Click(object sender, RoutedEventArgs e)
     {
-        var window = new AnimeOrganizationWindow(animeId) { Owner = this };
-        if (window.ShowDialog() is true) await LoadSafelyAsync();
+        try
+        {
+            var window = new AnimeOrganizationWindow(animeId) { Owner = this };
+            if (window.ShowDialog() is true) await LoadSafelyAsync();
+        }
+        catch (Exception exception)
+        {
+            global::AniT.Infrastructure.AniTDiagnostics.Write("ORGANIZACAO", "Não foi possível abrir a organização do anime.", exception);
+            MessageBox.Show(
+                "Não foi possível abrir a organização deste anime. Os detalhes foram registrados no diagnóstico do AniT.",
+                "Organização indisponível · AniT",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
     }
 
     private void Back_Click(object sender, RoutedEventArgs e) => AppNavigation.Back(this);

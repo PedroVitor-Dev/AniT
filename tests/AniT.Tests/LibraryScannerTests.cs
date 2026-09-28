@@ -64,6 +64,66 @@ public sealed class LibraryScannerTests
     }
 
     [Fact]
+    public async Task ScanAsync_AfterFileIsDeleted_HidesStaleAnimeButPreservesHistoryForRecovery()
+    {
+        await WithLibraryAsync(async (context, root, libraryPath) =>
+        {
+            var animePath = Path.Combine(libraryPath, "Frieren");
+            Directory.CreateDirectory(animePath);
+            var episodePath = Path.Combine(animePath, "Frieren - 01.mkv");
+            await File.WriteAllBytesAsync(episodePath, [1, 2, 3]);
+            var scanner = new LibraryScanner(context);
+            await scanner.ScanAsync(root);
+
+            var episode = await context.Episodes.SingleAsync();
+            episode.Status = WatchStatus.Completed;
+            episode.Rating = 5;
+            await context.SaveChangesAsync();
+            File.Delete(episodePath);
+
+            var result = await scanner.ScanAsync(root);
+            var preservedAnime = await context.Anime
+                .Include(item => item.Seasons)
+                .ThenInclude(season => season.Episodes)
+                .ThenInclude(item => item.MediaFiles)
+                .SingleAsync();
+
+            Assert.Equal(1, result.FilesMissing);
+            Assert.False(LibraryCatalogPresence.IsPresent(preservedAnime));
+            Assert.Equal(MediaFileAvailability.Missing, (await context.MediaFiles.SingleAsync()).Availability);
+            Assert.Equal(WatchStatus.Completed, (await context.Episodes.SingleAsync()).Status);
+            Assert.Equal(5d, (await context.Episodes.SingleAsync()).Rating.GetValueOrDefault());
+            Assert.Empty(await context.Anime.Where(LibraryCatalogPresence.AnimeFilter).ToListAsync());
+        });
+    }
+
+    [Fact]
+    public async Task ScanAsync_AfterOneEpisodeIsDeleted_KeepsAnimeWithOnlyPresentEpisodes()
+    {
+        await WithLibraryAsync(async (context, root, libraryPath) =>
+        {
+            var animePath = Path.Combine(libraryPath, "Frieren");
+            Directory.CreateDirectory(animePath);
+            var firstEpisodePath = Path.Combine(animePath, "Frieren - 01.mkv");
+            await File.WriteAllBytesAsync(firstEpisodePath, [1]);
+            await File.WriteAllBytesAsync(Path.Combine(animePath, "Frieren - 02.mkv"), [2]);
+            var scanner = new LibraryScanner(context);
+            await scanner.ScanAsync(root);
+            File.Delete(firstEpisodePath);
+
+            await scanner.ScanAsync(root);
+            var anime = await context.Anime
+                .Include(item => item.Seasons)
+                .ThenInclude(season => season.Episodes)
+                .ThenInclude(item => item.MediaFiles)
+                .SingleAsync();
+
+            Assert.True(LibraryCatalogPresence.IsPresent(anime));
+            Assert.Single(anime.Seasons.SelectMany(season => season.Episodes).Where(LibraryCatalogPresence.IsPresent));
+        });
+    }
+
+    [Fact]
     public async Task ScanAsync_MatchesAnimeTitleInsideNoisyTopLevelFileName()
     {
         await WithLibraryAsync(async (context, root, libraryPath) =>
