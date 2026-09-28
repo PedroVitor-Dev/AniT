@@ -40,7 +40,7 @@ try {
 
     $productVersion = (Get-Item -LiteralPath $playerPath).VersionInfo.ProductVersion
     if (-not $productVersion.StartsWith($version, [StringComparison]::Ordinal)) {
-        throw "A versão extraída não corresponde a $version: $productVersion"
+        throw "A versão extraída não corresponde a ${version}: $productVersion"
     }
 
     Write-Output "MPC-HC $productVersion validado em $resolvedDestination"
