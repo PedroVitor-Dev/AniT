@@ -94,7 +94,24 @@ internal static class ProfileSettingsStore
         {
             var collection = LoadCollectionCore();
             var profileId = settings.ProfileId == Guid.Empty ? collection.ActiveProfileId : settings.ProfileId;
-            var normalized = Normalize(settings with { ProfileId = profileId });
+            var persisted = collection.Profiles.FirstOrDefault(profile => profile.ProfileId == profileId);
+            var persistedPin = persisted is not null && HasPin(persisted)
+                ? new global::AniT.Core.ProfilePinCredential(persisted.PinHash!, persisted.PinSalt!, persisted.PinIterations)
+                : null;
+            var draftPin = HasPin(settings)
+                ? new global::AniT.Core.ProfilePinCredential(settings.PinHash!, settings.PinSalt!, settings.PinIterations)
+                : null;
+            var protectedPin = global::AniT.Core.ProfilePinSecurity.ResolveAfterProfileEdit(persistedPin, draftPin);
+            var normalized = Normalize(settings with
+            {
+                ProfileId = profileId,
+                // PIN credentials are security state, not editable profile data.
+                // Preserve the latest persisted value so a stale settings draft
+                // cannot restore a removed PIN or erase a newly created one.
+                PinHash = protectedPin?.Hash,
+                PinSalt = protectedPin?.Salt,
+                PinIterations = protectedPin?.Iterations ?? 0
+            });
             var profiles = collection.Profiles.Select(profile => profile.ProfileId == profileId ? normalized : profile).ToArray();
             if (!profiles.Any(profile => profile.ProfileId == profileId)) profiles = [.. profiles, normalized];
             SaveCollectionCore(collection with { Profiles = profiles });

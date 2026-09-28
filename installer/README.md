@@ -11,7 +11,7 @@ winget install --id JRSoftware.InnoSetup.7 -e --source winget
 
 Os artefatos são criados em `artifacts/installer/`:
 
-- `AniT-Setup-1.0.0-win-x64.exe`
+- `AniT-Setup-1.0.1-win-x64.exe`
 - `SHA256SUMS.txt`
 
 O pacote instala somente para o usuário atual em `%LOCALAPPDATA%\Programs\AniT`, não requer privilégios administrativos e não remove `%LOCALAPPDATA%\AniT` durante a desinstalação. O instalador e os atalhos usam `assets/anit.ico`; as artes do assistente são reconstruídas a partir dos assets oficiais pelo script `New-InstallerAssets.ps1`.

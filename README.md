@@ -155,7 +155,7 @@ Boas primeiras contribuições incluem novos casos de nomes de episódio, melhor
 
 ## 🗺️ Próximos passos
 
-O foco atual é validar o candidato 1.0.0, concluir o empacotamento reproduzível e ampliar testes de interface e acessibilidade. As próximas etapas estão no [roadmap público](docs/ROADMAP.md).
+O foco atual é validar o candidato 1.0.1, concluir o empacotamento reproduzível e ampliar testes de interface e acessibilidade. As próximas etapas estão no [roadmap público](docs/ROADMAP.md).
 
 ## 📜 Licença e avisos
 

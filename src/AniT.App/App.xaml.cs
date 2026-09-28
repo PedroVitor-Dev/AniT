@@ -56,16 +56,17 @@ public partial class App : Application
     public static global::AniT.Infrastructure.AniTDbContext OpenFreshDatabase() => global::AniT.Infrastructure.AniTDatabase.Create(databasePath);
     public static string DataRootPath => dataRootPath;
     public static string DatabasePath => databasePath;
-    public static string DisplayVersion
+    public static string VersionNumber
     {
         get
         {
             var version = Assembly.GetEntryAssembly()?.GetName().Version;
             return version is null
-                ? "Versão desconhecida"
-                : $"Versão {version.Major}.{version.Minor}.{Math.Max(0, version.Build)}";
+                ? "desconhecida"
+                : $"{version.Major}.{version.Minor}.{Math.Max(0, version.Build)}";
         }
     }
+    public static string DisplayVersion => $"Versão {VersionNumber}";
 
     public static Task<global::AniT.Infrastructure.AniTBackupManifest> ExportBackupAsync(string destinationPath, CancellationToken cancellationToken = default) =>
         backupService.ExportAsync(dataRootPath, databasePath, destinationPath, CurrentVersion, cancellationToken);
@@ -129,7 +130,7 @@ public partial class App : Application
         Current.Shutdown();
     }
 
-    private static string CurrentVersion => Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "desconhecida";
+    private static string CurrentVersion => VersionNumber;
 
     public static bool NeedsLibraryRelinkAfterRestore()
     {

@@ -65,6 +65,7 @@
     <Resource Include="..\..\assets\loading.png" Link="Assets\Loading\loading.png" />
     <Resource Include="..\..\assets\loading_....png" Link="Assets\Loading\loading-text.png" />
     <Resource Include="..\..\assets\atualizandoimagens.png" Link="Assets\atualizandoimagens.png" />
+    <Resource Include="..\..\assets\ask.png" Link="Assets\ask.png" />
     <Resource Include="..\..\assets\baki-pi\normal-sf.png" Link="Assets\normal-sf.png" />
     <Resource Include="..\..\assets\baki-pi\angry-sf.png" Link="Assets\angry-sf.png" />
     <Resource Include="..\..\assets\baki-pi\sad-sf.png" Link="Assets\sad-sf.png" />

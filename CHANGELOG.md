@@ -6,6 +6,19 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Não publicado]
 
+## [1.0.1] - 2026-09-27
+
+### Alterado
+
+- O histórico agora usa o Baki-Pi `ask` para episódios que ainda não receberam avaliação.
+
+### Corrigido
+
+- Remover o PIN de um perfil agora persiste corretamente após salvar configurações e reiniciar o AniT.
+- Alterações comuns do perfil não podem mais restaurar um PIN removido nem apagar um PIN recém-criado por meio de um rascunho antigo.
+
+## [1.0.0] - 2026-09-27
+
 ### Adicionado
 
 - Home premium responsiva com destaques da biblioteca.

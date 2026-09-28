@@ -788,6 +788,8 @@ public partial class SystemSettingsWindow : Window
         ProfilePinBox.Clear();
         ProfilePinConfirmationBox.Clear();
         ReloadLocalProfiles(selected.ProfileId);
+        if (selected.ProfileId == profileDraft.ProfileId)
+            profileDraft = ProfileSettingsStore.GetProfiles().First(profile => profile.ProfileId == selected.ProfileId);
         ProfilePinStatusText.Text = $"✓ PIN de {selected.DisplayName} salvo com segurança.";
     }
 
@@ -806,6 +808,8 @@ public partial class SystemSettingsWindow : Window
             return;
         }
         ReloadLocalProfiles(selected.ProfileId);
+        if (selected.ProfileId == profileDraft.ProfileId)
+            profileDraft = ProfileSettingsStore.GetProfiles().First(profile => profile.ProfileId == selected.ProfileId);
         ProfilePinStatusText.Text = $"✓ {selected.DisplayName} agora entra sem PIN.";
     }
 
@@ -990,7 +994,7 @@ public partial class SystemSettingsWindow : Window
         var settings = AniTSystemSettingsStore.Load();
         var cache = settings.ImageCacheDirectory ?? AniTSystemSettings.Default.ImageCacheDirectory ?? "—";
         DeveloperInfoText.Text =
-            $"Versão: {System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version}\n" +
+            $"Versão: {App.VersionNumber}\n" +
             $"Runtime: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}\n" +
             $"Sistema: {System.Runtime.InteropServices.RuntimeInformation.OSDescription}\n" +
             $"Processo: {(Environment.Is64BitProcess ? "64 bits" : "32 bits")}\n" +

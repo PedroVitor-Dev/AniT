@@ -20,6 +20,18 @@ public static class ProfilePinSecurity
         return new ProfilePinCredential(Convert.ToBase64String(hash), Convert.ToBase64String(salt), DefaultIterations);
     }
 
+    public static ProfilePinCredential? ResolveAfterProfileEdit(
+        ProfilePinCredential? persisted,
+        ProfilePinCredential? staleDraft)
+    {
+        // Profile identity edits must never mutate authentication state. The
+        // draft may predate a PIN change, so only the persisted credential is
+        // authoritative. Keeping the second argument makes this invariant
+        // explicit at the call site and guards both regression directions.
+        _ = staleDraft;
+        return persisted;
+    }
+
     public static bool Verify(string? pin, string? encodedHash, string? encodedSalt, int iterations)
     {
         if (!IsValidFormat(pin) || string.IsNullOrWhiteSpace(encodedHash) || string.IsNullOrWhiteSpace(encodedSalt) || iterations <= 0) return false;

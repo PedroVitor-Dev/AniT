@@ -43,4 +43,24 @@ public sealed class ProfilePinSecurityTests
         Assert.NotEqual(first.Salt, second.Salt);
         Assert.NotEqual(first.Hash, second.Hash);
     }
+
+    [Fact]
+    public void ProfileEdit_DoesNotRestorePinRemovedAfterDraftWasLoaded()
+    {
+        var staleDraft = ProfilePinSecurity.Create("1234");
+
+        var resolved = ProfilePinSecurity.ResolveAfterProfileEdit(persisted: null, staleDraft);
+
+        Assert.Null(resolved);
+    }
+
+    [Fact]
+    public void ProfileEdit_DoesNotErasePinCreatedAfterDraftWasLoaded()
+    {
+        var persisted = ProfilePinSecurity.Create("5678");
+
+        var resolved = ProfilePinSecurity.ResolveAfterProfileEdit(persisted, staleDraft: null);
+
+        Assert.Same(persisted, resolved);
+    }
 }
