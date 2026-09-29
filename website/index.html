@@ -33,7 +33,7 @@
 
   <header class="topbar" id="topo">
     <a class="brand" href="#inicio" aria-label="AniT — voltar ao início"><img src="./assets/anit-logo.png" alt="AniT" width="320" height="180"></a>
-    <nav aria-label="Navegação principal"><a href="#arquivo-vivo">Experimente</a><a href="#recursos">Recursos</a><a href="#demos">Demos</a><a href="#baki-pi">Baki-Pi</a></nav>
+    <nav aria-label="Navegação principal"><a href="#arquivo-vivo">Máquina</a><a href="#recursos">Recursos</a><a href="#demos">Demos</a><a href="#baki-pi">Baki-Pi</a></nav>
     <a class="nav-download release-link" href="https://github.com/PedroVitor-Dev/AniT/releases/latest">Baixar <span class="nav-version">agora</span></a>
   </header>
 
@@ -77,27 +77,68 @@
       </div>
     </section>
 
-    <section class="living-library section-shell" id="arquivo-vivo" aria-labelledby="library-title">
-      <div class="section-heading reveal"><p class="eyebrow"><span></span> Demonstração conceitual</p><h2 id="library-title">Toque na bagunça.<br><em>Veja a estante respirar.</em></h2><p>Os nomes abaixo são fictícios. A interação mostra como o AniT reconhece padrões diferentes sem acessar nenhum arquivo deste navegador.</p></div>
-      <div class="organizer reveal" data-delay="1">
-        <div class="organizer-column raw-column">
-          <div class="column-title"><span>01</span><div><strong>Arquivos encontrados</strong><small>Clique, use Enter ou arraste</small></div></div>
-          <div class="raw-files" id="rawFiles">
-            <button class="raw-file" type="button" draggable="true" data-file="1"><span class="file-icon">MKV</span><span><strong>[Kitsune] Hoshi no Tabi - 01 [1080p]</strong><small>padrão de fansub</small></span></button>
-            <button class="raw-file" type="button" draggable="true" data-file="2"><span class="file-icon">MP4</span><span><strong>Star.Journey.S01E02.WEB</strong><small>título em inglês</small></span></button>
-            <button class="raw-file" type="button" draggable="true" data-file="3"><span class="file-icon">MKV</span><span><strong>星の旅 第03話</strong><small>título em japonês</small></span></button>
+    <section class="living-library machine-section section-shell" id="arquivo-vivo" aria-labelledby="library-title">
+      <div class="section-heading machine-heading reveal"><p class="eyebrow"><span></span> Experimento interativo</p><h2 id="library-title">A máquina de<br><em>organizar episódios.</em></h2><p>Uma oficina fantástica do Baki-Pi transforma nomes confusos em uma estante por anime, temporada e episódio. É uma simulação local no navegador: nenhum arquivo real é lido ou enviado.</p></div>
+
+      <div class="machine-shell reveal" id="machineExperience" data-state="idle" data-delay="1">
+        <div class="machine-progress" aria-label="Etapas da demonstração">
+          <span class="active" data-machine-step="idle"><b>01</b> Escolha</span>
+          <span data-machine-step="intake"><b>02</b> Entrada</span>
+          <span data-machine-step="analysis"><b>03</b> Análise</span>
+          <span data-machine-step="sorting"><b>04</b> Organização</span>
+          <span data-machine-step="organized"><b>05</b> Estante</span>
+        </div>
+
+        <div class="machine-stage" id="machineStage">
+          <div class="machine-poster" id="machinePoster" aria-hidden="true">
+            <div class="poster-orbit"></div>
+            <div class="poster-machine"><i></i><i></i><i></i><span><img src="./assets/anit-mark.png" alt="" width="512" height="512"></span></div>
+            <img src="./assets/baki-normal.png" alt="" width="1024" height="1024">
+            <p><span></span> Preparando a oficina do Baki-Pi</p>
+          </div>
+          <canvas id="machineCanvas" hidden aria-hidden="true"></canvas>
+          <div class="machine-camera-zone" id="machineCameraZone" role="region" tabindex="0" aria-label="Máquina 3D do Baki-Pi. Arraste para girar a câmera ou use as setas do teclado." aria-describedby="machineCameraHint"></div>
+          <p class="camera-hint" id="machineCameraHint"><span aria-hidden="true">◉</span> Arraste para observar · setas também giram</p>
+          <div class="machine-baki-panel"><img id="machineBaki" src="./assets/baki-normal.png" alt="Baki-Pi operando a máquina" width="1024" height="1024"><p id="machineBakiLine">Pegue uma fita e jogue na máquina. Eu cuido do resto.</p></div>
+          <div class="machine-compat" id="machineCompat" hidden><strong>Modo visual compatível</strong><span>A demonstração continua funcionando sem WebGL.</span></div>
+        </div>
+
+        <div class="machine-console">
+          <div class="machine-input-deck">
+            <div class="machine-panel-title"><span>ENTRADA</span><div><strong>Fitas de arquivos encontradas</strong><small>Pegue uma fita e solte dentro da máquina</small></div></div>
+            <div class="machine-files" id="machineFiles">
+              <button class="machine-file" type="button" draggable="true" data-machine-file="1" aria-pressed="false"><i>01</i><span><strong>[Kitsune] Hoshi no Tabi - 01 [1080p HEVC] [PT-BR].mkv</strong><small>fansub · resolução · idioma</small></span></button>
+              <button class="machine-file" type="button" draggable="true" data-machine-file="2" aria-pressed="false"><i>02</i><span><strong>Hoshi.no.Tabi.S01E02.1080p.WEB-DL.mkv</strong><small>temporada e episódio</small></span></button>
+              <button class="machine-file" type="button" draggable="true" data-machine-file="3" aria-pressed="false"><i>03</i><span><strong>Hoshi no Tabi EP03v2 [JPN].mkv</strong><small>prefixo e versão</small></span></button>
+              <button class="machine-file chaotic" type="button" draggable="true" data-machine-file="4" data-chaotic="true" aria-pressed="false"><i>?!</i><span><strong>[KIRA]__Hoshi_no_Tabi__01x04__WEB__x265__Dual-Audio__[C0FFEE12].mkv</strong><small>um pequeno caos para o Baki-Pi</small></span></button>
+            </div>
+          </div>
+
+          <div class="machine-command">
+            <div class="command-core" aria-hidden="true"><i></i><span><img src="./assets/anit-mark.png" alt="" width="512" height="512"></span></div>
+            <strong id="machineSelectionCount">0 fitas inseridas</strong>
+            <button class="secondary-action" id="organizeMachine" type="button">Organizar arquivos</button>
+            <button class="quiet-action" id="resetMachine" type="button">Reiniciar</button>
+            <p id="machineStatus" role="status" aria-live="polite">Escolha fitas ou organize todas de uma vez.</p>
+          </div>
+
+          <div class="machine-output-deck" id="machineOutput">
+            <div class="machine-panel-title"><span>SAÍDA</span><div><strong>Biblioteca organizada</strong><small>anime → temporada → episódio</small></div></div>
+            <div class="machine-output-empty"><span>✦</span><strong>A estante está esperando.</strong><small>O resultado aparece depois do processamento.</small></div>
+            <div class="machine-series">
+              <button class="machine-series-toggle" id="machineSeriesToggle" type="button" aria-expanded="false" aria-controls="machineEpisodes" disabled><span class="machine-cover" aria-hidden="true">星<small>HOSHI</small></span><span><small>OBRA FICTÍCIA</small><strong>Hoshi no Tabi</strong><i id="machineSeriesMeta">Temporada 01 · 4 episódios</i></span><b>abrir</b></button>
+              <ol id="machineEpisodes" hidden>
+                <li><b>E01</b><span><strong>A partida</strong><small>[Kitsune] Hoshi no Tabi - 01…</small></span><i>regular</i></li>
+                <li><b>E02</b><span><strong>O mapa azul</strong><small>Hoshi.no.Tabi.S01E02…</small></span><i>S01E02</i></li>
+                <li><b>E03</b><span><strong>Luz entre estrelas</strong><small>Hoshi no Tabi EP03v2…</small></span><i>EP03</i></li>
+                <li><b>E04</b><span><strong>A oficina celeste</strong><small>[KIRA]__Hoshi_no_Tabi__01x04…</small></span><i>01x04</i></li>
+              </ol>
+            </div>
           </div>
         </div>
-        <div class="organizer-core" id="organizerCore" tabindex="0" role="button" aria-label="Organizar todos os arquivos selecionados"><div class="core-rings" aria-hidden="true"><i></i><i></i><i></i></div><img src="./assets/anit-mark.png" alt="" width="512" height="512"><strong id="coreLabel">Solte ou ative aqui</strong><small id="coreHint">0 de 3 reconhecidos</small></div>
-        <div class="organizer-column shelf-column">
-          <div class="column-title"><span>02</span><div><strong>Estante organizada</strong><small>temporada e episódios em ordem</small></div></div>
-          <div class="organized-shelf" id="organizedShelf" aria-live="polite">
-            <div class="shelf-empty"><span>✦</span><p>Sua estante aparece aqui.</p></div>
-            <div class="series-result"><div class="fiction-cover" aria-hidden="true"><span>星</span><small>HOSHI</small></div><div class="series-info"><small>SÉRIE FICTÍCIA</small><strong>Hoshi no Tabi</strong><span>Temporada 01 · 3 episódios</span></div><ol><li><b>01</b><span>A partida</span><i>Pronto</i></li><li><b>02</b><span>O mapa azul</span><i>Pronto</i></li><li><b>03</b><span>Luz entre estrelas</span><i>Pronto</i></li></ol></div>
-          </div>
-        </div>
+
+        <div class="machine-finale" id="machineFinale"><div><span>✓</span><p><strong id="machineFinaleTitle">Arquivos diferentes. Uma temporada em ordem.</strong><small id="machineFinaleNote">A demonstração usa padrões que o AniT realmente trata: número após hífen, S01E02, EP03 e 01x04.</small></p></div><a class="release-link" href="https://github.com/PedroVitor-Dev/AniT/releases/latest">Organize sua própria biblioteca com o AniT</a></div>
       </div>
-      <div class="organizer-actions reveal"><button class="secondary-action" id="organizeAll" type="button">Organizar demonstração</button><button class="quiet-action" id="resetOrganizer" type="button">Começar de novo</button><p id="organizerStatus" role="status" aria-live="polite">Escolha um arquivo ou organize tudo de uma vez.</p></div>
     </section>
 
     <section class="memory-flow section-shell" id="jornada" aria-labelledby="memory-title">
