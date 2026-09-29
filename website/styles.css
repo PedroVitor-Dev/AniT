@@ -375,14 +375,25 @@ h1 em, h2 em { color: transparent; font-style: normal; background: linear-gradie
 
 .support-section { display: grid; grid-template-columns: minmax(18rem, .75fr) minmax(25rem, 1.25fr); align-items: center; gap: clamp(2rem, 7vw, 8rem); }
 .support-character { position: relative; min-height: 30rem; display: grid; place-items: center; }
-.support-character::before { content: ""; position: absolute; width: 80%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(255,193,76,.14), transparent 66%); }
+.support-character::before { content: ""; position: absolute; width: 80%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(116,89,255,.2), rgba(20,241,149,.08) 38%, transparent 68%); }
 .support-character img { position: relative; width: min(26rem, 90%); filter: drop-shadow(0 2rem 2.5rem rgba(0,4,18,.42)); }
 .support-copy > p:not(.eyebrow) { max-width: 43rem; margin: 1.5rem 0; color: var(--muted); font-size: 1rem; }
-.support-paused { max-width: 48rem; padding: 1.1rem; display: grid; grid-template-columns: 3rem 1fr; gap: 1rem; border: 1px solid rgba(255,198,95,.26); border-radius: 1.2rem; background: rgba(92,55,11,.16); }
-.support-paused > span { width: 3rem; height: 3rem; display: grid; place-items: center; border-radius: .85rem; background: rgba(255,190,70,.13); color: var(--warm); font-size: 1.3rem; }
-.support-paused strong { font-size: .86rem; }
-.support-paused p { margin: .35rem 0 0; color: var(--muted); font-size: .76rem; }
-.support-paused code { color: var(--warm); font-size: .74rem; }
+.solana-donation { position: relative; max-width: 52rem; padding: 1rem; display: grid; grid-template-columns: 11rem minmax(0, 1fr); align-items: center; gap: 1.25rem; overflow: hidden; border: 1px solid color-mix(in srgb, #14f195 35%, var(--line)); border-radius: 1.5rem; background: linear-gradient(135deg, rgba(20,241,149,.09), rgba(153,69,255,.13) 55%, var(--surface)); box-shadow: inset 0 1px rgba(255,255,255,.08), 0 1.5rem 4rem rgba(0,4,18,.22); }
+.solana-donation::after { content: ""; position: absolute; right: -5rem; bottom: -7rem; width: 16rem; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(153,69,255,.16), transparent 68%); pointer-events: none; }
+.solana-qr { position: relative; z-index: 1; padding: .55rem; border: 1px solid rgba(255,255,255,.12); border-radius: 1.1rem; background: #030303; text-align: center; }
+.solana-qr img { width: 100%; height: auto; display: block; border-radius: .7rem; }
+.solana-qr span { display: block; margin: .55rem .25rem .2rem; color: #d8e6ff; font-size: .57rem; line-height: 1.4; }
+.solana-details { position: relative; z-index: 1; min-width: 0; }
+.solana-network { width: fit-content; margin-bottom: .85rem; padding: .4rem .62rem; display: flex; align-items: center; gap: .45rem; border: 1px solid rgba(20,241,149,.28); border-radius: 999px; background: rgba(20,241,149,.08); color: #72f5bd; font-size: .56rem; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+.solana-network i { width: .45rem; height: .45rem; border-radius: 50%; background: #14f195; box-shadow: 0 0 .75rem #14f195; }
+.solana-details > strong { display: block; font-size: .9rem; }
+.solana-details code { margin-top: .55rem; padding: .8rem .9rem; display: block; overflow-wrap: anywhere; border: 1px solid var(--line); border-radius: .85rem; background: rgba(1,8,20,.62); color: #d9d3ff; font: 700 .73rem/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; user-select: all; }
+.solana-actions { margin-top: .75rem; display: flex; flex-wrap: wrap; gap: .55rem; }
+.solana-actions button, .solana-actions a { min-height: 2.75rem; padding: .65rem .85rem; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line-strong); border-radius: .8rem; color: var(--text); font-size: .68rem; font-weight: 800; cursor: pointer; }
+.solana-actions button { background: linear-gradient(125deg, #14a97d, #7956e8); }
+.solana-actions a { background: var(--surface-soft); }
+.solana-actions button:hover, .solana-actions a:hover { transform: translateY(-2px); border-color: #72f5bd; }
+.solana-details > p { margin: .75rem 0 0; color: var(--faint); font-size: .64rem; line-height: 1.55; }
 
 .baki-guide { position: fixed; z-index: 90; right: 1.1rem; bottom: 1.1rem; width: min(22rem, calc(100vw - 2rem)); min-height: 5.2rem; padding: .75rem 2.6rem .75rem 5.4rem; display: flex; align-items: center; border: 1px solid var(--line-strong); border-radius: 1.25rem; background: color-mix(in srgb, var(--surface-solid) 89%, transparent); box-shadow: 0 1.4rem 3.5rem rgba(0,4,18,.44), inset 0 1px rgba(255,255,255,.08); backdrop-filter: blur(20px); transform: translateY(140%); opacity: 0; transition: transform .5s cubic-bezier(.2,.8,.2,1), opacity .5s ease; }
 .baki-guide.visible { transform: none; opacity: 1; }
@@ -511,8 +522,8 @@ footer > div a:hover { color: var(--accent); }
   .final-download { min-height: 38rem; border-radius: 2rem; padding-left: 1rem; padding-right: 1rem; }
   .final-download > img { width: 19rem; right: -8rem; opacity: .35; }
   .support-character { min-height: 19rem; }
-  .support-paused { grid-template-columns: 2.5rem 1fr; }
-  .support-paused > span { width: 2.5rem; height: 2.5rem; }
+  .solana-donation { grid-template-columns: 1fr; }
+  .solana-qr { width: min(15rem, 100%); }
   .baki-guide { right: .6rem; bottom: .6rem; width: calc(100vw - 1.2rem); }
   footer { grid-template-columns: 1fr; justify-items: center; text-align: center; }
   footer > div { flex-wrap: wrap; justify-content: center; }

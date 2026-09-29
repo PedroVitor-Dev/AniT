@@ -152,6 +152,7 @@ const machineSelected = new Set();
 const machineStepOrder = ['idle', 'intake', 'analysis', 'sorting', 'organized'];
 let machineBusy = false;
 let machineRunToken = 0;
+let machineAutoRunTimer = 0;
 let machine3D = null;
 let machineLoadStarted = false;
 
@@ -212,6 +213,16 @@ function selectMachineFile(id, announce = true) {
   } else if (machineStatus) {
     machineStatus.textContent = machineSelected.size ? 'Fita inserida. Jogue outras na máquina ou inicie a organização.' : 'Escolha fitas ou organize todas de uma vez.';
   }
+  window.clearTimeout(machineAutoRunTimer);
+  machineAutoRunTimer = 0;
+  if (machineSelected.size === machineFileButtons.length) {
+    if (machineStatus) machineStatus.textContent = 'Todas as quatro fitas entraram. Organização automática iniciando…';
+    machineMood('happy', 'Coleção completa! Vou colocar tudo em ordem agora.', false);
+    machineAutoRunTimer = window.setTimeout(() => {
+      machineAutoRunTimer = 0;
+      if (!machineBusy && machineSelected.size === machineFileButtons.length) organizeMachine();
+    }, reduceMotion ? 0 : 650);
+  }
 }
 
 function machineDelay(milliseconds, token) {
@@ -219,6 +230,8 @@ function machineDelay(milliseconds, token) {
 }
 
 async function organizeMachine() {
+  window.clearTimeout(machineAutoRunTimer);
+  machineAutoRunTimer = 0;
   if (machineBusy) {
     if (machineStatus) machineStatus.textContent = 'A máquina já está processando. Espere só um instante.';
     return;
@@ -260,6 +273,8 @@ async function organizeMachine() {
 }
 
 function resetMachine() {
+  window.clearTimeout(machineAutoRunTimer);
+  machineAutoRunTimer = 0;
   machineRunToken += 1;
   machineBusy = false;
   machineSelected.clear();
@@ -298,7 +313,7 @@ machineCameraZone?.addEventListener('drop', event => {
   machineRoot?.classList.remove('drop-ready');
   const id = event.dataTransfer?.getData('text/plain');
   if (id && !machineSelected.has(id)) selectMachineFile(id);
-  if (id && machineStatus) machineStatus.textContent = 'A fita foi guardada dentro da máquina. Pode inserir outra ou começar.';
+  if (id && machineStatus && machineSelected.size < machineFileButtons.length) machineStatus.textContent = 'A fita foi guardada dentro da máquina. Pode inserir outra ou começar.';
 });
 machineSeriesToggle?.addEventListener('click', () => {
   if (!machineEpisodes || machineSeriesToggle.disabled) return;
@@ -637,8 +652,8 @@ async function createMachine3D() {
       draggedCard = null;
       if (enteredMachine) {
         if (!machineSelected.has(id)) selectMachineFile(id, id === '4');
-        if (machineStatus) machineStatus.textContent = 'A fita foi guardada dentro da máquina. Pode inserir outra ou começar.';
-        machineMood('normal', 'Peguei! Ela está segura aqui dentro.', false);
+        if (machineStatus && machineSelected.size < machineFileButtons.length) machineStatus.textContent = 'A fita foi guardada dentro da máquina. Pode inserir outra ou começar.';
+        if (machineSelected.size < machineFileButtons.length) machineMood('normal', 'Peguei! Ela está segura aqui dentro.', false);
       } else if (!moved) {
         selectMachineFile(id);
       } else if (machineStatus) {
@@ -705,6 +720,28 @@ if (machineRoot && 'IntersectionObserver' in window) {
   loadMachine3D();
 }
 document.addEventListener('visibilitychange', () => machine3D?.setActive(!document.hidden && Boolean(machineRoot?.getBoundingClientRect().bottom > 0)));
+
+const solanaDonationAddress = 'C4rPy4tYhFrpYA4U6BHaef7r8acEG9QWCfWrpgGddKwC';
+const copySolanaAddress = $('#copySolanaAddress');
+const solanaStatus = $('#solanaStatus');
+copySolanaAddress?.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(solanaDonationAddress);
+  } catch {
+    const field = document.createElement('textarea');
+    field.value = solanaDonationAddress;
+    field.setAttribute('readonly', '');
+    field.style.position = 'fixed';
+    field.style.opacity = '0';
+    document.body.appendChild(field);
+    field.select();
+    document.execCommand('copy');
+    field.remove();
+  }
+  copySolanaAddress.textContent = 'Endereço copiado';
+  if (solanaStatus) solanaStatus.textContent = 'Endereço Solana copiado. Confira a rede e o endereço na sua carteira antes de enviar.';
+  window.setTimeout(() => { copySolanaAddress.textContent = 'Copiar endereço'; }, 2400);
+});
 
 const journeyStates = {
   quero: { progress: 0, time: 'Ainda não iniciado', percent: '0%', action: 'Começar o episódio', message: 'Adicionado à jornada. Quando começar, eu guardo o caminho.', mood: 'normal' },

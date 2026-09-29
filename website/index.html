@@ -173,7 +173,27 @@
 
     <section class="final-download section-shell" aria-labelledby="download-title"><div class="final-sky" aria-hidden="true"></div><img src="./assets/baki-happy.png" alt="Baki-Pi convidando para começar uma nova jornada" width="1024" height="1024" loading="lazy"><div class="final-copy reveal"><p class="eyebrow centered"><span></span> Sua estante está esperando <span></span></p><h2 id="download-title">A próxima memória<br><em>começa no seu PC.</em></h2><a class="primary-action release-link" href="https://github.com/PedroVitor-Dev/AniT/releases/latest"><span class="action-mark" aria-hidden="true">✦</span><span><strong>Baixar AniT para Windows</strong><small class="release-meta">Versão mais recente</small></span></a><p>Instalador x64 · Windows 10 ou 11 · gratuito e open source</p></div></section>
 
-    <section class="support-section section-shell" id="apoie" aria-labelledby="support-title"><div class="support-character reveal"><img src="./assets/baki-donation.png" alt="Baki-Pi cuidando de uma pequena chama" width="1024" height="1024" loading="lazy"></div><div class="support-copy reveal" data-delay="1"><p class="eyebrow"><span></span> Apoio opcional</p><h2 id="support-title">Ajude a chama<br><em>a continuar acesa.</em></h2><p>O AniT é gratuito e independente. A área de apoio está pronta, mas a invoice anterior era temporária e expira em 5 de outubro de 2026.</p><div class="support-paused" role="note"><span aria-hidden="true">⚡</span><div><strong>Doações Lightning temporariamente pausadas</strong><p>Para ativar de forma confiável, falta um endereço Lightning reutilizável — por exemplo, <code>nome@dominio</code> — e o QR Code correspondente.</p></div></div></div></section>
+    <section class="support-section section-shell" id="apoie" aria-labelledby="support-title">
+      <div class="support-character reveal"><img src="./assets/baki-donation.png" alt="Baki-Pi segurando uma moeda da rede Solana" width="1024" height="1024" loading="lazy"></div>
+      <div class="support-copy reveal" data-delay="1">
+        <p class="eyebrow"><span></span> Apoio opcional · Solana</p>
+        <h2 id="support-title">Ajude a chama<br><em>a continuar acesa.</em></h2>
+        <p>O AniT é gratuito, independente e open source. Se ele deixou sua biblioteca mais especial, você pode apoiar o projeto pela rede Solana.</p>
+        <div class="solana-donation">
+          <div class="solana-qr"><img src="./assets/solana-qr.png" alt="QR Code do endereço Solana do AniT" width="281" height="248" loading="lazy"><span>Escaneie com uma carteira Solana</span></div>
+          <div class="solana-details">
+            <span class="solana-network"><i aria-hidden="true"></i> Solana mainnet</span>
+            <strong>Endereço para doação</strong>
+            <code id="solanaAddress">C4rPy4tYhFrpYA4U6BHaef7r8acEG9QWCfWrpgGddKwC</code>
+            <div class="solana-actions">
+              <button id="copySolanaAddress" type="button">Copiar endereço</button>
+              <a href="https://explorer.solana.com/address/C4rPy4tYhFrpYA4U6BHaef7r8acEG9QWCfWrpgGddKwC" target="_blank" rel="noopener noreferrer">Ver no Solana Explorer</a>
+            </div>
+            <p id="solanaStatus" role="status" aria-live="polite">Endereço público reutilizável e sem vencimento automático. Envie somente ativos compatíveis com a rede Solana.</p>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <aside class="baki-guide" id="bakiGuide" aria-live="polite"><img id="guideBaki" src="./assets/baki-normal.png" alt="" width="1024" height="1024"><p id="guideText">Eu cuido das memórias. Você escolhe a próxima história.</p><button type="button" id="closeGuide" aria-label="Fechar mensagem do Baki-Pi">×</button></aside>
