@@ -112,7 +112,7 @@ h1 em, h2 em { color: transparent; font-style: normal; background: linear-gradie
 .section-heading > p:last-child { max-width: 48rem; margin: 1.8rem 0 0; color: var(--muted); font-size: 1.05rem; }
 .section-heading.compact { max-width: 62rem; }
 
-.hero { position: relative; min-height: max(48rem, 100svh); padding: calc(var(--header-h) + 3.4rem) clamp(1.2rem, 6vw, 7rem) 7.8rem; display: grid; grid-template-columns: minmax(23rem, .83fr) minmax(31rem, 1.17fr); align-items: center; gap: clamp(2rem, 5vw, 7rem); overflow: hidden; isolation: isolate; }
+.hero { position: relative; min-height: max(48rem, 100svh); padding: calc(var(--header-h) + 3.4rem) clamp(1.2rem, 6vw, 7rem) 7.8rem; display: grid; grid-template-columns: minmax(23rem, 42rem) minmax(31rem, 64rem); align-items: center; justify-content: center; gap: clamp(2rem, 5vw, 7rem); overflow: hidden; isolation: isolate; }
 .hero::after { content: ""; position: absolute; z-index: -1; left: 0; right: 0; bottom: 0; height: 12rem; background: linear-gradient(transparent, var(--bg)); }
 .hero-world { position: absolute; z-index: -3; inset: 0; background: linear-gradient(90deg, rgba(2,7,18,.93) 0%, rgba(2,7,18,.55) 42%, rgba(2,7,18,.1) 75%), url("./assets/world.png") center/cover no-repeat; filter: var(--world-filter); transform: scale(1.04); transition: filter .8s ease, transform .8s ease; }
 :root[data-atmosphere="nostalgia"] .hero-world { transform: scale(1.08) translateX(-1%); }
@@ -325,6 +325,8 @@ h1 em, h2 em { color: transparent; font-style: normal; background: linear-gradie
 .mood-picker { position: absolute; z-index: 4; left: 50%; bottom: 1rem; padding: .35rem; display: flex; gap: .2rem; border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--bg-deep) 80%, transparent); transform: translateX(-50%); backdrop-filter: blur(18px); }
 .mood { padding: .65rem .82rem; border-radius: 999px; color: var(--faint); font-size: .67rem; font-weight: 760; white-space: nowrap; }
 .mood.active { background: linear-gradient(125deg, var(--accent), var(--accent-2)); color: white; }
+.baki-copy h2 { padding-block: .04em .08em; font-size: clamp(3rem, 5vw, 4.75rem); line-height: 1.02; }
+.baki-copy h2 .title-line { display: inline-block; white-space: nowrap; }
 .baki-copy > p:not(.eyebrow) { max-width: 35rem; margin: 1.7rem 0; color: var(--muted); font-size: 1.05rem; }
 .baki-copy blockquote { margin: 2rem 0 0; padding: 1.2rem 1.4rem; border-left: 2px solid var(--accent); background: linear-gradient(90deg, var(--surface-soft), transparent); color: var(--text); font-size: 1.05rem; font-weight: 650; }
 
@@ -509,6 +511,7 @@ footer > div a:hover { color: var(--accent); }
   .feature-row > strong { grid-column: 2; justify-self: start; text-align: left; }
   .baki-stage { min-height: 31rem; }
   .baki-stage > img { width: 90%; }
+  .baki-copy h2 { font-size: clamp(2.4rem, 11vw, 4.3rem); }
   .mood-picker { width: calc(100% - 1rem); overflow-x: auto; justify-content: flex-start; }
   .mood { padding: .62rem .7rem; font-size: .62rem; }
   .share-card-wrap { min-height: 27rem; border-radius: 1.6rem; }
