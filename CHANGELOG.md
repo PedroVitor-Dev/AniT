@@ -6,6 +6,10 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Não publicado]
 
+### Adicionado
+
+- Onboarding de primeira execução com boas-vindas, nome e foto opcionais, seleção da pasta principal com subpastas e revisão antes de entrar. É possível configurar a pasta depois e retomar uma configuração interrompida.
+
 ## [1.0.2] - 2026-09-28
 
 ### Alterado
