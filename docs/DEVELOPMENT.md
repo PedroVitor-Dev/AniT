@@ -100,7 +100,7 @@ Testes de disco devem criar diretórios temporários isolados e limpá-los.
 
 ```powershell
 winget install --id JRSoftware.InnoSetup.7 -e --source winget
-.\scripts\Build-Installer.ps1 -Version 1.0.2
+.\scripts\Build-Installer.ps1 -Version 1.0.2 -AllowUnsigned # apenas testes locais
 ```
 
 Os artefatos ficam em `artifacts/installer/`. Consulte [Release](RELEASING.md) antes de distribuir.

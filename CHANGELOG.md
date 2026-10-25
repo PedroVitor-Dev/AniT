@@ -10,6 +10,10 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 - Onboarding de primeira execução com boas-vindas, nome e foto opcionais, seleção da pasta principal com subpastas e revisão antes de entrar. É possível configurar a pasta depois e retomar uma configuração interrompida.
 
+### Alterado
+
+- Distribuições exigem assinatura Authenticode por padrão; builds locais sem assinatura precisam de `-AllowUnsigned`. O processo valida o certificado antes da publicação e assina os binários próprios, o instalador e o desinstalador.
+
 ## [1.0.2] - 2026-09-28
 
 ### Alterado

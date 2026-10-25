@@ -38,6 +38,10 @@ jobs:
       - name: Build
         run: dotnet build AniT.slnx --configuration Release --no-restore
 
+      - name: Test signing preflight
+        shell: pwsh
+        run: .\scripts\Test-InstallerSigning.ps1
+
       - name: Test
         run: dotnet test AniT.slnx --configuration Release --no-build --collect:"XPlat Code Coverage" --logger "console;verbosity=normal"
 
