@@ -6,6 +6,12 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Não publicado]
 
+### Corrigido
+
+- Onboarding com logo preservada após otimização de imagens, margens internas, navegação sempre acessível e painel lateral adaptado ao espaço disponível após a escala da interface. O foco não oculta mais o título da etapa de perfil.
+- Verificações de interface cobrem as quatro etapas em 144 combinações de tamanho, escala e tema usando as regras reais de aparência e otimização do aplicativo.
+
+
 ### Adicionado
 
 - Onboarding de primeira execução com boas-vindas, nome e foto opcionais, seleção da pasta principal com subpastas e revisão antes de entrar. É possível configurar a pasta depois e retomar uma configuração interrompida.

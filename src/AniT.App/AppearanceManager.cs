@@ -120,7 +120,12 @@ internal static class AppearanceManager
 
     private static void ApplyImageAppearance(Image image, AniTSystemSettings settings)
     {
-        var source = image.Source?.ToString();
+        // Optimization wraps BitmapImage in TransformedBitmap, whose ToString() loses the URI.
+        // Follow bitmap wrappers so packaged logos/mascots never inherit cover cropping.
+        ImageSource? original = image.Source;
+        while (original is TransformedBitmap or CroppedBitmap)
+            original = original is TransformedBitmap transformed ? transformed.Source : ((CroppedBitmap)original).Source;
+        var source = original is BitmapImage bitmap ? bitmap.UriSource?.OriginalString : original?.ToString();
         if (string.IsNullOrWhiteSpace(source) || source.Contains("/Assets/", StringComparison.OrdinalIgnoreCase) || source.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase)) return;
         image.Stretch = settings.ArtworkStretchMode == ArtworkStretchMode.Uniform ? Stretch.Uniform : Stretch.UniformToFill;
         image.RenderTransform = Transform.Identity;

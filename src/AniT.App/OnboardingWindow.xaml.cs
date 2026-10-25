@@ -21,7 +21,7 @@ public partial class OnboardingWindow : Window
         this.setupStore = setupStore;
         this.profile = profile;
         InitializeComponent();
-        ResponsiveWindow.FitToWorkArea(this, 980, 690);
+        ResponsiveWindow.FitToWorkArea(this, 1040, 740);
         NameBox.Text = profile.DisplayName is "Pet-S" or "Meu perfil" ? string.Empty : profile.DisplayName;
         avatarPath = profile.AvatarPath;
         RefreshAvatar();
@@ -30,11 +30,13 @@ public partial class OnboardingWindow : Window
         ShowStep();
     }
 
-    private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+    private void Root_SizeChanged(object sender, SizeChangedEventArgs e)
     {
         if (StoryPanel is null) return;
-        StoryPanel.Visibility = ActualWidth < 800 ? Visibility.Collapsed : Visibility.Visible;
-        StoryColumn.Width = new GridLength(ActualWidth < 800 ? 0 : 265);
+        // Root size is measured after interface scaling, unlike the outer window size.
+        var showStory = e.NewSize.Width >= 900 && e.NewSize.Height >= 580;
+        StoryPanel.Visibility = showStory ? Visibility.Visible : Visibility.Collapsed;
+        StoryColumn.Width = new GridLength(showStory ? 252 : 0);
     }
 
     private void ShowStep()
@@ -43,7 +45,7 @@ public partial class OnboardingWindow : Window
         ProfileStep.Visibility = step == 1 ? Visibility.Visible : Visibility.Collapsed;
         FolderStep.Visibility = step == 2 ? Visibility.Visible : Visibility.Collapsed;
         ReadyStep.Visibility = step == 3 ? Visibility.Visible : Visibility.Collapsed;
-        Heading.Text = new[] { "Bem-vindo ao seu AniT.", "Vamos deixar com a sua cara.", "Onde vivem suas histórias?", "Sua próxima jornada está pronta." }[step];
+        Heading.Text = new[] { "Seu próximo anime começa aqui.", "Um perfil com a sua cara.", "Onde estão seus animes?", "Tudo pronto para começar." }[step];
         StepText.Text = $"PASSO {step + 1} DE 4 · {new[] { "BOAS-VINDAS", "SEU PERFIL", "SUA ESTANTE", "TUDO PRONTO" }[step]}";
         StepProgress.Value = step + 1;
         BackButton.Visibility = step == 0 ? Visibility.Hidden : Visibility.Visible;
@@ -52,8 +54,8 @@ public partial class OnboardingWindow : Window
         SummaryName.Text = DisplayName;
         SummaryFolder.Text = folderPath ?? "Configurar depois, em Configurações → Estante.";
         StatusText.Text = string.Empty;
-        if (step == 1) NameBox.Focus();
-        else NextButton.Focus();
+        StepScroller.ScrollToTop();
+        NextButton.Focus();
     }
 
     private string DisplayName => string.IsNullOrWhiteSpace(NameBox.Text) ? "Meu perfil" : NameBox.Text.Trim();
@@ -180,8 +182,9 @@ public partial class OnboardingWindow : Window
 
     private void RefreshAvatar()
     {
-        try { AvatarBrush.ImageSource = ComfortableImageSource.Load(avatarPath ?? "Assets/Profile/1.png", 320); }
-        catch { avatarPath = null; AvatarBrush.ImageSource = ComfortableImageSource.Load("Assets/Profile/1.png", 320); }
+        const string fallback = "pack://application:,,,/AniT;component/Assets/Profile/1.png";
+        try { AvatarBrush.ImageSource = ComfortableImageSource.Load(avatarPath ?? fallback, 320); }
+        catch { avatarPath = null; AvatarBrush.ImageSource = ComfortableImageSource.Load(fallback, 320); }
     }
 
     protected override void OnClosing(CancelEventArgs e)

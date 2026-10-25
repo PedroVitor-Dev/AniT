@@ -108,3 +108,13 @@ Os artefatos ficam em `artifacts/installer/`. Consulte [Release](RELEASING.md) a
 ## Commits e pull requests
 
 Use Conventional Commits, por exemplo `feat:`, `fix:`, `docs:`, `test:` e `chore:`. Antes do PR, execute validação em Release, atualize documentação e inclua evidência visual para WPF. Não misture refatorações sem relação.
+
+## Verificação do layout do onboarding
+
+```powershell
+dotnet run --project tests/AniT.UiChecks -c Release
+# Prévia interativa isolada, sem abrir perfis ou biblioteca pessoais:
+dotnet run --project tests/AniT.UiChecks -c Release -- --preview
+```
+
+O verificador carrega os mesmos temas, otimização de imagens e regras globais de aparência usados pelo app. Percorre as quatro etapas em 144 combinações de viewport (720p, 1080p, ultrawide e janela compacta), tamanhos lógicos equivalentes a escalas de tela de 100/125/150%, escala de interface de 100/125%, texto de 100/140% e temas escuro/claro/automático. Confere navegação visível, rolagem até o fim, ausência de overflow horizontal, espaço no título e preservação da logo após otimização. A equivalência de tamanhos lógicos não substitui o teste manual de rasterização em monitores com DPI real diferente. A prévia não deve ser usada para salvar configurações; serve apenas para inspeção e navegação.

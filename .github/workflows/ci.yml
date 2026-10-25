@@ -38,6 +38,9 @@ jobs:
       - name: Build
         run: dotnet build AniT.slnx --configuration Release --no-restore
 
+      - name: Check onboarding layout
+        run: dotnet run --project tests/AniT.UiChecks -c Release --no-build
+
       - name: Test signing preflight
         shell: pwsh
         run: .\scripts\Test-InstallerSigning.ps1

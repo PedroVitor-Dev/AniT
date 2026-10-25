@@ -1,18 +1,23 @@
 <Window x:Class="AniT.App.OnboardingWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Bem-vindo ao AniT" Width="980" Height="690" MinWidth="580" MinHeight="420"
+        xmlns:local="clr-namespace:AniT.App"
+        Title="Bem-vindo ao AniT" Width="1040" Height="740" MinWidth="580" MinHeight="420"
         WindowStartupLocation="CenterScreen" Background="{DynamicResource AniT.Brush.Background}"
         Foreground="{DynamicResource AniT.Brush.TextPrimary}" FontFamily="Segoe UI"
-        SizeChanged="Window_SizeChanged">
+        Icon="/AniT;component/Assets/anit.ico" UseLayoutRounding="True" SnapsToDevicePixels="True">
     <Window.Resources>
+        <Style TargetType="ScrollViewer">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        </Style>
         <Style TargetType="TextBlock">
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>
         <Style x:Key="Body" TargetType="TextBlock">
             <Setter Property="TextWrapping" Value="Wrap"/>
             <Setter Property="FontSize" Value="15"/>
-            <Setter Property="LineHeight" Value="24"/>
+            <Setter Property="LineStackingStrategy" Value="MaxHeight"/>
             <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextSecondary}"/>
             <Setter Property="Margin" Value="0,12,0,0"/>
         </Style>
@@ -21,16 +26,16 @@
             <Setter Property="BorderBrush" Value="{DynamicResource AniT.Brush.Border}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="16"/>
-            <Setter Property="Padding" Value="20"/>
-            <Setter Property="Margin" Value="0,18,0,0"/>
+            <Setter Property="Padding" Value="22"/>
+            <Setter Property="Margin" Value="0,16,0,0"/>
         </Style>
     </Window.Resources>
-    <Grid>
+    <Grid x:Name="RootGrid" SizeChanged="Root_SizeChanged">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition x:Name="StoryColumn" Width="265"/>
+            <ColumnDefinition x:Name="StoryColumn" Width="252"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <Border x:Name="StoryPanel" Padding="30,34">
+        <Border x:Name="StoryPanel" Padding="28,32">
             <Border.Background>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                     <GradientStop Color="#163E73" Offset="0"/>
@@ -40,18 +45,25 @@
             <Grid>
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                 <StackPanel>
-                    <Image Source="Assets/logo-letter-white.png" Width="112" Height="46" Stretch="Uniform" HorizontalAlignment="Left"/>
-                    <TextBlock Text="SUA PRÓXIMA HISTÓRIA&#10;COMEÇA AQUI." FontSize="11" FontWeight="SemiBold" Foreground="#85D8FF" Margin="0,24,0,0" LineHeight="19"/>
+                    <Image x:Name="BrandLogo" Width="128" Height="64" Stretch="Uniform" HorizontalAlignment="Left" local:ComfortableImageSource.AutoOptimize="False" AutomationProperties.Name="AniT">
+                        <Image.Source>
+                            <!-- Remove only the transparent canvas around the existing wordmark. -->
+                            <CroppedBitmap SourceRect="20,100,460,260">
+                                <CroppedBitmap.Source><BitmapImage UriSource="/AniT;component/Assets/logo-letter-white.png"/></CroppedBitmap.Source>
+                            </CroppedBitmap>
+                        </Image.Source>
+                    </Image>
+                    <TextBlock Text="SUA BIBLIOTECA PESSOAL" FontSize="10" FontWeight="SemiBold" Foreground="#85D8FF" Margin="0,14,0,0"/>
                 </StackPanel>
                 <StackPanel Grid.Row="1" VerticalAlignment="Center">
-                    <Image Source="Assets/happy-sf.png" Width="158" Height="166" Stretch="Uniform"/>
-                    <TextBlock Text="Um lugar para todas&#10;as suas jornadas." Foreground="White" FontWeight="SemiBold" FontSize="23" Margin="0,20,0,0" LineHeight="31"/>
-                    <TextBlock Text="Seus animes, seu ritmo,&#10;do seu jeito." Foreground="#B5CFEA" FontSize="14" Margin="0,12,0,0" LineHeight="23"/>
+                    <Image Source="/AniT;component/Assets/happy-sf.png" Width="152" Height="160" Stretch="Uniform" local:ComfortableImageSource.AutoOptimize="False"/>
+                    <TextBlock Text="Toda jornada merece um lar." Foreground="White" FontWeight="SemiBold" FontSize="24" Margin="0,24,0,0"/>
+                    <TextBlock Text="Seus animes e suas memórias, sempre por perto." Foreground="#B5CFEA" FontSize="14" Margin="0,14,0,0"/>
                 </StackPanel>
                 <TextBlock Grid.Row="2" Text="LOCAL. PESSOAL. SEU." Foreground="#85D8FF" FontSize="10" FontWeight="SemiBold"/>
             </Grid>
         </Border>
-        <Grid Grid.Column="1" Margin="32,30">
+        <Grid Grid.Column="1" Margin="30,28" MaxWidth="680" HorizontalAlignment="Stretch">
             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
             <StackPanel>
                 <TextBlock x:Name="StepText" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AniT.Brush.AccentCyan}"/>
@@ -67,34 +79,40 @@
                     </ProgressBar.Template>
                 </ProgressBar>
             </StackPanel>
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,10,12">
-                <StackPanel>
-                    <TextBlock x:Name="Heading" FontSize="30" FontWeight="SemiBold" LineHeight="38"/>
+            <ScrollViewer x:Name="StepScroller" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" BorderThickness="0" Background="Transparent" Focusable="False" FocusVisualStyle="{x:Null}">
+                <StackPanel Margin="8,8,18,20">
+                    <TextBlock x:Name="Heading" FontSize="32" FontWeight="SemiBold"/>
                     <StackPanel x:Name="WelcomeStep">
-                        <TextBlock Style="{StaticResource Body}" Text="Vamos preparar sua estante? Em poucos passos, o AniT ganha a sua cara e encontra os animes que você já tem no computador."/>
+                        <TextBlock Style="{StaticResource Body}" Text="Vamos preparar seu espaço. Escolha seu perfil e conecte a pasta dos seus animes — leva só alguns passos."/>
                         <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <TextBlock Text="01   Um perfil com a sua cara" FontSize="15" FontWeight="SemiBold"/>
-                                <TextBlock Style="{StaticResource Body}" Text="Escolha seu nome e uma foto, se quiser."/>
-                                <TextBlock Text="02   Seus animes em um só lugar" FontSize="15" FontWeight="SemiBold" Margin="0,22,0,0"/>
-                                <TextBlock Style="{StaticResource Body}" Text="Selecione a pasta principal. As subpastas também entram na biblioteca."/>
-                            </StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="48"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <Border Width="34" Height="34" CornerRadius="10" Background="{DynamicResource AniT.Brush.SurfaceSelected}" VerticalAlignment="Top"><TextBlock Text="01" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                <StackPanel Grid.Column="1"><TextBlock Text="Um perfil com a sua cara" FontSize="16" FontWeight="SemiBold"/><TextBlock Style="{StaticResource Body}" Text="Nome e foto opcionais. O seu espaço, do seu jeito." FontSize="14"/></StackPanel>
+                            </Grid>
                         </Border>
-                        <TextBlock Style="{StaticResource Body}" Text="Sem cadastro. Seus perfis e seu progresso ficam neste computador. Você pode mudar essas escolhas depois."/>
+                        <Border Style="{StaticResource Card}">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="48"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <Border Width="34" Height="34" CornerRadius="10" Background="{DynamicResource AniT.Brush.SurfaceSelected}" VerticalAlignment="Top"><TextBlock Text="02" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                <StackPanel Grid.Column="1"><TextBlock Text="Uma pasta, muitas histórias" FontSize="16" FontWeight="SemiBold"/><TextBlock Style="{StaticResource Body}" Text="Conecte seus animes ou deixe essa escolha para depois." FontSize="14"/></StackPanel>
+                            </Grid>
+                        </Border>
+                        <TextBlock Style="{StaticResource Body}" Foreground="{DynamicResource AniT.Brush.TextMuted}" FontSize="13" Margin="0,22,0,0" Text="Sem cadastro. Seus perfis e seu progresso ficam neste computador."/>
                     </StackPanel>
                     <StackPanel x:Name="ProfileStep" Visibility="Collapsed">
                         <TextBlock Style="{StaticResource Body}" Text="Como você quer aparecer por aqui? Nome e foto são opcionais e podem ser alterados no perfil."/>
                         <Border Style="{StaticResource Card}">
                             <StackPanel>
                                 <Border Width="106" Height="106" CornerRadius="53" HorizontalAlignment="Left" Margin="0,0,0,14">
-                                    <Border.Background><ImageBrush x:Name="AvatarBrush" Stretch="UniformToFill" ImageSource="Assets/Profile/1.png"/></Border.Background>
+                                    <Border.Background><ImageBrush x:Name="AvatarBrush" Stretch="UniformToFill" ImageSource="/AniT;component/Assets/Profile/1.png"/></Border.Background>
                                 </Border>
                                 <WrapPanel>
                                     <Button Content="Escolher _foto" Style="{StaticResource AniT.Button.Base}" Click="ChooseAvatar_Click" Margin="0,0,10,8"/>
                                     <Button Content="Usar _padrão" Style="{StaticResource AniT.Button.Base}" Click="ResetAvatar_Click" Margin="0,0,0,8"/>
                                 </WrapPanel>
                                 <Label Content="Seu _nome (opcional)" Target="{Binding ElementName=NameBox}" Foreground="{DynamicResource AniT.Brush.TextSecondary}" Padding="0" Margin="0,16,0,8"/>
-                                <TextBox x:Name="NameBox" MaxLength="32" FontSize="17" Padding="12" Background="{DynamicResource AniT.Brush.Background}" Foreground="{DynamicResource AniT.Brush.TextPrimary}" BorderBrush="{DynamicResource AniT.Brush.Border}" AutomationProperties.Name="Nome do perfil, opcional"/>
+                                <TextBox x:Name="NameBox" Style="{StaticResource AniT.Input.TextBox}" MaxLength="32" FontSize="17" AutomationProperties.Name="Nome do perfil, opcional"/>
                                 <TextBlock Text="Se deixar em branco, usaremos Meu perfil." Style="{StaticResource Body}" FontSize="12"/>
                             </StackPanel>
                         </Border>
@@ -109,7 +127,7 @@
                             </StackPanel>
                         </Border>
                         <TextBlock Style="{StaticResource Body}" Text="A busca apenas lê seus arquivos. Seus vídeos não serão movidos, renomeados ou apagados."/>
-                        <Button Content="Configurar a pasta _depois" Style="{StaticResource AniT.Button.Base}" HorizontalAlignment="Left" Margin="0,20,0,0" Click="SkipFolder_Click"/>
+                        <Button x:Name="SkipFolderButton" Content="Configurar a pasta _depois" Style="{StaticResource AniT.Button.Base}" HorizontalAlignment="Left" Margin="0,20,0,0" Click="SkipFolder_Click"/>
                     </StackPanel>
                     <StackPanel x:Name="ReadyStep" Visibility="Collapsed">
                         <TextBlock Style="{StaticResource Body}" Text="Confira suas escolhas. Ao entrar, a biblioteca começa a encontrar seus episódios em segundo plano."/>
@@ -125,9 +143,9 @@
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>
-            <StackPanel Grid.Row="2" Margin="0,12,0,0">
+            <StackPanel Grid.Row="2" Margin="8,16,8,0">
                 <TextBlock x:Name="StatusText" Foreground="{DynamicResource AniT.Brush.Danger}" FontSize="13" Margin="0,0,0,12" AutomationProperties.LiveSetting="Polite"/>
-                <Grid>
+                <Grid Margin="4,4,4,4">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                     <Button x:Name="BackButton" Content="_Voltar" Style="{StaticResource AniT.Button.Base}" Click="Back_Click"/>
                     <Button x:Name="NextButton" Grid.Column="2" Content="_Começar" Style="{StaticResource AniT.Button.Base}" Background="{DynamicResource AniT.Brush.AccentBlueStrong}" Foreground="White" Click="Next_Click" IsDefault="True"/>
