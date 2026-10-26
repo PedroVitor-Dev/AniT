@@ -6,6 +6,22 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Não publicado]
 
+### Corrigido
+
+- Home: renderização compatível limitada à janela elimina molduras falsas nas imagens transparentes e falhas nos cantos arredondados; o Baki-Pi do banner deixa de usar o quadro das capas, e o recorte dos cartões passa a preservar o contorno externo.
+
+- Onboarding com logo preservada após otimização de imagens, margens internas, navegação sempre acessível e painel lateral adaptado ao espaço disponível após a escala da interface. O foco não oculta mais o título da etapa de perfil.
+- Verificações de interface cobrem as quatro etapas em 144 combinações de tamanho, escala e tema usando as regras reais de aparência e otimização do aplicativo.
+
+
+### Adicionado
+
+- Onboarding de primeira execução com boas-vindas, nome e foto opcionais, seleção da pasta principal com subpastas e revisão antes de entrar. É possível configurar a pasta depois e retomar uma configuração interrompida.
+
+### Alterado
+
+- Distribuições exigem assinatura Authenticode por padrão; builds locais sem assinatura precisam de `-AllowUnsigned`. O processo valida o certificado antes da publicação e assina os binários próprios, o instalador e o desinstalador.
+
 ## [1.0.2] - 2026-09-28
 
 ### Alterado

@@ -100,7 +100,7 @@ Testes de disco devem criar diretórios temporários isolados e limpá-los.
 
 ```powershell
 winget install --id JRSoftware.InnoSetup.7 -e --source winget
-.\scripts\Build-Installer.ps1 -Version 1.0.2
+.\scripts\Build-Installer.ps1 -Version 1.0.2 -AllowUnsigned # apenas testes locais
 ```
 
 Os artefatos ficam em `artifacts/installer/`. Consulte [Release](RELEASING.md) antes de distribuir.
@@ -108,3 +108,23 @@ Os artefatos ficam em `artifacts/installer/`. Consulte [Release](RELEASING.md) a
 ## Commits e pull requests
 
 Use Conventional Commits, por exemplo `feat:`, `fix:`, `docs:`, `test:` e `chore:`. Antes do PR, execute validação em Release, atualize documentação e inclua evidência visual para WPF. Não misture refatorações sem relação.
+
+## Verificação do layout do onboarding
+
+```powershell
+dotnet run --project tests/AniT.UiChecks -c Release
+# Prévia interativa isolada, sem abrir perfis ou biblioteca pessoais:
+dotnet run --project tests/AniT.UiChecks -c Release -- --preview
+```
+
+O verificador carrega os mesmos temas, otimização de imagens e regras globais de aparência usados pelo app. Percorre as quatro etapas em 144 combinações de viewport (720p, 1080p, ultrawide e janela compacta), tamanhos lógicos equivalentes a escalas de tela de 100/125/150%, escala de interface de 100/125%, texto de 100/140% e temas escuro/claro/automático. Confere navegação visível, rolagem até o fim, ausência de overflow horizontal, espaço no título e preservação da logo após otimização. A equivalência de tamanhos lógicos não substitui o teste manual de rasterização em monitores com DPI real diferente. A prévia não deve ser usada para salvar configurações; serve apenas para inspeção e navegação.
+## Conferência visual da Home
+
+```powershell
+dotnet run --project tests/AniT.UiChecks -c Release -- --home-only
+dotnet run --project tests/AniT.UiChecks -c Release -- --preview-home
+```
+
+A prévia carrega o XAML real da Home com dados fictícios e remove os eventos de navegação e acesso ao banco. Os testes verificam a transparência original do mascote, a ausência do quadro das capas no mascote do banner e o recorte dos filhos dos cartões após mudanças de tamanho, raio e escala.
+
+A Home habilita `StableWindowRendering.Enabled`: o `HwndTarget` dessa janela usa `SoftwareOnly` para evitar artefatos observados na composição acelerada de superfícies transparentes e cantos arredondados. Não há alteração do registro, configuração global do Windows ou modo de renderização do processo. Isso troca a aceleração gráfica da Home por renderização na CPU; ao alterar animações/efeitos pesados, confira também fluidez e consumo em tela ultrawide. As demais janelas continuam com o modo de renderização padrão.

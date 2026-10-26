@@ -1,4 +1,4 @@
-﻿using System.Configuration;
+using System.Configuration;
 using System.Data;
 using System.Diagnostics;
 using System.IO;
@@ -441,17 +441,30 @@ public partial class App : Application
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
         AppearanceManager.Initialize(this);
 
-        var profileSelection = new ProfileSelectionWindow();
-        MainWindow = profileSelection;
-        if (profileSelection.ShowDialog() != true || profileSelection.SelectedProfileId == Guid.Empty)
+        var setupStore = new global::AniT.Infrastructure.FirstRunSetupStore(dataDirectory);
+        var needsSetup = setupStore.NeedsSetup;
+        Guid selectedProfileId;
+        if (needsSetup)
         {
-            Shutdown();
-            return;
+            // Persist before the default profile/database is created, so closing setup resumes it.
+            setupStore.Begin();
+            selectedProfileId = ProfileSettingsStore.ActiveProfileId;
+        }
+        else
+        {
+            var profileSelection = new ProfileSelectionWindow();
+            MainWindow = profileSelection;
+            if (profileSelection.ShowDialog() != true || profileSelection.SelectedProfileId == Guid.Empty)
+            {
+                Shutdown();
+                return;
+            }
+            selectedProfileId = profileSelection.SelectedProfileId;
         }
 
         try
         {
-            ActivateProfileForStartup(profileSelection.SelectedProfileId);
+            ActivateProfileForStartup(selectedProfileId);
         }
         catch (Exception exception)
         {
@@ -471,6 +484,17 @@ public partial class App : Application
         ArtworkCacheManager.EnsureManagedCache(settings);
         var coversDirectory = settings.ArtworkDirectory ?? global::System.IO.Path.Combine(dataRootPath, "Covers");
         animeCoverProvider = new global::AniT.Infrastructure.AnimeCoverProvider(coversDirectory);
+        if (needsSetup)
+        {
+            var onboarding = new OnboardingWindow(setupStore, ProfileSettingsStore.Load(), Database.LibraryRoots.AsNoTracking().FirstOrDefault(root => root.IsEnabled)?.Path);
+            MainWindow = onboarding;
+            if (onboarding.ShowDialog() != true)
+            {
+                Database.Dispose();
+                Shutdown();
+                return;
+            }
+        }
         InitializeMediaPlayer();
         ConfigureLibraryBackgroundScan(settings);
         ConfigureAutomaticBackup(settings);
@@ -482,7 +506,7 @@ public partial class App : Application
         ShutdownMode = ShutdownMode.OnMainWindowClose;
         dashboard.ContentRendered += (_, _) =>
         {
-            if (!Database.LibraryRoots.Any() || NeedsLibraryRelinkAfterRestore()) AppNavigation.Settings(dashboard, SettingsSection.Shelf);
+            if ((!needsSetup && !Database.LibraryRoots.Any(root => root.IsEnabled)) || NeedsLibraryRelinkAfterRestore()) AppNavigation.Settings(dashboard, SettingsSection.Shelf);
             else AppNavigation.PrewarmLoadingSurface(dashboard);
         };
         dashboard.Show();

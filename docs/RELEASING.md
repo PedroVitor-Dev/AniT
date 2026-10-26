@@ -52,16 +52,16 @@ O CI em `.github/workflows/ci.yml` executa restore travado, auditoria NuGet, bui
 Instale Inno Setup 7 e execute:
 
 ```powershell
-.\scripts\Build-Installer.ps1 -Version 1.0.2
-```
-
-Quando houver certificado Authenticode válido no repositório do usuário, gere a distribuição assinada para que o Windows consiga identificar o fornecedor:
-
-```powershell
 .\scripts\Build-Installer.ps1 -Version 1.0.2 -CertificateThumbprint SEU_THUMBPRINT
 ```
 
-O script assina e verifica `AniT.exe` e o instalador antes de calcular o hash. Não coloque senha, chave privada ou arquivo `.pfx` no repositório.
+A distribuição exige certificado Authenticode válido com chave privada e finalidade Code Signing em `Cert:\CurrentUser\My`. Sem certificado, o script encerra antes de limpar artefatos. Para testes locais, use explicitamente `-AllowUnsigned`; esses builds não devem ser publicados como release oficial:
+
+```powershell
+.\scripts\Build-Installer.ps1 -Version 1.0.2 -AllowUnsigned
+```
+
+O script assina e verifica `AniT.exe` e as DLLs próprias (`AniT.dll`, `AniT.*.dll`), usa SHA-256 e timestamp RFC 3161 e configura o Inno Setup para assinar o instalador e o desinstalador embutido. O instalador é verificado antes de calcular o hash. Binários de terceiros preservam suas assinaturas originais. Não coloque senha, chave privada ou arquivo `.pfx` no repositório.
 
 O script publica `win-x64` autossuficiente, prepara assets, inclui o MPC-HC homologado e compila:
 
@@ -70,7 +70,7 @@ artifacts\installer\AniT-Setup-1.0.2-win-x64.exe
 artifacts\installer\SHA256SUMS.txt
 ```
 
-Não inclua bancos, perfis, capas baixadas, logs, backups, `TestResults`, diretórios `work` ou mídia. Na ausência de certificado, declare claramente que o instalador não é assinado.
+Não inclua bancos, perfis, capas baixadas, logs, backups, `TestResults`, diretórios `work` ou mídia. Consulte [Assinatura digital](CODE_SIGNING.md) para obter e configurar o certificado. Não apresente um build de teste sem certificado como versão assinada.
 
 ## Smoke test do artefato
 
@@ -90,7 +90,7 @@ Não inclua bancos, perfis, capas baixadas, logs, backups, `TestResults`, diret�
 5. Baixe novamente os anexos públicos e repita hash/smoke test.
 6. Marque como latest somente depois da validação.
 
-Quando houver suporte de assinatura, prefira tag anotada/assinada e assinatura Authenticode dos binários.
+Use assinatura Authenticode na distribuição oficial; prefira também tags anotadas/assinadas no Git.
 
 ## Hotfix
 

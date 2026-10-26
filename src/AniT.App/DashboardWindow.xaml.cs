@@ -32,6 +32,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
     public string HeroTitle { get; private set; } = "Sua próxima história";
     public string HeroSubtitle { get; private set; } = "Sua estante está pronta";
     public string HeroCoverPath { get; private set; } = "Assets/normal-sf.png";
+    public bool HeroIsMascot => !System.IO.Path.IsPathRooted(HeroCoverPath) && HeroCoverPath.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase);
     public string HeroQuote { get; private set; } = AnimeQuoteCatalog.GetFor(Guid.Empty);
     public double HeroProgressPercent { get; private set; }
     public string HeroProgressLabel { get; private set; } = "Pronto para começar";
@@ -252,6 +253,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HeroTitle)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HeroSubtitle)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HeroCoverPath)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HeroIsMascot)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HeroQuote)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HeroProgressPercent)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HeroProgressLabel)));
@@ -395,10 +397,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
     private void RoundedPanel_SizeChanged(object sender, SizeChangedEventArgs e)
     {
         if (sender is not Border border || border.ActualWidth <= 0 || border.ActualHeight <= 0) return;
-        var radius = double.TryParse(border.Tag?.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var parsedRadius)
-            ? parsedRadius
-            : 18;
-        border.Clip = new RectangleGeometry(new Rect(0, 0, border.ActualWidth, border.ActualHeight), radius, radius);
+        RoundedPanelClip.Update(border);
     }
 
     private void Window_SizeChanged(object sender, SizeChangedEventArgs e)

@@ -16,6 +16,11 @@
 #define AppUrl "https://github.com/PedroVitor-Dev/AniT"
 
 [Setup]
+#ifdef SigningEnabled
+SignTool=AniTReleaseSign
+SignedUninstaller=yes
+SignToolRetryCount=2
+#endif
 AppId={{B5E77420-FA12-42AC-B811-32EAE2C6DAF3}
 AppName={#AppName}
 AppVersion={#AppVersion}

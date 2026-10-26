@@ -1,5 +1,18 @@
 # Manual de utilização
 
+## Primeira vez no AniT
+
+Em uma instalação nova, um assistente apresenta o AniT e prepara seu espaço:
+
+1. **Boas-vindas:** conheça os passos e o armazenamento local dos seus dados.
+2. **Seu perfil:** escolha um nome de até 32 caracteres e uma foto PNG, JPG ou BMP. Ambos são opcionais; sem personalização, o AniT usa **Meu perfil** e o avatar padrão. A foto é copiada para os dados do aplicativo.
+3. **Sua estante:** escolha a pasta principal dos animes. A busca inclui subpastas e não move, renomeia ou apaga seus vídeos. Use **Configurar a pasta depois** para começar sem biblioteca.
+4. **Tudo pronto:** revise as escolhas e clique em **Entrar no AniT**. A busca dos episódios ocorre em segundo plano.
+
+É possível voltar às etapas anteriores. Fechar o assistente antes de concluir permite recomeçar na próxima abertura; as escolhas só são aplicadas ao concluir. Se houver falha ao salvar, corrija a pasta/foto e tente novamente. Depois, altere nome e foto no perfil e a pasta em **Configurações → Estante**.
+
+Quem já possui perfis ou biblioteca mantém o fluxo de seleção de perfis, inclusive o PIN. Atualizações não repetem o assistente.
+
 Este guia descreve o fluxo do AniT 1.0.2, da escolha do perfil ao backup da biblioteca.
 
 ## 1. Instalação

@@ -6,6 +6,7 @@ param(
     [string] $DotNetPath = 'dotnet',
     [string] $InnoCompilerPath,
     [string] $CertificateThumbprint,
+    [switch] $AllowUnsigned,
     [string] $SignToolPath,
     [string] $TimestampUrl = 'https://timestamp.digicert.com'
 )
@@ -74,6 +75,39 @@ function Invoke-AuthenticodeSign([string] $path, [string] $thumbprint, [string] 
     Invoke-Checked $signTool @('verify', '/pa', '/v', $path)
 }
 
+# Fail before deleting previous artifacts or publishing when release signing is unavailable.
+$signingEnabled = -not [string]::IsNullOrWhiteSpace($CertificateThumbprint)
+if (-not $signingEnabled -and -not $AllowUnsigned) {
+    throw 'Distribuições exigem um certificado de assinatura. Informe -CertificateThumbprint ou use -AllowUnsigned somente para testes locais.'
+}
+if ($signingEnabled) {
+    $CertificateThumbprint = ($CertificateThumbprint -replace '\s', '').ToUpperInvariant()
+    if ($CertificateThumbprint -notmatch '^[A-F0-9]{40}$') {
+        throw 'Informe o thumbprint SHA-1 de 40 caracteres do certificado de assinatura.'
+    }
+    $certificate = Get-Item -LiteralPath "Cert:\CurrentUser\My\$CertificateThumbprint" -ErrorAction SilentlyContinue
+    if (-not $certificate -or -not $certificate.HasPrivateKey) {
+        throw 'Certificado com chave privada não encontrado em Cert:\CurrentUser\My. Configure o certificado/token do emissor antes de gerar a release.'
+    }
+    $now = Get-Date
+    if ($certificate.NotBefore -gt $now -or $certificate.NotAfter -le $now) {
+        throw 'O certificado de assinatura está fora do período de validade.'
+    }
+    $codeSigningUsage = $certificate.Extensions |
+        Where-Object { $_ -is [Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension] } |
+        ForEach-Object { $_.EnhancedKeyUsages } |
+        Where-Object { $_.Value -eq '1.3.6.1.5.5.7.3.3' }
+    if (-not $codeSigningUsage) {
+        throw 'O certificado informado não possui a finalidade Code Signing.'
+    }
+    $timestampUri = $null
+    if (-not [Uri]::TryCreate($TimestampUrl, [UriKind]::Absolute, [ref]$timestampUri) -or
+        $timestampUri.Scheme -ne 'https' -or $TimestampUrl -match '[\s"$]') {
+        throw 'Informe uma URL HTTPS válida para o timestamp RFC 3161.'
+    }
+    $SignToolPath = Resolve-SignTool $SignToolPath
+}
+
 Reset-ArtifactDirectory $publishDirectory
 Reset-ArtifactDirectory $installerDirectory
 
@@ -110,18 +144,17 @@ foreach ($requiredFile in $requiredFiles) {
 Copy-Item -LiteralPath (Join-Path $repositoryRoot 'LICENSE') -Destination (Join-Path $publishDirectory 'LICENSE.txt')
 Copy-Item -LiteralPath (Join-Path $repositoryRoot 'THIRD_PARTY_NOTICES.md') -Destination (Join-Path $publishDirectory 'THIRD_PARTY_NOTICES.md')
 
-$signingEnabled = -not [string]::IsNullOrWhiteSpace($CertificateThumbprint)
 if ($signingEnabled) {
-    $CertificateThumbprint = ($CertificateThumbprint -replace '\s', '').ToUpperInvariant()
-    if ($CertificateThumbprint -notmatch '^[A-F0-9]{40,64}$') {
-        throw 'O thumbprint do certificado de assinatura possui formato inválido.'
+    # Only sign our own binaries; preserve third-party signatures and ownership.
+    $ownedBinaries = Get-ChildItem -LiteralPath $publishDirectory -File | Where-Object {
+        $_.Name -eq 'AniT.exe' -or $_.Name -eq 'AniT.dll' -or $_.Name -like 'AniT.*.dll'
     }
-    $SignToolPath = Resolve-SignTool $SignToolPath
-    Invoke-AuthenticodeSign (Join-Path $publishDirectory 'AniT.exe') $CertificateThumbprint $SignToolPath
+    foreach ($binary in $ownedBinaries) {
+        Invoke-AuthenticodeSign $binary.FullName $CertificateThumbprint $SignToolPath
+    }
 } else {
-    Write-Warning 'Instalador sem assinatura Authenticode: o SmartScreen poderá exibir “Fornecedor desconhecido”.'
+    Write-Warning 'BUILD DE TESTE SEM ASSINATURA: não distribuir como release oficial.'
 }
-
 if ([string]::IsNullOrWhiteSpace($InnoCompilerPath)) {
     $candidates = @(
         (Join-Path $env:ProgramFiles 'Inno Setup 7\ISCC.exe'),
@@ -136,12 +169,21 @@ if ([string]::IsNullOrWhiteSpace($InnoCompilerPath) -or -not (Test-Path -Literal
     throw 'ISCC.exe não encontrado. Instale o Inno Setup 7 ou informe -InnoCompilerPath.'
 }
 
-Invoke-Checked $InnoCompilerPath @(
+$compilerArguments = @(
     "/DAppVersion=$Version",
     "/DSourceDir=$publishDirectory",
-    "/DOutputDir=$installerDirectory",
-    $installerScript
+    "/DOutputDir=$installerDirectory"
 )
+if ($signingEnabled) {
+    # Inno Setup signs setup AND the embedded uninstaller during compilation.
+    # $q/$f are Inno placeholders; escape literal dollars in the executable path.
+    $innoSignTool = $SignToolPath.Replace('$', '$$')
+    $signCommand = '$q{0}$q sign /sha1 {1} /fd SHA256 /tr $q{2}$q /td SHA256 $f' -f $innoSignTool, $CertificateThumbprint, $TimestampUrl
+    $compilerArguments += '/DSigningEnabled=1'
+    $compilerArguments += "/SAniTReleaseSign=$signCommand"
+}
+$compilerArguments += $installerScript
+Invoke-Checked $InnoCompilerPath $compilerArguments
 
 $installerPath = Join-Path $installerDirectory "AniT-Setup-$Version-win-x64.exe"
 if (-not (Test-Path -LiteralPath $installerPath)) {
@@ -149,7 +191,7 @@ if (-not (Test-Path -LiteralPath $installerPath)) {
 }
 
 if ($signingEnabled) {
-    Invoke-AuthenticodeSign $installerPath $CertificateThumbprint $SignToolPath
+    Invoke-Checked $SignToolPath @('verify', '/pa', '/all', '/v', $installerPath)
 }
 
 $hash = Get-FileHash -LiteralPath $installerPath -Algorithm SHA256

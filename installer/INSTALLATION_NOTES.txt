@@ -4,7 +4,7 @@ Bem-vindo à atualização 1.0.2 do AniT.
 
 • A instalação é feita somente para o usuário atual e não exige permissão de administrador.
 • O AniT inclui o .NET 10 necessário para funcionar e o player MPC-HC portátil homologado.
-• Na primeira abertura, escolha seu perfil e depois as pastas onde seus animes estão armazenados.
+• Na primeira abertura em uma instalação nova, o assistente apresenta o AniT, permite escolher nome e foto de perfil opcionais e selecionar a pasta principal dos seus animes. Você também pode configurar a pasta depois.
 • Perfis podem ter um PIN local opcional configurado dentro do AniT.
 • Biblioteca, histórico, progresso, notas, conquistas e configurações ficam em:
   %LOCALAPPDATA%\AniT
