@@ -11,6 +11,7 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        if (args.Any(a => a is "--preview-fluent" or "--check-fluent" or "--benchmark-fluent")) return FluentPilotRunner.Run(args);
         // Load the same theme dictionaries, image optimization and appearance hooks as the app.
         // Never run App.OnStartup or open the user's profiles/database during layout checks.
         var application = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };

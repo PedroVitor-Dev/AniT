@@ -11,20 +11,22 @@ Data: 26/10/2026. Direção escolhida pelo usuário: **Cinematográfica**. Etapa
 5. Preservar correções de recorte, escala, transparência e renderização existentes durante a migração.
 6. Sem push e sem instalador até solicitação do usuário.
 
-## Próximo trabalho: etapa 3
+## Etapa 3: prova técnica implementada
+
+Piloto e evidências em [fluent-pilot-report.md](fluent-pilot-report.md). Adoção técnica viável; aceitação de teclado, contraste completo e DPI físico permanece pendente antes de migrar telas reais.
 
 Criar uma prova de integração isolada do WPF UI, com dados fictícios, sem redirecionar App.OnStartup nem carregar scanner, banco, perfis ou backup. Ainda não substituir o shell inteiro nem trocar o contrato de janelas da Biblioteca.
 
 ### Lista de execução
 
-- [ ] Conferir versão publicada, licença e suporte ao target `net10.0-windows`; registrar versão fixada e dependências transitivas. Não presumir compatibilidade a partir da aparência da biblioteca.
-- [ ] Definir a ordem de carregamento dos recursos WPF UI, tokens AniT e overrides locais; documentar colisões, quando houver.
-- [ ] Montar controles piloto: Button, TextBox com erro, ComboBox, ToggleSwitch e diálogo não destrutivo com dados fictícios.
+- [x] Conferir versão publicada, licença e suporte ao target `net10.0-windows`; registrar versão fixada e dependências transitivas. Não presumir compatibilidade a partir da aparência da biblioteca.
+- [x] Definir a ordem de carregamento dos recursos WPF UI, tokens AniT e overrides locais; documentar colisões, quando houver.
+- [x] Montar controles piloto: Button, TextBox com erro, ComboBox, ToggleSwitch e diálogo não destrutivo com dados fictícios.
 - [ ] Verificar foco, Tab/Shift+Tab, Enter/Escape, estado desabilitado, nome acessível e contraste nos temas.
-- [ ] Exercitar InterfaceScale 80/100/125%, TextScale 85/100/140%, raios 0/16/32 e redução de movimento. Ampliar os checks quando a API dos controles estiver definida.
-- [ ] Comparar hardware padrão e o workaround por janela da Home, sem alterar o modo do processo ou o Windows.
+- [x] Exercitar InterfaceScale 80/100/125%, TextScale 85/100/140%, raios 0/16/32 e redução de movimento. Ampliar os checks quando a API dos controles estiver definida.
+- [x] Comparar hardware padrão e o workaround por janela da Home, sem alterar o modo do processo ou o Windows.
 - [ ] Validar layouts equivalentes a 1280×720, 1920×1080 e 3440×1440 e realizar uma conferência posterior em DPI físico 100/125/150%.
-- [ ] Registrar CPU, memória, latência de abertura e fluidez em cenários definidos. Medir antes/depois no mesmo computador; nenhum valor de desempenho foi obtido na etapa 2.
+- [x] Registrar CPU, memória, latência de abertura e fluidez em cenários definidos. Medir antes/depois no mesmo computador; nenhum valor de desempenho foi obtido na etapa 2.
 - [ ] Aprovar a prova técnica antes de propagar estilos ou iniciar a transformação de todas as telas.
 
 Critério de saída: a biblioteca está fixada e documentada, os componentes piloto funcionam com temas/preferências/teclado, os checks passam e as limitações de renderização estão conhecidas. Se houver incompatibilidade, registrar a evidência e ajustar a proposta antes de migrar telas.

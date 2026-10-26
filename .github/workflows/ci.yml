@@ -41,6 +41,9 @@ jobs:
       - name: Check onboarding layout
         run: dotnet run --project tests/AniT.UiChecks -c Release --no-build
 
+      - name: Check isolated Fluent pilot
+        run: dotnet run --project tests/AniT.UiChecks -c Release --no-build -- --check-fluent
+
       - name: Test signing preflight
         shell: pwsh
         run: .\scripts\Test-InstallerSigning.ps1

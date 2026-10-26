@@ -8,4 +8,5 @@
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../../src/AniT.App/AniT.App.csproj" /></ItemGroup>
   <ItemGroup><None Include="../../src/AniT.App/DashboardWindow.xaml" Link="Fixtures/DashboardWindow.xaml" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/AniT.Presentation.Pilot/AniT.Presentation.Pilot.csproj" /></ItemGroup>
 </Project>
