@@ -269,7 +269,8 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <Grid>
+            <Grid x:Name="LibraryHeaderGrid" SizeChanged="Header_SizeChanged">
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
@@ -282,7 +283,7 @@
                                Margin="0,6,18,0"
                                TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
-                <StackPanel x:Name="HeaderActionsPanel"
+                <WrapPanel x:Name="HeaderActionsPanel"
                             Grid.Column="1"
                             Orientation="Horizontal"
                             HorizontalAlignment="Right"
@@ -351,7 +352,7 @@
                             Height="40"
                             Margin="10,0,0,0"
                             Click="AddFolder_Click"/>
-                </StackPanel>
+                </WrapPanel>
             </Grid>
 
             <TabControl x:Name="LibraryTabs" Grid.Row="1" Margin="0,25,0,0" SelectedIndex="0" Style="{StaticResource LibraryTabControl}" ItemContainerStyle="{StaticResource LibraryTab}">

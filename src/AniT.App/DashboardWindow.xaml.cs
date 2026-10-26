@@ -415,7 +415,6 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
             RightRailColumn.Width = new GridLength(270);
             MainContentHost.Margin = new Thickness(18, 16, 18, 34);
             SearchContainer.MaxWidth = 350;
-            MyListTopButton.Visibility = Visibility.Collapsed;
             HeroQuotePanel.Visibility = Visibility.Collapsed;
             HeroArtwork.Width = 230;
             HeroTitleText.FontSize = 30;
@@ -428,7 +427,6 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
             RightRailColumn.Width = new GridLength(310);
             MainContentHost.Margin = new Thickness(24, 20, 24, 40);
             SearchContainer.MaxWidth = 500;
-            MyListTopButton.Visibility = Visibility.Visible;
             HeroQuotePanel.Visibility = Visibility.Visible;
             HeroArtwork.Width = 280;
             HeroTitleText.FontSize = 37;
@@ -441,7 +439,6 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
             RightRailColumn.Width = new GridLength(340);
             MainContentHost.Margin = new Thickness(30, 22, 30, 44);
             SearchContainer.MaxWidth = 580;
-            MyListTopButton.Visibility = Visibility.Visible;
             HeroQuotePanel.Visibility = Visibility.Visible;
             HeroArtwork.Width = 310;
             HeroTitleText.FontSize = 41;
@@ -454,7 +451,6 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
             RightRailColumn.Width = new GridLength(380);
             MainContentHost.Margin = new Thickness(42, 28, 42, 52);
             SearchContainer.MaxWidth = 660;
-            MyListTopButton.Visibility = Visibility.Visible;
             HeroQuotePanel.Visibility = Visibility.Visible;
             HeroArtwork.Width = 330;
             HeroTitleText.FontSize = 44;

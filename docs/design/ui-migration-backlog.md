@@ -35,6 +35,10 @@ Critério de saída: a biblioteca está fixada e documentada, os componentes pil
 
 Tokens, componentes e adapter de preferências implementados em AniT.Presentation. Contratos e validações: [design-system.md](design-system.md). O piloto passou a consumir essa base. Próxima etapa: shell compartilhado (5), preservando o contrato da Biblioteca; DPI físico 125/150% segue pendente.
 
+## Etapa 5: shell compartilhado aplicado
+
+Sidebar e cabeçalho compartilhados aplicados às sete telas que duplicavam essa composição. Busca, perfil, ações específicas e contrato de janelas preservados; detalhes e limites em [cinematic-shell.md](cinematic-shell.md). A Biblioteca mantém janela própria e deixa de perder a consulta ao reduzir largura. Conquistas mantém seu layout específico para a etapa das demais telas. Próxima etapa: Home Cinematográfica (6).
+
 ## Fila de migração orientada por risco
 
 | Item | Prioridade | Etapa prevista | Ação concreta | Aceitação |

@@ -578,7 +578,6 @@ public partial class AnimeDetailsWindow : Window
             DetailsRightRail.Visibility = Visibility.Collapsed;
             DetailsContentHost.Margin = new Thickness(18, 14, 18, 36);
             SearchContainer.MaxWidth = 350;
-            LibraryTopButton.Visibility = Visibility.Collapsed;
             HeroBanner.Height = 286;
             HeroTitleText.FontSize = 34;
             HeroCopy.MaxWidth = 560;
@@ -591,7 +590,6 @@ public partial class AnimeDetailsWindow : Window
             DetailsRightRail.Visibility = Visibility.Visible;
             DetailsContentHost.Margin = new Thickness(24, 16, 24, 44);
             SearchContainer.MaxWidth = 500;
-            LibraryTopButton.Visibility = Visibility.Visible;
             HeroBanner.Height = 322;
             HeroTitleText.FontSize = 42;
             HeroCopy.MaxWidth = 720;
@@ -604,7 +602,6 @@ public partial class AnimeDetailsWindow : Window
             DetailsRightRail.Visibility = Visibility.Visible;
             DetailsContentHost.Margin = new Thickness(30, 20, 30, 50);
             SearchContainer.MaxWidth = 580;
-            LibraryTopButton.Visibility = Visibility.Visible;
             HeroBanner.Height = 350;
             HeroTitleText.FontSize = 46;
             HeroCopy.MaxWidth = 860;
@@ -617,7 +614,6 @@ public partial class AnimeDetailsWindow : Window
             DetailsRightRail.Visibility = Visibility.Visible;
             DetailsContentHost.Margin = new Thickness(42, 24, 42, 58);
             SearchContainer.MaxWidth = 660;
-            LibraryTopButton.Visibility = Visibility.Visible;
             HeroBanner.Height = 380;
             HeroTitleText.FontSize = 50;
             HeroCopy.MaxWidth = 1100;

@@ -66,8 +66,14 @@ internal static class ShortcutManager
         }
     }
 
-    private static bool FocusSearch(Window window)
+    internal static bool FocusSearch(Window window)
     {
+        if (window.FindName("ShellHeader") is CinematicHeader { ShowSearch: true } header)
+        {
+            header.SearchBox.Focus();
+            header.SearchBox.SelectAll();
+            return true;
+        }
         foreach (var name in new[] { "SearchBox", "GlobalSearchBox", "LibrarySearchBox", "HistorySearchBox" })
         {
             if (window.FindName(name) is not TextBox search) continue;

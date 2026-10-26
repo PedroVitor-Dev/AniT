@@ -8,16 +8,19 @@ namespace AniT.Presentation;
 /// <summary>One instance per window. Never installs global WPF UI resources.</summary>
 public sealed class CinematicTheme
 {
-    private readonly Window window;
+    private readonly FrameworkElement window;
+    private readonly bool scaleInterface;
+    private object? ContentRoot => window is System.Windows.Controls.ContentControl control ? control.Content : window;
     private readonly ThemesDictionary theme = new();
     private readonly ResourceDictionary values = new();
     private bool applied;
     private bool lastDark;
     private object? lastRoot;
     public AppearanceOptions Options { get; private set; } = new();
-    public CinematicTheme(Window window)
+    public CinematicTheme(FrameworkElement window, bool scaleInterface = true)
     {
         this.window = window;
+        this.scaleInterface = scaleInterface;
         AppearanceScope.SetIsManaged(window, true);
         window.Resources.MergedDictionaries.Add(theme);
         window.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/AniT.Presentation;component/Themes/Components.xaml", UriKind.Relative) });
@@ -29,9 +32,9 @@ public sealed class CinematicTheme
     {
         var normalized = options with { InterfaceScale = Math.Clamp(options.InterfaceScale, 80, 150), TextScale = Math.Clamp(options.TextScale, 85, 150), Radius = Math.Clamp(options.Radius, 0, 32) };
         var dark = options.Theme == VisualTheme.Dark || options.Theme == VisualTheme.System && ApplicationThemeManager.GetSystemTheme().ToString() is "Dark" or "CapturedMotion" or "Glow";
-        if (applied && Options == normalized && lastDark == dark && ReferenceEquals(lastRoot, window.Content)) return;
+        if (applied && Options == normalized && lastDark == dark && ReferenceEquals(lastRoot, ContentRoot)) return;
         Options = normalized;
-        lastDark = dark; lastRoot = window.Content; applied = true;
+        lastDark = dark; lastRoot = ContentRoot; applied = true;
         theme.Theme = dark ? ApplicationTheme.Dark : ApplicationTheme.Light;
         string[] roles = ["Background", "Sidebar", "Surface", "Raised", "Text", "Muted", "Border", "Error", "Success", "Warning"];
         string[] colors = dark
@@ -67,7 +70,7 @@ public sealed class CinematicTheme
             values[$"AniT.{role}Size"] = size * Options.TextScale / 100;
         values["ControlContentThemeFontSize"] = 14d * Options.TextScale / 100;
         values["ContentDialogTitleFontSize"] = 19d * Options.TextScale / 100;
-        if (window.Content is FrameworkElement root)
+        if (scaleInterface && ContentRoot is FrameworkElement root)
             root.LayoutTransform = new ScaleTransform(Options.InterfaceScale / 100d, Options.InterfaceScale / 100d);
     }
 

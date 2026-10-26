@@ -57,27 +57,10 @@
     <Grid>
         <Grid.Background><RadialGradientBrush GradientOrigin="0.72,0.05" Center="0.72,0.05" RadiusX="0.95" RadiusY="1.05"><GradientStop Color="#0A356D"/><GradientStop Color="#041A38" Offset="0.43"/><GradientStop Color="#020A1A" Offset="1"/></RadialGradientBrush></Grid.Background>
         <Grid.ColumnDefinitions><ColumnDefinition Width="220"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-        <Border Background="{DynamicResource HomeSidebarBrush}" BorderBrush="#174576" BorderThickness="0,0,1,0">
-            <Grid ClipToBounds="True"><Grid.RowDefinitions><RowDefinition Height="118"/><RowDefinition Height="*"/><RowDefinition Height="205"/></Grid.RowDefinitions>
-                <Border Width="178" Height="92" HorizontalAlignment="Center" VerticalAlignment="Center"><Border.Background><ImageBrush ImageSource="{local:ComfortableImage Path=Assets/logo-fire.png, DecodePixelWidth=320}" Viewbox="0,0.28,1,0.46" ViewboxUnits="RelativeToBoundingBox" Stretch="Uniform"/></Border.Background></Border>
-                <StackPanel Grid.Row="1" Margin="0,12,0,0">
-                    <TextBlock Text="NAVEGAÇÃO" Foreground="#587DA9" FontSize="10" FontWeight="SemiBold" Margin="24,0,0,9"/>
-                    <Button Style="{StaticResource HomeNavButton}" Click="Home_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Home}" Label="Início"/></Button>
-                    <Button Style="{StaticResource HomeNavButton}" Click="Explore_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Explore}" Label="Explorar"/></Button>
-                    <Button Style="{StaticResource HomeNavButton}" Click="Library_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Library}" Label="Biblioteca"/></Button>
-                    <Button Style="{StaticResource HomeNavButton}" Click="Calendar_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Calendar}" Label="Calendário"/></Button>
-                    <Button Style="{StaticResource HomeNavButton}" Click="History_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.History}" Label="Histórico"/></Button>
-                    <Button Style="{StaticResource HomeNavButton}" Click="Achievements_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Achievements}" Label="Conquistas"/></Button>
-                    <Button Style="{StaticResource HomeNavButton}" Click="Profile_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Profile}" Label="Perfil"/></Button>
-                    <Border Height="1" Background="#214874" Margin="20,18,20,11"/><TextBlock Text="SISTEMA" Foreground="#587DA9" FontSize="10" FontWeight="SemiBold" Margin="24,0,0,7"/>
-                    <Button Style="{StaticResource HomeActiveNavButton}"><local:NavItemContent IconData="{StaticResource AniT.Icon.Settings}" Label="Configurações"/></Button>
-                </StackPanel>
-                <Image Grid.Row="2" Source="{local:PageMascot Page=Configuracoes, Fallback=Assets/ghost_menu.png}" Style="{StaticResource HomeSidebarMascot}"/>
-            </Grid>
-        </Border>
+        <local:CinematicSidebar x:Name="ShellSidebar" Section="Settings"/>
 
-        <Grid Grid.Column="1"><Grid.RowDefinitions><RowDefinition Height="82"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-            <Border Background="#D9051937" BorderBrush="#174A7C" BorderThickness="0,0,0,1"><Grid MaxWidth="2500" Margin="28,0"><TextBlock Text="Central de configurações" Foreground="#DDF2FF" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/><StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"><Button Style="{StaticResource HomeTopButton}" Content="⌂  Início" Click="Home_Click"/><Button Style="{StaticResource HomeTopButton}" Content="♡  Biblioteca" Click="Library_Click"/><Border Width="1" Height="30" Background="#24527F" Margin="10,0,12,0"/><local:ProfileAvatarButton/></StackPanel></Grid></Border>
+        <Grid Grid.Column="1"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <local:CinematicHeader x:Name="ShellHeader" ShowSearch="False" ShowAction="False" HomeRequested="Home_Click"/>
             <Grid Grid.Row="1" MaxWidth="1700" Margin="34,26,34,42" HorizontalAlignment="Stretch">
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                 <StackPanel Margin="0,0,0,22"><TextBlock Text="Configurações do AniT" Foreground="White" FontSize="34" FontWeight="Bold"/><TextBlock Text="Personalize sua experiência por categoria. Cada módulo pode crescer sem poluir as outras telas." Foreground="#9EC4E5" FontSize="14" Margin="0,7,0,0" TextWrapping="Wrap"/></StackPanel>

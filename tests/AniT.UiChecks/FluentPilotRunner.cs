@@ -18,6 +18,8 @@ internal static class FluentPilotRunner
         var legacyStyle = new Button().TryFindResource(typeof(Button));
         try
         {
+            if (args.Contains("--check-shell")) { ShellChecks.Run(app); return 0; }
+            if (args.Contains("--preview-shell")) { AniT.App.AppearanceManager.Initialize(app, AniT.Infrastructure.AniTSystemSettings.Default); app.Run(ShellChecks.Preview()); return 0; }
             if (args.Contains("--check-design-system")) { DesignSystemChecks.Run(app); return 0; }
             if (args.Contains("--preview-fluent")) { app.Run(new FluentPilotWindow()); return 0; }
             if (args.Contains("--benchmark-fluent")) { Benchmark(); return 0; }

@@ -100,7 +100,10 @@ internal static class HomeVisualChecks
         }
         foreach (var avatar in root.Descendants().Where(e => e.Name.LocalName == "ProfileAvatarButton").ToArray())
             avatar.ReplaceWith(new XElement(root.Name.Namespace + "Border", new XAttribute("Width", "44"), new XAttribute("Height", "44")));
+        foreach (var shell in root.Descendants().Where(e => e.Name.LocalName is "CinematicSidebar" or "CinematicHeader")) shell.SetAttributeValue("IsPreview", "True");
         var window = (Window)XamlReader.Parse(xml.ToString());
+        foreach (var sidebar in Descendants(window).OfType<CinematicSidebar>()) sidebar.IsPreview = true;
+        foreach (var header in Descendants(window).OfType<CinematicHeader>()) header.IsPreview = true;
         window.WindowState = WindowState.Normal;
         window.Width = 1600; window.Height = 900;
         window.Title = "AniT · Prévia isolada da Home";

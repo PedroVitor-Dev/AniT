@@ -1,0 +1,29 @@
+<UserControl x:Class="AniT.App.CinematicHeader"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Focusable="False">
+ <Border Background="{DynamicResource AniT.Background}" BorderBrush="{DynamicResource AniT.Border}" BorderThickness="0,0,0,1" Padding="24,12">
+  <Grid x:Name="HeaderGrid">
+   <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+   <Border x:Name="SearchSurface" MinWidth="120" MaxWidth="660" MinHeight="44" Margin="0,0,16,0" Background="{DynamicResource AniT.Surface}" BorderBrush="{DynamicResource AniT.Border}" BorderThickness="1" CornerRadius="{DynamicResource AniT.ControlRadius}" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+    <Grid>
+     <Grid.ColumnDefinitions><ColumnDefinition Width="36"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+     <Path Data="M10,3 A7,7 0 1 1 9.99,3 M15,15 L21,21" Stroke="{DynamicResource AniT.Muted}" StrokeThickness="1.8" Width="18" Height="18" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"/>
+     <Grid Grid.Column="1">
+      <TextBlock x:Name="HeaderSearchHint" Text="Buscar na sua estante" Style="{DynamicResource AniT.Caption}" VerticalAlignment="Center" IsHitTestVisible="False" Margin="0,0,12,0" TextTrimming="CharacterEllipsis"/>
+      <TextBox x:Name="HeaderSearchBox" Background="Transparent" BorderThickness="0" Foreground="{DynamicResource AniT.Text}" CaretBrush="{DynamicResource AniT.Text}" FontSize="{DynamicResource AniT.BodySize}" Padding="0,10,12,10" VerticalContentAlignment="Center" TextChanged="Search_TextChanged" KeyDown="Search_KeyDown" AutomationProperties.Name="Buscar animes, episódios e gêneros" ToolTip="Buscar animes, episódios e gêneros">
+       <TextBox.Template><ControlTemplate TargetType="TextBox"><Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"><ScrollViewer x:Name="PART_ContentHost"/></Border></ControlTemplate></TextBox.Template>
+      </TextBox>
+     </Grid>
+    </Grid>
+   </Border>
+   <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+    <Button x:Name="HeaderHome" Content="Início" Click="Home_Click" Style="{DynamicResource AniT.HeaderButton}" Margin="0,0,8,0"/>
+    <Button x:Name="HeaderAction" Content="Continuar" Click="Action_Click" Style="{DynamicResource AniT.HeaderButton}" Margin="0,0,8,0"/>
+    <Button x:Name="HeaderLibrary" Content="Biblioteca" Click="Library_Click" Style="{DynamicResource AniT.HeaderButton}" Margin="0,0,12,0"/>
+    <Button x:Name="HeaderProfile" Click="Profile_Click" Width="44" Height="44" Padding="3" Style="{DynamicResource AniT.HeaderButton}" AutomationProperties.Name="Abrir perfil" ToolTip="Abrir perfil">
+     <Ellipse Width="32" Height="32"><Ellipse.Fill><ImageBrush x:Name="AvatarBrush" ImageSource="/AniT;component/Assets/Profile/1.png" Stretch="UniformToFill"/></Ellipse.Fill></Ellipse>
+    </Button>
+   </StackPanel>
+  </Grid>
+ </Border>
+</UserControl>

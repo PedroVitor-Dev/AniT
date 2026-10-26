@@ -101,6 +101,11 @@ internal static class AppearanceManager
 
     private static void ApplyElementAppearance(DependencyObject element, AniTSystemSettings settings)
     {
+        if (element is IAppearanceHost host)
+        {
+            host.ApplyAppearance(new AppearanceOptions((VisualTheme)settings.ThemeMode, settings.AccentColor, settings.InterfaceScalePercent, settings.TextScalePercent, settings.CornerRadius, settings.ReduceMotion));
+            return;
+        }
         if (AppearanceScope.GetIsManaged(element)) return;
         if (element is TextBlock text)
         {

@@ -87,3 +87,7 @@ WPF-UI/Abstractions permanecem fixados em 4.3.0 com lockfiles. O App agora refer
 - Regressão: 144 configurações do onboarding, quatro etapas cada, e checks da Home aprovados.
 - Preflight de assinatura: sete verificações aprovadas, sem gerar artefatos de distribuição.
 - Auditoria NuGet da nova camada: nenhuma vulnerabilidade conhecida reportada pela fonte consultada.
+
+## Integração parcial da etapa 5
+
+CinematicTheme também aceita um FrameworkElement com `scaleInterface: false` para controles dentro de janelas legadas. AppearanceManager reconhece IAppearanceHost durante a travessia e entrega as preferências sem uma segunda escala. O shell utiliza esse contrato; implementação e validação em [cinematic-shell.md](cinematic-shell.md).

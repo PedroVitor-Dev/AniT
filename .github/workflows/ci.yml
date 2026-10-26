@@ -47,6 +47,9 @@ jobs:
       - name: Check cinematic design system
         run: dotnet run --project tests/AniT.UiChecks -c Release --no-build -- --check-design-system
 
+      - name: Check cinematic shell
+        run: dotnet run --project tests/AniT.UiChecks -c Release --no-build -- --check-shell
+
       - name: Test signing preflight
         shell: pwsh
         run: .\scripts\Test-InstallerSigning.ps1

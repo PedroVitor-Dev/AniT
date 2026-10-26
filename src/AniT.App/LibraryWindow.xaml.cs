@@ -106,12 +106,20 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
         }
     }
 
+    private void Header_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        var compact = LibraryHeaderGrid.ActualWidth < 940;
+        System.Windows.Controls.Grid.SetRow(HeaderActionsPanel, compact ? 1 : 0);
+        System.Windows.Controls.Grid.SetColumn(HeaderActionsPanel, compact ? 0 : 1);
+        System.Windows.Controls.Grid.SetColumnSpan(HeaderActionsPanel, compact ? 2 : 1);
+        HeaderActionsPanel.HorizontalAlignment = compact ? HorizontalAlignment.Left : HorizontalAlignment.Right;
+        HeaderActionsPanel.Margin = compact ? new Thickness(0, 16, 0, 0) : new Thickness(0);
+    }
+
     private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        var shouldHideSearch = ActualWidth < 920;
-        SearchBanner.Visibility = shouldHideSearch ? Visibility.Collapsed : Visibility.Visible;
-        if (shouldHideSearch && LibrarySearchBox is not null && LibrarySearchBox.Text.Length > 0)
-            LibrarySearchBox.Clear();
+        // Resizing must preserve the active query and keep its field reachable.
+        SearchBanner.Visibility = Visibility.Visible;
         UpdateCardLayout(e.NewSize.Width);
     }
 

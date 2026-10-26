@@ -56,25 +56,10 @@
     <Grid>
         <Grid.Background><RadialGradientBrush GradientOrigin="0.7,0.02" Center="0.7,0.02" RadiusX="1" RadiusY="1.1"><GradientStop Color="#0A356D" Offset="0"/><GradientStop Color="#041A38" Offset="0.45"/><GradientStop Color="#020A1A" Offset="1"/></RadialGradientBrush></Grid.Background>
         <Grid.ColumnDefinitions><ColumnDefinition x:Name="SidebarColumn" Width="220"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-        <Border Background="{DynamicResource HomeSidebarBrush}" BorderBrush="#174576" BorderThickness="0,0,1,0">
-            <Grid ClipToBounds="True"><Grid.RowDefinitions><RowDefinition Height="118"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                <Border Width="178" Height="92" HorizontalAlignment="Center" VerticalAlignment="Center"><Border.Background><ImageBrush ImageSource="{local:ComfortableImage Path=Assets/logo-fire.png, DecodePixelWidth=320}" Viewbox="0,0.28,1,0.46" ViewboxUnits="RelativeToBoundingBox" Stretch="Uniform"/></Border.Background></Border>
-                <StackPanel Grid.Row="1" Margin="0,12,0,0">
-                    <TextBlock Text="NAVEGAÇÃO" Foreground="#587DA9" FontSize="10" FontWeight="SemiBold" Margin="24,0,0,9"/>
-                    <Button Style="{StaticResource HomeNavButton}" Click="Home_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Home}" Label="Início"/></Button>
-                    <Button Style="{StaticResource HomeNavButton}" Click="Explore_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Explore}" Label="Explorar"/></Button>
-                    <Button Style="{StaticResource HomeNavButton}" Click="Library_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Library}" Label="Biblioteca"/></Button>
-                    <Button Style="{StaticResource HomeNavButton}" Click="Calendar_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Calendar}" Label="Calendário"/></Button>
-                    <Button Style="{StaticResource HomeNavButton}" Click="History_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.History}" Label="Histórico"/></Button>
-                    <Button Style="{StaticResource HomeActiveNavButton}"><local:NavItemContent IconData="{StaticResource AniT.Icon.Profile}" Label="Perfil"/></Button>
-                    <local:SystemSettingsNavButton/>
-                </StackPanel>
-                <Grid Grid.Row="2" IsHitTestVisible="False"><TextBlock Text="Mais animes, mais boas memórias. ♡" Style="{StaticResource HomeSidebarMascotCaption}"/><Image Source="{local:PageMascot Page=Perfil, Fallback=Assets/Profile/2.png}" Style="{StaticResource HomeSidebarMascot}"/></Grid>
-            </Grid>
-        </Border>
+        <local:CinematicSidebar x:Name="ShellSidebar" Section="Profile"/>
 
-        <Grid Grid.Column="1"><Grid.RowDefinitions><RowDefinition Height="82"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-            <Border Background="#D9051937" BorderBrush="#174A7C" BorderThickness="0,0,0,1"><Grid MaxWidth="2500" Margin="28,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><Border x:Name="SearchContainer" MinWidth="300" MaxWidth="560" Height="46" Margin="0,0,20,0" Background="#A20B254B" BorderBrush="#336C9F" BorderThickness="1" CornerRadius="23" HorizontalAlignment="Stretch" VerticalAlignment="Center"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="48"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Viewbox Width="19" Height="19" HorizontalAlignment="Center" VerticalAlignment="Center"><Path Data="{StaticResource AniT.Icon.Search}" Style="{StaticResource ProfileSectionIcon}"/></Viewbox><Grid Grid.Column="1"><TextBlock x:Name="SearchHint" Text="Buscar animes, episódios, gêneros..." Foreground="#7F9FC8" FontSize="14" VerticalAlignment="Center" IsHitTestVisible="False"/><TextBox x:Name="SearchBox" Background="Transparent" BorderThickness="0" Foreground="White" CaretBrush="#62D6FF" FontSize="14" VerticalContentAlignment="Center" Padding="0,0,14,0" TextChanged="SearchBox_TextChanged" KeyDown="SearchBox_KeyDown"/></Grid></Grid></Border><StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"><Button Style="{StaticResource HomeTopButton}" Click="Home_Click"><StackPanel Orientation="Horizontal"><Path Data="{StaticResource AniT.Icon.Home}" Style="{StaticResource ProfileInlineIcon}"/><TextBlock Text="Início" Margin="6,0,0,0"/></StackPanel></Button><Button Style="{StaticResource HomeTopButton}" Click="Continue_Click"><StackPanel Orientation="Horizontal"><Path Data="{StaticResource AniT.Icon.Play}" Style="{StaticResource ProfileInlineIcon}"/><TextBlock Text="Assistir" Margin="6,0,0,0"/></StackPanel></Button><Button x:Name="LibraryTopButton" Style="{StaticResource HomeTopButton}" Click="Library_Click"><StackPanel Orientation="Horizontal"><Path Data="{StaticResource AniT.Icon.Library}" Style="{StaticResource ProfileInlineIcon}"/><TextBlock Text="Biblioteca" Margin="6,0,0,0"/></StackPanel></Button><Border Width="1" Height="30" Background="#24527F" Margin="10,0,12,0"/><local:ProfileAvatarButton/></StackPanel></Grid></Border>
+        <Grid Grid.Column="1"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <local:CinematicHeader x:Name="ShellHeader" SearchChanged="SearchBox_TextChanged" SearchSubmitted="SearchBox_KeyDown" HomeRequested="Home_Click" ActionRequested="Continue_Click"/>
 
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel x:Name="ProfileContentHost" MaxWidth="2500" Margin="24,16,24,46">
