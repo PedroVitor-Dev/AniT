@@ -1,6 +1,6 @@
 # Etapa 1 — direção visual do AniT
 
-Status: proposta pronta para avaliação. A direção ainda não foi escolhida pelo usuário.
+Status: direção **Cinematográfica aprovada pelo usuário em 26/10/2026**. A proposta Essencial permanece apenas como alternativa exploratória registrada.
 
 ## Objetivo
 
@@ -10,7 +10,7 @@ Esta etapa entrega uma proposta de Home, sidebar e cards. Não instala bibliotec
 
 ## Direções propostas
 
-### Cinematográfica — recomendação inicial
+### Cinematográfica — direção escolhida
 
 - Sidebar com ícone e rótulo, seleção discreta e grupos separados por espaço.
 - Banner editorial dedicado ao episódio em andamento, com uma ação principal e uma secundária.
@@ -25,7 +25,7 @@ Esta etapa entrega uma proposta de Home, sidebar e cards. Não instala bibliotec
 - Miniaturas em formato horizontal, com título, progresso e ações consistentes.
 - Indicada para quem prioriza localizar e abrir episódios rapidamente.
 
-A comparação altera a composição, não apenas a cor. Ambas preservam busca, favoritos e biblioteca local. Uma decisão possível é adotar a Home cinematográfica e aproveitar a densidade da proposta Essencial na Biblioteca; isso ainda depende da avaliação do usuário.
+O usuário escolheu a composição Cinematográfica. A transformação seguirá o banner editorial, a sidebar com rótulos e os cards de pôster dessa direção. A alternativa Essencial não será aplicada automaticamente à Biblioteca.
 
 ## Fundamentos visuais
 
@@ -75,12 +75,12 @@ Calendário, histórico e conquistas aparecem como contexto de navegação, mas 
 
 ## Critérios para aplicar a direção escolhida
 
-1. Validar a composição da Home, a densidade da coleção e a presença do Baki-Pi com o usuário.
+1. Direção Cinematográfica escolhida pelo usuário; os detalhes serão refinados preservando essa composição.
 2. Confirmar que sidebar, texto e cards permanecem legíveis em 1280×720, 1920×1080 e ultrawide, incluindo escalas de 100%, 125% e 150% no aplicativo.
 3. Garantir que as ações possam ser realizadas por teclado e não dependam de hover.
 4. Preservar a correção de transparência e contornos da Home.
 5. Medir CPU e fluidez antes de acrescentar efeitos, pois a Home usa renderização por software como correção de compatibilidade.
-6. Prosseguir para inventário de componentes e prova de integração do WPF UI somente após a escolha da direção.
+6. Direção escolhida e inventário da etapa 2 registrado; a prova de integração do WPF UI é o próximo passo técnico.
 
 ## Validação desta entrega
 
