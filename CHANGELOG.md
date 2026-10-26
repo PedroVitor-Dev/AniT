@@ -8,6 +8,8 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ### Corrigido
 
+- Home: renderização compatível limitada à janela elimina molduras falsas nas imagens transparentes e falhas nos cantos arredondados; o Baki-Pi do banner deixa de usar o quadro das capas, e o recorte dos cartões passa a preservar o contorno externo.
+
 - Onboarding com logo preservada após otimização de imagens, margens internas, navegação sempre acessível e painel lateral adaptado ao espaço disponível após a escala da interface. O foco não oculta mais o título da etapa de perfil.
 - Verificações de interface cobrem as quatro etapas em 144 combinações de tamanho, escala e tema usando as regras reais de aparência e otimização do aplicativo.
 

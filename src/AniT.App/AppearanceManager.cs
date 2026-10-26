@@ -110,7 +110,8 @@ internal static class AppearanceManager
                 original.Radius.TopRight * ratio,
                 original.Radius.BottomRight * ratio,
                 original.Radius.BottomLeft * ratio);
-            if (border.Clip is RectangleGeometry clip)
+            if (RoundedPanelClip.IsManaged(border)) RoundedPanelClip.Update(border);
+            else if (border.Clip is RectangleGeometry clip)
                 clip.RadiusX = clip.RadiusY = Math.Max(0, settings.CornerRadius);
         }
 

@@ -18,6 +18,17 @@ internal static class Program
             application.Resources.MergedDictionaries.Add(new ResourceDictionary
             { Source = new Uri($"pack://application:,,,/AniT;component/Themes/{theme}.xaml") });
         AppearanceManager.Initialize(application);
+        if (args.Contains("--preview-home"))
+        {
+            AppearanceManager.Apply(AniTSystemSettings.Default);
+            application.Run(HomeVisualChecks.Preview());
+            return 0;
+        }
+        if (args.Contains("--home-only"))
+        {
+            try { HomeVisualChecks.Run(); return 0; }
+            finally { application.Shutdown(); }
+        }
         if (args.Contains("--preview"))
         {
             AppearanceManager.Apply(AniTSystemSettings.Default);
@@ -61,6 +72,7 @@ internal static class Program
                 configurations++;
             }
             CheckOptimizedBrandImage();
+            HomeVisualChecks.Run();
             Console.WriteLine($"PASS: {configurations} layout configurations, four steps each; optimized brand image keeps its layout.");
             return 0;
         }
