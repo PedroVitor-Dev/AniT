@@ -8,5 +8,4 @@
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../../src/AniT.App/AniT.App.csproj" /></ItemGroup>
   <ItemGroup><None Include="../../src/AniT.App/DashboardWindow.xaml" Link="Fixtures/DashboardWindow.xaml" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
-  <ItemGroup><ProjectReference Include="../../src/AniT.Presentation.Pilot/AniT.Presentation.Pilot.csproj" /></ItemGroup>
-<ItemGroup><None Include="../../src/AniT.App/LibraryWindow.xaml" Link="Fixtures/LibraryWindow.xaml" CopyToOutputDirectory="PreserveNewest" /><None Include="../../src/AniT.App/AnimeDetailsWindow.xaml" Link="Fixtures/AnimeDetailsWindow.xaml" CopyToOutputDirectory="PreserveNewest" /></ItemGroup></Project>
+</Project>

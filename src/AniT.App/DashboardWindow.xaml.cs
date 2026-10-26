@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using AniT.Infrastructure;
-using AniT.Presentation;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -13,10 +12,10 @@ using System.Windows.Threading;
 
 namespace AniT.App;
 
-public partial class DashboardWindow : Window, INotifyPropertyChanged, IAppearanceHost
+public partial class DashboardWindow : Window, INotifyPropertyChanged
 {
-    private readonly CinematicTheme visualTheme;
-    private AppearanceOptions appearance = new();
+    private static readonly Brush ActiveHeroDotBrush = new SolidColorBrush(Color.FromRgb(168, 231, 255));
+    private static readonly Brush InactiveHeroDotBrush = new SolidColorBrush(Color.FromRgb(49, 90, 137));
     private readonly DispatcherTimer heroRotationTimer = new() { Interval = TimeSpan.FromSeconds(8) };
     private readonly List<DashboardHeroSlide> heroSlides = [];
     private Guid? heroAnimeId;
@@ -34,10 +33,6 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged, IAppearan
     public string HeroSubtitle { get; private set; } = "Sua estante está pronta";
     public string HeroCoverPath { get; private set; } = "Assets/normal-sf.png";
     public bool HeroIsMascot => !System.IO.Path.IsPathRooted(HeroCoverPath) && HeroCoverPath.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase);
-    public string HeroArtworkPath => HeroIsMascot ? "pack://application:,,,/AniT;component/Assets/Home/anime-horizon.png" : HeroCoverPath;
-    public string HeroActionLabel => CanPlayHero ? "Continuar assistindo" : "Abrir biblioteca";
-    public string HeroEyebrow => CanPlayHero ? "CONTINUE SUA JORNADA" : "SUA PRÓXIMA HISTÓRIA";
-    public bool HasHeroAnime => heroAnimeId is not null;
     public string HeroQuote { get; private set; } = AnimeQuoteCatalog.GetFor(Guid.Empty);
     public double HeroProgressPercent { get; private set; }
     public string HeroProgressLabel { get; private set; } = "Pronto para começar";
@@ -50,18 +45,13 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged, IAppearan
 
     public DashboardWindow()
     {
-        visualTheme = new CinematicTheme(this);
-        Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/AniT;component/Styles/CinematicHome.xaml", UriKind.Relative) });
         InitializeComponent();
-        ApplyAppearance(new());
         GlobalSearchController.Attach(this, SearchBox, SearchHint, SearchContainer);
         ResponsiveWindow.FitToWorkArea(this, 1380, 860);
         homeSettings = AniTSystemSettingsStore.Load();
         heroRotationTimer.Interval = TimeSpan.FromSeconds(homeSettings.HomeBannerIntervalSeconds);
         heroRotationTimer.Tick += HeroRotationTimer_Tick;
         Closed += (_, _) => heroRotationTimer.Stop();
-        Deactivated += (_, _) => UpdateHeroRotation();
-        IsVisibleChanged += (_, _) => UpdateHeroRotation();
         DataContext = this;
     }
 
@@ -175,7 +165,6 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged, IAppearan
         BuildHeroSlides(anime);
 
         ContinueEmptyText.Visibility = ContinueCards.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        RecentEmptyText.Visibility = RecentCards.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         FavoritesEmptyText.Visibility = FavoriteCards.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         TopRatedEmptyText.Visibility = TopRatedCards.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         DataContext = null;
@@ -234,8 +223,8 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged, IAppearan
             heroSlides.Add(new DashboardHeroSlide(
                 null,
                 null,
-                "Sua próxima história começa aqui.",
-                "Adicione uma pasta na Biblioteca e encontre sua próxima aventura.",
+                "Sua próxima história",
+                "Assista a um episódio para começar",
                 "Assets/normal-sf.png",
                 0,
                 AnimeQuoteCatalog.GetFor(Guid.Empty),
@@ -243,7 +232,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged, IAppearan
         }
 
         ShowHeroSlide(0);
-        UpdateHeroRotation();
+        if (homeSettings.HomeBannerAutoRotate && heroSlides.Count > 1) heroRotationTimer.Start();
     }
 
     private void ShowHeroSlide(int index)
@@ -269,30 +258,28 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged, IAppearan
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HeroProgressPercent)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HeroProgressLabel)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanPlayHero)));
-        foreach (var property in new[] { nameof(HeroArtworkPath), nameof(HeroActionLabel), nameof(HeroEyebrow), nameof(HasHeroAnime) }) PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
         UpdateHeroDots();
-        ApplyCoverPreferences();
     }
 
     private void UpdateHeroDots()
     {
-        Button[] dots = [HeroDot0, HeroDot1, HeroDot2, HeroDot3];
+        Ellipse[] dots = [HeroDot0, HeroDot1, HeroDot2, HeroDot3];
         for (var index = 0; index < dots.Length; index++)
         {
-            dots[index].Visibility = index < heroSlides.Count && heroSlides.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
-            dots[index].Background = (Brush)FindResource(index == heroSlideIndex ? "AniT.Text" : "AniT.Muted");
-            dots[index].Width = index == heroSlideIndex ? 32 : 24;
+            dots[index].Visibility = index < heroSlides.Count ? Visibility.Visible : Visibility.Collapsed;
+            dots[index].Fill = index == heroSlideIndex ? ActiveHeroDotBrush : InactiveHeroDotBrush;
+            dots[index].Width = index == heroSlideIndex ? 18 : 7;
         }
     }
 
     private void HeroRotationTimer_Tick(object? sender, EventArgs e) => ShowHeroSlide(heroSlideIndex + 1);
 
-    private void HeroDot_Click(object sender, RoutedEventArgs e)
+    private void HeroDot_Click(object sender, MouseButtonEventArgs e)
     {
         if (sender is not FrameworkElement element || !int.TryParse(element.Tag?.ToString(), out var index) || index >= heroSlides.Count) return;
         ShowHeroSlide(index);
         heroRotationTimer.Stop();
-        UpdateHeroRotation();
+        if (homeSettings.HomeBannerAutoRotate && heroSlides.Count > 1) heroRotationTimer.Start();
     }
 
     private void ApplyHomeSectionLayout()
@@ -356,12 +343,8 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged, IAppearan
     private void Profile_Click(object sender, RoutedEventArgs e) => AppNavigation.Profile(this);
     private void Achievements_Click(object sender, RoutedEventArgs e) => AppNavigation.Achievements(this);
 
-    private async void HeroContinue_Click(object sender, RoutedEventArgs e)
-    {
-        if (CanPlayHero) await ContinueAsync(heroEpisodeId, heroAnimeId);
-        else AppNavigation.OpenLibrary(this);
-    }
-    private void ContinueTop_Click(object sender, RoutedEventArgs e) => HeroContinue_Click(sender, e);
+    private async void HeroContinue_Click(object sender, RoutedEventArgs e) => await ContinueAsync(heroEpisodeId, heroAnimeId);
+    private async void ContinueTop_Click(object sender, RoutedEventArgs e) => await ContinueAsync(heroEpisodeId, heroAnimeId);
 
     private async void ContinueCard_Click(object sender, RoutedEventArgs e)
     {
@@ -422,46 +405,62 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged, IAppearan
         UpdateResponsiveLayout(e.NewSize.Width, e.NewSize.Height);
     }
 
-    private void UpdateResponsiveLayout(double width, double height) => DashboardLayout.Update(this);
-    private void Content_SizeChanged(object sender, SizeChangedEventArgs e) => DashboardLayout.Update(this);
-    public void ApplyAppearance(AppearanceOptions options)
+    private void UpdateResponsiveLayout(double width, double height)
     {
-        appearance = options;
-        visualTheme.Apply(options);
-        Resources["Home.HeroTitleSize"] = 36d * options.TextScale / 100;
-        if (ShellSidebar is null) return;
-        ShellSidebar.ApplyAppearance(options);
-        ShellHeader.ApplyAppearance(options);
-        DashboardLayout.Update(this);
-        UpdateHeroDots();
-        UpdateHeroRotation();
-    }
-    internal void ApplyCoverAppearance(Image image)
-    {
-        image.RenderTransform = Transform.Identity;
-        if (ReferenceEquals(image, HeroCoverImage) && HeroIsMascot) { image.Stretch = Stretch.Uniform; return; }
-        AppearanceManager.ApplyArtworkAppearance(image, homeSettings);
-    }
-    private void Cover_Loaded(object sender, RoutedEventArgs e) { if (sender is Image image) ApplyCoverAppearance(image); }
-    private void ApplyCoverPreferences()
-    {
-        foreach (var image in FindImages(this)) ApplyCoverAppearance(image);
-    }
-    private static IEnumerable<Image> FindImages(DependencyObject root)
-    {
-        for (var i=0;i<VisualTreeHelper.GetChildrenCount(root);i++)
+        if (SidebarColumn is null || RightRailColumn is null || MainContentHost is null) return;
+
+        if (width < 1220)
         {
-            var child=VisualTreeHelper.GetChild(root,i); if (child is Image image) yield return image;
-            foreach(var nested in FindImages(child)) yield return nested;
+            SidebarColumn.Width = new GridLength(184);
+            RightRailColumn.Width = new GridLength(270);
+            MainContentHost.Margin = new Thickness(18, 16, 18, 34);
+            SearchContainer.MaxWidth = 350;
+            MyListTopButton.Visibility = Visibility.Collapsed;
+            HeroQuotePanel.Visibility = Visibility.Collapsed;
+            HeroArtwork.Width = 230;
+            HeroTitleText.FontSize = 30;
+            HeroProgressPanel.Width = 330;
+            HeroBanner.Height = height < 780 ? 286 : 310;
         }
-    }
-    private void HeroPointer_Changed(object sender, MouseEventArgs e) => UpdateHeroRotation();
-    private void HeroFocus_Changed(object sender, DependencyPropertyChangedEventArgs e) => UpdateHeroRotation();
-    private void UpdateHeroRotation()
-    {
-        heroRotationTimer.Stop();
-        if (IsVisible && IsActive && homeSettings.HomeBannerAutoRotate && !appearance.ReduceMotion && heroSlides.Count > 1
-            && HeroBanner is { IsKeyboardFocusWithin: false, IsMouseOver: false }) heroRotationTimer.Start();
+        else if (width < 1600)
+        {
+            SidebarColumn.Width = new GridLength(220);
+            RightRailColumn.Width = new GridLength(310);
+            MainContentHost.Margin = new Thickness(24, 20, 24, 40);
+            SearchContainer.MaxWidth = 500;
+            MyListTopButton.Visibility = Visibility.Visible;
+            HeroQuotePanel.Visibility = Visibility.Visible;
+            HeroArtwork.Width = 280;
+            HeroTitleText.FontSize = 37;
+            HeroProgressPanel.Width = 420;
+            HeroBanner.Height = height < 820 ? 308 : 336;
+        }
+        else if (width < 2300)
+        {
+            SidebarColumn.Width = new GridLength(232);
+            RightRailColumn.Width = new GridLength(340);
+            MainContentHost.Margin = new Thickness(30, 22, 30, 44);
+            SearchContainer.MaxWidth = 580;
+            MyListTopButton.Visibility = Visibility.Visible;
+            HeroQuotePanel.Visibility = Visibility.Visible;
+            HeroArtwork.Width = 310;
+            HeroTitleText.FontSize = 41;
+            HeroProgressPanel.Width = 480;
+            HeroBanner.Height = 352;
+        }
+        else
+        {
+            SidebarColumn.Width = new GridLength(250);
+            RightRailColumn.Width = new GridLength(380);
+            MainContentHost.Margin = new Thickness(42, 28, 42, 52);
+            SearchContainer.MaxWidth = 660;
+            MyListTopButton.Visibility = Visibility.Visible;
+            HeroQuotePanel.Visibility = Visibility.Visible;
+            HeroArtwork.Width = 330;
+            HeroTitleText.FontSize = 44;
+            HeroProgressPanel.Width = 520;
+            HeroBanner.Height = 380;
+        }
     }
 }
 

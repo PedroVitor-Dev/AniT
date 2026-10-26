@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using AniT.Presentation;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
@@ -9,10 +8,8 @@ using System.Windows.Input;
 
 namespace AniT.App;
 
-public partial class LibraryWindow : Window, INotifyPropertyChanged, IAppearanceHost
+public partial class LibraryWindow : Window, INotifyPropertyChanged
 {
-    private readonly CinematicTheme visualTheme;
-    public ObservableCollection<LibraryPosterRow> PosterRows { get; } = [];
     public ObservableCollection<AnimeLibraryItem> Anime { get; } = [];
     public ObservableCollection<LibraryRootItem> LibraryRoots { get; } = [];
     public ObservableCollection<ReviewQueueItem> ReviewItems { get; } = [];
@@ -48,7 +45,7 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged, IAppearance
     private CancellationTokenSource? libraryRefreshCancellation;
     private bool isRefreshing;
     private bool isPopulatingFilters;
-    private bool areFiltersExpanded = false;
+    private bool areFiltersExpanded = true;
     private readonly SemaphoreSlim loadGate = new(1, 1);
     private string libraryEmptyTitle = "Nenhuma pasta adicionada ainda";
     private string libraryEmptyDetail = "Adicione uma pasta. O AniT encontra os vídeos sem exigir que você renomeie ou reorganize nada.";
@@ -56,7 +53,6 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged, IAppearance
     public LibraryWindow()
     {
         InitializeComponent();
-        visualTheme = new CinematicTheme(this);
         GlobalSearchController.Attach(this, LibrarySearchBox, SearchPlaceholder, SearchBanner);
         ResponsiveWindow.FitToWorkArea(this, 1180, 760);
         DataContext = this;
@@ -110,63 +106,32 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged, IAppearance
         }
     }
 
-    private void Header_SizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        CatalogLayout.UpdateLibraryHeader(this);
-    }
-
     private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        // Resizing must preserve the active query and keep its field reachable.
-        SearchBanner.Visibility = Visibility.Visible;
+        var shouldHideSearch = ActualWidth < 920;
+        SearchBanner.Visibility = shouldHideSearch ? Visibility.Collapsed : Visibility.Visible;
+        if (shouldHideSearch && LibrarySearchBox is not null && LibrarySearchBox.Text.Length > 0)
+            LibrarySearchBox.Clear();
         UpdateCardLayout(e.NewSize.Width);
     }
 
-    private int posterColumns;
-    private double posterWidth;
-    private void PosterList_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateCardLayout(ActualWidth);
     private void UpdateCardLayout(double windowWidth)
     {
-        if (LibraryPosterList is null) return;
-        var settings=AppearanceManager.CurrentSettings;
-        var available=LibraryPosterList.ActualWidth>0?LibraryPosterList.ActualWidth:Math.Max(200,windowWidth-84);
-        var preferred=settings.CardSize switch { AniT.Infrastructure.AppearanceCardSize.Compact=>184d,AniT.Infrastructure.AppearanceCardSize.Large=>260d,_=>220d };
-        if(settings.CardsPerRow>0)preferred=Math.Clamp((available-16*(settings.CardsPerRow-1))/settings.CardsPerRow,160,310);
-        preferred=Math.Min(preferred,Math.Max(160,available-16));
-        var changed=Math.Abs(LibraryCardWidth-preferred)>.5;
-        LibraryCardWidth=preferred;
-        Resources["AniT.LibraryCardWidth"]=preferred;
-        Resources["AniT.LibraryPosterHeight"]=Math.Round(preferred*4/3);
-        if(changed)PropertyChanged?.Invoke(this,new PropertyChangedEventArgs(nameof(LibraryCardWidth)));
-        UpdatePosterRows(preserveOffset:true);
-    }
-    private void UpdatePosterRows(bool preserveOffset=false)
-    {
-        if(LibraryPosterList is null)return;
-        var available=LibraryPosterList.ActualWidth>0?LibraryPosterList.ActualWidth:Math.Max(200,Width-84);
-        var columns=LibraryPosterRows.Columns(available,LibraryCardWidth);
-        if(preserveOffset&&posterColumns==columns&&Math.Abs(posterWidth-LibraryCardWidth)<.5)return;
-        var scroll=CatalogLayout.Descendants(LibraryPosterList).OfType<System.Windows.Controls.ScrollViewer>().FirstOrDefault();
-        var offset=preserveOffset?scroll?.VerticalOffset??0:0;
-        PosterRows.Clear();
-        foreach(var row in LibraryPosterRows.Build(Anime,available,LibraryCardWidth))PosterRows.Add(row);
-        posterColumns=columns;posterWidth=LibraryCardWidth;
-        if(scroll is not null)Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded,new Action(()=>scroll.ScrollToVerticalOffset(offset)));
-    }
-    public void ApplyAppearance(AppearanceOptions options)
-    {
-        visualTheme.Apply(options);
-        UpdateCardLayout(ActualWidth>0?ActualWidth:Width);
-        foreach(var border in CatalogLayout.Descendants(this).OfType<System.Windows.Controls.Border>())
-            if(RoundedPanelClip.IsManaged(border))RoundedPanelClip.Update(border);
-    }
-    private void Cover_Loaded(object sender,RoutedEventArgs e)
-    {
-        if(sender is System.Windows.Controls.Image image)AppearanceManager.ApplyArtworkAppearance(image,AppearanceManager.CurrentSettings);
-    }
-    private void PosterArtwork_SizeChanged(object sender,SizeChangedEventArgs e)
-    {
-        if(sender is System.Windows.Controls.Border border)RoundedPanelClip.Update(border);
+        var settings = global::AniT.Infrastructure.AniTSystemSettingsStore.Load();
+        var preferred = settings.CardSize switch
+        {
+            global::AniT.Infrastructure.AppearanceCardSize.Compact => 184d,
+            global::AniT.Infrastructure.AppearanceCardSize.Large => 260d,
+            _ => 220d
+        };
+        if (settings.CardsPerRow > 0)
+        {
+            var usable = Math.Max(500, windowWidth - 105);
+            preferred = Math.Clamp((usable - 19 * (settings.CardsPerRow - 1)) / settings.CardsPerRow, 160, 310);
+        }
+        if (Math.Abs(LibraryCardWidth - preferred) < 0.5) return;
+        LibraryCardWidth = preferred;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LibraryCardWidth)));
     }
 
     private void Window_Closed(object? sender, EventArgs e)
@@ -210,7 +175,6 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged, IAppearance
         foreach (var existingItem in allAnime) existingItem.PropertyChanged -= AnimeItem_PropertyChanged;
         allAnime.Clear();
         Anime.Clear();
-        PosterRows.Clear();
         var missingMetadata = new List<(AnimeLibraryItem Item, string? SavedCoverPath, string? SavedSynopsis, double? SavedCriticScore, string? SavedGenres, int? SavedReleaseYear, string? SavedStudio)>();
         var now = DateTimeOffset.UtcNow;
         foreach (var item in anime)
@@ -431,10 +395,8 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged, IAppearance
         };
 
         Anime.Clear();
-        PosterRows.Clear();
         foreach (var item in filtered)
             Anime.Add(item);
-        UpdatePosterRows();
 
         var activeFilterCount = new[] { selectedGenre, selectedYear, selectedStatus, selectedStudio, selectedTag, selectedCollection }.Count(value => !string.IsNullOrWhiteSpace(value));
         FilterResultText.Text = Anime.Count == allAnime.Count

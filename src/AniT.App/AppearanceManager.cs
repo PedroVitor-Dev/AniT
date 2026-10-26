@@ -1,5 +1,4 @@
 using AniT.Infrastructure;
-using AniT.Presentation;
 using Microsoft.Win32;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -26,9 +25,8 @@ internal static class AppearanceManager
     private static readonly ConditionalWeakTable<Window, object> RegisteredWindows = new();
     private static AniTSystemSettings current = AniTSystemSettings.Default;
     private static bool initialized;
-    internal static AniTSystemSettings CurrentSettings => current;
 
-    public static void Initialize(Application application, AniTSystemSettings? initialSettings = null)
+    public static void Initialize(Application application)
     {
         if (!initialized)
         {
@@ -66,7 +64,7 @@ internal static class AppearanceManager
                 foreach (Window window in application.Windows) ApplyToWindow(window);
             };
         }
-        Apply(initialSettings ?? AniTSystemSettingsStore.Load());
+        Apply(AniTSystemSettingsStore.Load());
     }
 
     public static void Apply(AniTSystemSettings settings)
@@ -78,12 +76,6 @@ internal static class AppearanceManager
 
     public static void ApplyToWindow(Window window)
     {
-        if (window is IAppearanceHost host)
-        {
-            host.ApplyAppearance(new AppearanceOptions((VisualTheme)current.ThemeMode, current.AccentColor, current.InterfaceScalePercent, current.TextScalePercent, current.CornerRadius, current.ReduceMotion));
-            return;
-        }
-        if (AppearanceScope.GetIsManaged(window)) return;
         ApplyResources(window.Resources, current);
         var light = IsLight(current.ThemeMode);
         window.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(light ? "#D8E8F5" : "#020B1D"));
@@ -102,12 +94,6 @@ internal static class AppearanceManager
 
     private static void ApplyElementAppearance(DependencyObject element, AniTSystemSettings settings)
     {
-        if (element is IAppearanceHost host)
-        {
-            host.ApplyAppearance(new AppearanceOptions((VisualTheme)settings.ThemeMode, settings.AccentColor, settings.InterfaceScalePercent, settings.TextScalePercent, settings.CornerRadius, settings.ReduceMotion));
-            return;
-        }
-        if (AppearanceScope.GetIsManaged(element)) return;
         if (element is TextBlock text)
         {
             ApplyTextAppearance(text, settings);
@@ -135,12 +121,6 @@ internal static class AppearanceManager
 
     private static void ApplyImageAppearance(Image image, AniTSystemSettings settings)
     {
-        if (AppearanceScope.GetIsManaged(image)) return;
-        ApplyArtworkAppearance(image, settings);
-    }
-
-    internal static void ApplyArtworkAppearance(Image image, AniTSystemSettings settings)
-    {
         // Optimization wraps BitmapImage in TransformedBitmap, whose ToString() loses the URI.
         // Follow bitmap wrappers so packaged logos/mascots never inherit cover cropping.
         ImageSource? original = image.Source;
@@ -166,7 +146,6 @@ internal static class AppearanceManager
 
     private static void ApplyTextAppearance(TextBlock text, AniTSystemSettings settings)
     {
-        if (AppearanceScope.GetIsManaged(text)) return;
         var original = TextSizes.GetValue(text, item => new OriginalText(item.FontSize));
         text.FontSize = original.FontSize * settings.TextScalePercent / 100d;
         // Settings uses an intentionally dark workspace in both application themes.

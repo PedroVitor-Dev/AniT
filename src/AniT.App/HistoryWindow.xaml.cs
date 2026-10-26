@@ -347,22 +347,22 @@ public partial class HistoryWindow : Window, INotifyPropertyChanged
         if (width < 1320)
         {
             SidebarColumn.Width = new GridLength(184); RightRailColumn.Width = new GridLength(0); RightRail.Visibility = Visibility.Collapsed;
-            HistoryContentHost.Margin = new Thickness(18, 0, 18, 36); SearchContainer.MaxWidth = 350;
+            HistoryContentHost.Margin = new Thickness(18, 0, 18, 36); SearchContainer.MaxWidth = 350; LibraryTopButton.Visibility = Visibility.Collapsed;
         }
         else if (width < 1700)
         {
             SidebarColumn.Width = new GridLength(220); RightRailColumn.Width = new GridLength(280); RightRail.Visibility = Visibility.Visible;
-            HistoryContentHost.Margin = new Thickness(24, 0, 24, 42); SearchContainer.MaxWidth = 500;
+            HistoryContentHost.Margin = new Thickness(24, 0, 24, 42); SearchContainer.MaxWidth = 500; LibraryTopButton.Visibility = Visibility.Visible;
         }
         else if (width < 2300)
         {
             SidebarColumn.Width = new GridLength(232); RightRailColumn.Width = new GridLength(320); RightRail.Visibility = Visibility.Visible;
-            HistoryContentHost.Margin = new Thickness(30, 0, 30, 46); SearchContainer.MaxWidth = 580;
+            HistoryContentHost.Margin = new Thickness(30, 0, 30, 46); SearchContainer.MaxWidth = 580; LibraryTopButton.Visibility = Visibility.Visible;
         }
         else
         {
             SidebarColumn.Width = new GridLength(250); RightRailColumn.Width = new GridLength(360); RightRail.Visibility = Visibility.Visible;
-            HistoryContentHost.Margin = new Thickness(42, 0, 42, 52); SearchContainer.MaxWidth = 660;
+            HistoryContentHost.Margin = new Thickness(42, 0, 42, 52); SearchContainer.MaxWidth = 660; LibraryTopButton.Visibility = Visibility.Visible;
         }
     }
 

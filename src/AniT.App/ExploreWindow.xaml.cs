@@ -485,6 +485,7 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
             RightRail.Visibility = Visibility.Collapsed;
             ExploreContentHost.Margin = new Thickness(18, 14, 18, 34);
             SearchContainer.MaxWidth = 350;
+            LibraryTopButton.Visibility = Visibility.Collapsed;
             DiscoveryBanner.Height = 248;
             DiscoveryMascot.Width = 310;
             DiscoveryMascot.Height = 290;
@@ -501,6 +502,7 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
             RightRail.Visibility = Visibility.Visible;
             ExploreContentHost.Margin = new Thickness(24, 16, 24, 42);
             SearchContainer.MaxWidth = 500;
+            LibraryTopButton.Visibility = Visibility.Visible;
             DiscoveryBanner.Height = 276;
             DiscoveryMascot.Width = 400;
             DiscoveryMascot.Height = 350;
@@ -517,6 +519,7 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
             RightRail.Visibility = Visibility.Visible;
             ExploreContentHost.Margin = new Thickness(30, 18, 30, 46);
             SearchContainer.MaxWidth = 580;
+            LibraryTopButton.Visibility = Visibility.Visible;
             DiscoveryBanner.Height = 292;
             DiscoveryMascot.Width = 440;
             DiscoveryMascot.Height = 380;
@@ -533,6 +536,7 @@ public partial class ExploreWindow : Window, INotifyPropertyChanged
             RightRail.Visibility = Visibility.Visible;
             ExploreContentHost.Margin = new Thickness(42, 22, 42, 54);
             SearchContainer.MaxWidth = 660;
+            LibraryTopButton.Visibility = Visibility.Visible;
             DiscoveryBanner.Height = 310;
             DiscoveryMascot.Width = 470;
             DiscoveryMascot.Height = 410;
