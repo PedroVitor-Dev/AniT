@@ -91,3 +91,7 @@ WPF-UI/Abstractions permanecem fixados em 4.3.0 com lockfiles. O App agora refer
 ## Integração parcial da etapa 5
 
 CinematicTheme também aceita um FrameworkElement com `scaleInterface: false` para controles dentro de janelas legadas. AppearanceManager reconhece IAppearanceHost durante a travessia e entrega as preferências sem uma segunda escala. O shell utiliza esse contrato; implementação e validação em [cinematic-shell.md](cinematic-shell.md).
+
+## Componentes do catálogo (etapa 7)
+
+Botões nativos `AniT.ActionButton` e `AniT.SecondaryButton`, avaliação `AniT.RatingButton`, moldura `AniT.PosterFrame`, ação `AniT.PosterAction` e progresso `AniT.Progress`. A ação de pôster e o progresso da Home passaram para essa fonte compartilhada. Veja [cinematic-catalog.md](cinematic-catalog.md) para composição e evidências.

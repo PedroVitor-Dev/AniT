@@ -24,7 +24,7 @@
         <StackPanel x:Name="HeroProgressPanel" Margin="0,20,0,0">
          <StackPanel.Style><Style TargetType="StackPanel"><Style.Triggers><DataTrigger Binding="{Binding CanPlayHero}" Value="False"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></StackPanel.Style>
          <TextBlock Text="{Binding HeroProgressLabel}" Style="{DynamicResource AniT.Caption}" Margin="0,0,0,8"/>
-         <ProgressBar Value="{Binding HeroProgressPercent, Mode=OneWay}" Maximum="100" Style="{StaticResource Home.Progress}" AutomationProperties.Name="Progresso do episódio em destaque"/>
+         <ProgressBar Value="{Binding HeroProgressPercent, Mode=OneWay}" Maximum="100" Style="{StaticResource AniT.Progress}" AutomationProperties.Name="Progresso do episódio em destaque"/>
         </StackPanel>
         <WrapPanel Margin="0,24,0,0">
          <ui:Button x:Name="HeroPrimaryAction" Content="{Binding HeroActionLabel}" Style="{DynamicResource AniT.Button.Primary}" Click="HeroContinue_Click" Margin="0,0,12,8"/>
@@ -49,12 +49,12 @@
        <StackPanel x:Name="ContinueSection">
         <DockPanel Margin="0,0,0,16"><Button DockPanel.Dock="Right" Content="Ver biblioteca →" Style="{StaticResource Home.Link}" Click="Library_Click"/><TextBlock Text="Continuar assistindo" Style="{DynamicResource AniT.Section}" VerticalAlignment="Center"/></DockPanel>
         <ItemsControl x:Name="ContinueList" ItemsSource="{Binding ContinueCards}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate>
-         <Button Style="{StaticResource Home.CardButton}" Click="ContinueCard_Click" Margin="0,0,16,16" AutomationProperties.Name="{Binding Title}">
+         <Button Style="{StaticResource AniT.PosterAction}" Click="ContinueCard_Click" Margin="0,0,16,16" AutomationProperties.Name="{Binding Title}">
           <StackPanel Width="280">
            <Border Tag="Artwork" Height="158" CornerRadius="{DynamicResource AniT.ControlRadius}" Background="{DynamicResource AniT.Raised}" SizeChanged="RoundedPanel_SizeChanged"><Grid><Image Source="{Binding CoverPath}" Loaded="Cover_Loaded" Stretch="UniformToFill"/></Grid></Border>
            <TextBlock Text="{Binding Title}" Style="{DynamicResource AniT.Body}" FontWeight="SemiBold" Margin="0,12,0,0"/>
            <TextBlock Text="{Binding Subtitle}" Style="{DynamicResource AniT.Caption}" Margin="0,4,0,8"/>
-           <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}" Maximum="100" Style="{StaticResource Home.Progress}"/>
+           <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}" Maximum="100" Style="{StaticResource AniT.Progress}"/>
            <TextBlock Text="{Binding ProgressLabel}" Style="{DynamicResource AniT.Caption}" Margin="0,6,0,0"/>
           </StackPanel>
          </Button>

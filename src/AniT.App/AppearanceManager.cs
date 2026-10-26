@@ -26,6 +26,7 @@ internal static class AppearanceManager
     private static readonly ConditionalWeakTable<Window, object> RegisteredWindows = new();
     private static AniTSystemSettings current = AniTSystemSettings.Default;
     private static bool initialized;
+    internal static AniTSystemSettings CurrentSettings => current;
 
     public static void Initialize(Application application, AniTSystemSettings? initialSettings = null)
     {

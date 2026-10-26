@@ -11,7 +11,7 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
-        if (args.Any(a => a is "--preview-fluent" or "--check-fluent" or "--benchmark-fluent" or "--check-design-system" or "--check-shell" or "--preview-shell" or "--check-home-cinematic" or "--preview-home-light" or "--preview-home-populated")) return FluentPilotRunner.Run(args);
+        if (args.Any(a => a is "--check-catalog" or "--preview-library" or "--preview-details" or "--preview-fluent" or "--check-fluent" or "--benchmark-fluent" or "--check-design-system" or "--check-shell" or "--preview-shell" or "--check-home-cinematic" or "--preview-home-light" or "--preview-home-populated")) return FluentPilotRunner.Run(args);
         // Load the same theme dictionaries, image optimization and appearance hooks as the app.
         // Never run App.OnStartup or open the user's profiles/database during layout checks.
         var application = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };

@@ -18,6 +18,8 @@ internal static class FluentPilotRunner
         var legacyStyle = new Button().TryFindResource(typeof(Button));
         try
         {
+            if(args.Contains("--check-catalog")){CatalogChecks.Run(app);return 0;}
+            if(args.Contains("--preview-library")||args.Contains("--preview-details")){AniT.App.AppearanceManager.Initialize(app,AniT.Infrastructure.AniTSystemSettings.Default);var details=args.Contains("--preview-details");var w=CatalogChecks.Preview(details);w.Loaded+=(_,_)=>CatalogChecks.Apply(w,details,new(args.Contains("--light")?AniT.Presentation.VisualTheme.Light:AniT.Presentation.VisualTheme.Dark));app.Run(w);return 0;}
             if (args.Contains("--check-home-cinematic")) { CinematicHomeChecks.Run(app); return 0; }
             if (args.Contains("--preview-home-light") || args.Contains("--preview-home-populated"))
             {

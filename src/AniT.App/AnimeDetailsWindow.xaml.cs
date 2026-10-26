@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using AniT.Presentation;
 using AniT.Infrastructure;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -11,8 +12,9 @@ using System.Windows.Threading;
 
 namespace AniT.App;
 
-public partial class AnimeDetailsWindow : Window
+public partial class AnimeDetailsWindow : Window, IAppearanceHost
 {
+    private readonly CinematicTheme visualTheme;
     private readonly Guid animeId;
     private readonly Guid? requestedEpisodeId;
     private bool requestedEpisodeFocused;
@@ -49,6 +51,7 @@ public partial class AnimeDetailsWindow : Window
         this.animeId = animeId;
         this.requestedEpisodeId = requestedEpisodeId;
         InitializeComponent();
+        visualTheme = new CinematicTheme(this);
         GlobalSearchController.Attach(this, SearchBox, SearchHint, SearchContainer);
         ResponsiveWindow.FitToWorkArea(this, 1140, 800);
         DataContext = this;
@@ -557,71 +560,26 @@ public partial class AnimeDetailsWindow : Window
     private void RoundedPanel_SizeChanged(object sender, SizeChangedEventArgs e)
     {
         if (sender is not Border border || border.ActualWidth <= 0 || border.ActualHeight <= 0) return;
-        var radius = double.TryParse(border.Tag?.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var parsedRadius)
-            ? parsedRadius
-            : 16;
-        border.Clip = new RectangleGeometry(new Rect(0, 0, border.ActualWidth, border.ActualHeight), radius, radius);
+        RoundedPanelClip.Update(border);
     }
 
     private void Window_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateResponsiveLayout(e.NewSize.Width);
 
-    private void UpdateResponsiveLayout(double width)
+    private void UpdateResponsiveLayout(double width) => CatalogLayout.UpdateDetails(this);
+    private void Content_SizeChanged(object sender, SizeChangedEventArgs e) => CatalogLayout.UpdateDetails(this);
+    public void ApplyAppearance(AppearanceOptions options)
     {
-        if (SidebarColumn is null || DetailsContentHost is null || RightRailColumn is null) return;
-        var episodeTemplate = (DataTemplate)FindResource(width >= 1800 ? "EpisodeCardLargeTemplate" : "EpisodeCardTemplate");
-        SynopsisEpisodeList.ItemTemplate = episodeTemplate;
-        EpisodeList.ItemTemplate = episodeTemplate;
-        if (width < 1180)
-        {
-            SidebarColumn.Width = new GridLength(184);
-            RightRailColumn.Width = new GridLength(0);
-            DetailsRightRail.Visibility = Visibility.Collapsed;
-            DetailsContentHost.Margin = new Thickness(18, 14, 18, 36);
-            SearchContainer.MaxWidth = 350;
-            HeroBanner.Height = 286;
-            HeroTitleText.FontSize = 34;
-            HeroCopy.MaxWidth = 560;
-            HeroArtwork.Width = 300;
-        }
-        else if (width < 1600)
-        {
-            SidebarColumn.Width = new GridLength(220);
-            RightRailColumn.Width = new GridLength(320);
-            DetailsRightRail.Visibility = Visibility.Visible;
-            DetailsContentHost.Margin = new Thickness(24, 16, 24, 44);
-            SearchContainer.MaxWidth = 500;
-            HeroBanner.Height = 322;
-            HeroTitleText.FontSize = 42;
-            HeroCopy.MaxWidth = 720;
-            HeroArtwork.Width = 410;
-        }
-        else if (width < 2300)
-        {
-            SidebarColumn.Width = new GridLength(232);
-            RightRailColumn.Width = new GridLength(350);
-            DetailsRightRail.Visibility = Visibility.Visible;
-            DetailsContentHost.Margin = new Thickness(30, 20, 30, 50);
-            SearchContainer.MaxWidth = 580;
-            HeroBanner.Height = 350;
-            HeroTitleText.FontSize = 46;
-            HeroCopy.MaxWidth = 860;
-            HeroArtwork.Width = 460;
-        }
-        else
-        {
-            SidebarColumn.Width = new GridLength(250);
-            RightRailColumn.Width = new GridLength(390);
-            DetailsRightRail.Visibility = Visibility.Visible;
-            DetailsContentHost.Margin = new Thickness(42, 24, 42, 58);
-            SearchContainer.MaxWidth = 660;
-            HeroBanner.Height = 380;
-            HeroTitleText.FontSize = 50;
-            HeroCopy.MaxWidth = 1100;
-            HeroArtwork.Width = 520;
-        }
+        visualTheme.Apply(options);
+        ShellSidebar.ApplyAppearance(options); ShellHeader.ApplyAppearance(options);
+        CatalogLayout.UpdateDetails(this);
+        foreach(var border in CatalogLayout.Descendants(this).OfType<Border>())
+            if(RoundedPanelClip.IsManaged(border))RoundedPanelClip.Update(border);
+    }
+    private void Cover_Loaded(object sender,RoutedEventArgs e)
+    {
+        if(sender is Image image)AppearanceManager.ApplyArtworkAppearance(image,AppearanceManager.CurrentSettings);
     }
 }
-
 public sealed class EpisodeItem(
     Guid id,
     string number,

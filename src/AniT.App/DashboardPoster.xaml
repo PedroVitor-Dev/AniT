@@ -1,5 +1,5 @@
 <UserControl x:Class="AniT.App.DashboardPoster" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Focusable="False" Margin="0,0,14,16">
- <Button Style="{DynamicResource Home.CardButton}" Click="Open_Click" AutomationProperties.Name="{Binding Title}">
+ <Button Style="{DynamicResource AniT.PosterAction}" Click="Open_Click" AutomationProperties.Name="{Binding Title}">
   <StackPanel Width="176">
    <Border Height="232" CornerRadius="{DynamicResource AniT.ControlRadius}" Background="{DynamicResource AniT.Raised}" SizeChanged="Artwork_SizeChanged"><Grid><Image Source="{Binding CoverPath}" Loaded="Cover_Loaded" Stretch="UniformToFill"/></Grid></Border>
    <TextBlock Text="{Binding Title}" Style="{DynamicResource AniT.Body}" FontWeight="SemiBold" Margin="0,10,0,0"/>

@@ -43,6 +43,10 @@ Sidebar e cabeçalho compartilhados aplicados às sete telas que duplicavam essa
 
 Home migrada para a base visual nos temas claro e escuro, com banner acionável, estados vazios, pôsteres e texto externo. Arte original gerada com referências de anime. Preferências e layout detalhados em [cinematic-home.md](cinematic-home.md). Próxima etapa: Biblioteca/detalhes/cards (7); DPI físico e desempenho representativo seguem para validação final.
 
+## Etapa 7: catálogo Cinematográfico
+
+Biblioteca, detalhes e família de cards migrados, com temas semânticos, episódios responsivos e biblioteca virtualizada. Evidências e limites em [cinematic-catalog.md](cinematic-catalog.md). Próxima etapa: movimento e microinterações (8).
+
 ## Fila de migração orientada por risco
 
 | Item | Prioridade | Etapa prevista | Ação concreta | Aceitação |
