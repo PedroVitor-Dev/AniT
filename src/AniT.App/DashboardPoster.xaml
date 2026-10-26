@@ -1,0 +1,11 @@
+<UserControl x:Class="AniT.App.DashboardPoster" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Focusable="False" Margin="0,0,14,16">
+ <Button Style="{DynamicResource Home.CardButton}" Click="Open_Click" AutomationProperties.Name="{Binding Title}">
+  <StackPanel Width="176">
+   <Border Height="232" CornerRadius="{DynamicResource AniT.ControlRadius}" Background="{DynamicResource AniT.Raised}" SizeChanged="Artwork_SizeChanged"><Grid><Image Source="{Binding CoverPath}" Loaded="Cover_Loaded" Stretch="UniformToFill"/></Grid></Border>
+   <TextBlock Text="{Binding Title}" Style="{DynamicResource AniT.Body}" FontWeight="SemiBold" Margin="0,10,0,0"/>
+   <TextBlock Text="{Binding SecondaryText}" Style="{DynamicResource AniT.Caption}" Margin="0,4,0,0"/>
+   <TextBlock Text="NOVO NA ESTANTE" Visibility="{Binding NewBadgeVisibility}" Style="{DynamicResource AniT.Caption}" FontWeight="SemiBold" Margin="0,6,0,0"/>
+   <TextBlock Text="{Binding ScoreLabel}" Margin="0,6,0,0"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Foreground" Value="{DynamicResource AniT.Text}"/><Setter Property="FontSize" Value="{DynamicResource AniT.CaptionSize}"/><Setter Property="FontWeight" Value="SemiBold"/><Style.Triggers><DataTrigger Binding="{Binding ScoreLabel}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
+  </StackPanel>
+ </Button>
+</UserControl>

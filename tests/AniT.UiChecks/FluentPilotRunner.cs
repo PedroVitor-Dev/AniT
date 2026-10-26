@@ -18,6 +18,15 @@ internal static class FluentPilotRunner
         var legacyStyle = new Button().TryFindResource(typeof(Button));
         try
         {
+            if (args.Contains("--check-home-cinematic")) { CinematicHomeChecks.Run(app); return 0; }
+            if (args.Contains("--preview-home-light") || args.Contains("--preview-home-populated"))
+            {
+                AniT.App.AppearanceManager.Initialize(app, AniT.Infrastructure.AniTSystemSettings.Default);
+                var preview = HomeVisualChecks.Preview(args.Contains("--preview-home-populated"));
+                preview.Loaded += (_,_) => HomeVisualChecks.ApplyPreviewAppearance(preview, AniT.Infrastructure.AniTSystemSettings.Default with { ThemeMode = args.Contains("--preview-home-light") ? AniT.Infrastructure.AppearanceThemeMode.Light : AniT.Infrastructure.AppearanceThemeMode.Dark });
+                preview.Title = args.Contains("--preview-home-light") ? "AniT · Home Cinematográfica clara" : "AniT · Home Cinematográfica escura";
+                app.Run(preview); return 0;
+            }
             if (args.Contains("--check-shell")) { ShellChecks.Run(app); return 0; }
             if (args.Contains("--preview-shell")) { AniT.App.AppearanceManager.Initialize(app, AniT.Infrastructure.AniTSystemSettings.Default); app.Run(ShellChecks.Preview()); return 0; }
             if (args.Contains("--check-design-system")) { DesignSystemChecks.Run(app); return 0; }

@@ -73,7 +73,7 @@ internal static class HomeVisualChecks
 
     // The real Home XAML, with navigation/data event handlers removed, is safe to inspect
     // without opening profiles, scanning folders or initializing App's database services.
-    public static Window Preview()
+    public static Window Preview(bool populated = false, bool stressText = false)
     {
         var xml = XDocument.Load(Path.Combine(AppContext.BaseDirectory, "Fixtures", "DashboardWindow.xaml"));
         XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
@@ -101,34 +101,64 @@ internal static class HomeVisualChecks
         foreach (var avatar in root.Descendants().Where(e => e.Name.LocalName == "ProfileAvatarButton").ToArray())
             avatar.ReplaceWith(new XElement(root.Name.Namespace + "Border", new XAttribute("Width", "44"), new XAttribute("Height", "44")));
         foreach (var shell in root.Descendants().Where(e => e.Name.LocalName is "CinematicSidebar" or "CinematicHeader")) shell.SetAttributeValue("IsPreview", "True");
+        var wpf = root.Name.Namespace;
+        root.AddFirst(new XElement(wpf + "Window.Resources", new XElement(wpf + "ResourceDictionary",
+            new XElement(wpf + "ResourceDictionary.MergedDictionaries",
+                new XElement(wpf + "ResourceDictionary", new XAttribute("Source", "pack://application:,,,/AniT.Presentation;component/Themes/Components.xaml")),
+                new XElement(wpf + "ResourceDictionary", new XAttribute("Source", "pack://application:,,,/AniT;component/Styles/CinematicHome.xaml"))))));
         var window = (Window)XamlReader.Parse(xml.ToString());
-        foreach (var sidebar in Descendants(window).OfType<CinematicSidebar>()) sidebar.IsPreview = true;
-        foreach (var header in Descendants(window).OfType<CinematicHeader>()) header.IsPreview = true;
+        var theme = new AniT.Presentation.CinematicTheme(window);
+        window.Tag = theme;
         window.WindowState = WindowState.Normal;
         window.Width = 1600; window.Height = 900;
         window.Title = "AniT · Prévia isolada da Home";
+        const string art = "pack://application:,,,/AniT;component/Assets/Home/anime-horizon.png";
+        var cards = populated ? new[] {
+            new DashboardCard(Guid.NewGuid(), Guid.NewGuid(), stressText ? "Além do horizonte: uma jornada extraordinária entre ilhas, mares e as histórias que ainda vamos viver" : "Além do horizonte", "Temporada 1 · Episódio 08", "12 episódios na sua estante", art, 63, "63% assistido", "★ 4,8", true),
+            new DashboardCard(Guid.NewGuid(), null, "O verão das pequenas descobertas", "Temporada 2 · Episódio 03", "Uma nova aventura", art, 21, "21% assistido", "★ 4,6", false)
+        } : Array.Empty<DashboardCard>();
         window.DataContext = new
         {
-            HeroIsMascot = true, HeroCoverPath = "pack://application:,,,/AniT;component/Assets/normal-sf.png",
-            HeroTitle = "Sua próxima história", HeroSubtitle = "Assista a um episódio para começar",
-            HeroQuote = "A imaginação abre portas onde não havia paredes.", HeroProgressLabel = "Pronto para começar",
-            LibraryAnimeCount = "1", LibraryEpisodeCount = "12", LibraryCompletedCount = "0",
-            SessionMessage = "Escolha uma história na biblioteca e aproveite."
+            HeroIsMascot = !populated, HeroCoverPath = art, HeroArtworkPath = art,
+            HeroTitle = populated ? cards[0].Title : "Sua próxima história começa aqui.",
+            HeroSubtitle = populated ? "Temporada 1 · Episódio 08 · Continue de onde parou" : "Adicione uma pasta na Biblioteca e encontre sua próxima aventura.",
+            HeroActionLabel = populated ? "Continuar assistindo" : "Abrir biblioteca",
+            HeroEyebrow = populated ? "CONTINUE SUA JORNADA" : "SUA PRÓXIMA HISTÓRIA",
+            HeroQuote = "Cada nova história começa com o primeiro passo.",
+            CanPlayHero = populated, HasHeroAnime = populated, HeroProgressPercent = populated ? 63d : 0d,
+            HeroProgressLabel = populated ? "63% assistido" : "Pronto para começar",
+            LibraryAnimeCount = populated ? "24" : "0", LibraryEpisodeCount = populated ? "312" : "0", LibraryCompletedCount = populated ? "96" : "0",
+            SessionMessage = populated ? "Duas histórias prontas para continuar." : "Escolha uma história na biblioteca e aproveite.",
+            ContinueCards = cards.Take(1).ToArray(), RecentCards = cards, FavoriteCards = cards.Take(1).ToArray(), TopRatedCards = cards,
+            CalendarItems = populated ? new[] { new DashboardCalendarItem("LOCAL", cards[0].Title, "Episódio 09") } : Array.Empty<DashboardCalendarItem>()
         };
         window.Loaded += (_, _) =>
         {
-            foreach (var border in Descendants(window).OfType<Border>().Where(b => double.TryParse(b.Tag?.ToString(), System.Globalization.CultureInfo.InvariantCulture, out _)))
+            foreach (var border in Descendants(window).OfType<Border>().Where(b => Equals(b.Tag, "Artwork")))
             {
                 border.SizeChanged += (_, _) => RoundedPanelClip.Update(border);
                 RoundedPanelClip.Update(border);
             }
-            ((UIElement)window.FindName("HeroBanner")).Opacity = 1;
-            ((UIElement)window.FindName("MainBody")).Opacity = 1;
             foreach (var name in new[] { "ContinueEmptyText", "RecentEmptyText", "FavoritesEmptyText", "TopRatedEmptyText" })
-                if (window.FindName(name) is UIElement element) element.Visibility = Visibility.Visible;
+                ((UIElement)window.FindName(name)).Visibility = populated ? Visibility.Collapsed : Visibility.Visible;
+            for (var i=0;i<4;i++) ((Button)window.FindName($"HeroDot{i}")).Visibility = populated && i<2 ? Visibility.Visible : Visibility.Collapsed;
+            ApplyPreviewAppearance(window, AniTSystemSettings.Default);
         };
+        ((FrameworkElement)window.FindName("MainContentHost")).SizeChanged += (_,_) => DashboardLayout.Update(window);
         return window;
     }
+
+    public static void ApplyPreviewAppearance(Window window, AniTSystemSettings settings)
+    {
+        var options = new AniT.Presentation.AppearanceOptions((AniT.Presentation.VisualTheme)settings.ThemeMode, settings.AccentColor, settings.InterfaceScalePercent, settings.TextScalePercent, settings.CornerRadius, settings.ReduceMotion);
+        ((AniT.Presentation.CinematicTheme)window.Tag).Apply(options);
+        window.Resources["Home.HeroTitleSize"] = 36d * settings.TextScalePercent / 100;
+        ((CinematicSidebar)window.FindName("ShellSidebar")).ApplyAppearance(options);
+        ((CinematicHeader)window.FindName("ShellHeader")).ApplyAppearance(options);
+        window.UpdateLayout();
+        DashboardLayout.Update(window);
+    }
+
 
     private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
     {

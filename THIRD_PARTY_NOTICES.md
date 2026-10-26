@@ -30,3 +30,5 @@ AniList, MyAnimeList/Jikan, Kitsu, Wallhaven, Danbooru, Safebooru, Gelbooru e My
 Os elementos de marca, interface, Baki-Pi e badges presentes em `assets/` foram fornecidos ao projeto pelo mantenedor. Antes de cada publicação, o mantenedor deve confirmar que conserva a autoria, licença compatível ou autorização necessária para cada recurso distribuído. Capas e fan arts obtidas em tempo de execução não são incluídas no pacote do AniT.
 
 Os textos de licença e avisos do WPF UI ficam em `src/AniT.Presentation/Licenses` e são copiados para `Licenses/WpfUi` no output. Não redistribuir fontes Segoe separadamente; preservar os avisos originais do pacote.
+
+A paisagem de `assets/home/anime-horizon.png` foi gerada para o projeto com ImageGen, com referências ambientais solicitadas pelo mantenedor a Naruto e One Piece. Não é uma capa oficial nem foi baixada de um provedor de metadados. Prompt e proveniência: `assets/home/README.md`.

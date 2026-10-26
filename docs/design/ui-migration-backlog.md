@@ -39,6 +39,10 @@ Tokens, componentes e adapter de preferências implementados em AniT.Presentatio
 
 Sidebar e cabeçalho compartilhados aplicados às sete telas que duplicavam essa composição. Busca, perfil, ações específicas e contrato de janelas preservados; detalhes e limites em [cinematic-shell.md](cinematic-shell.md). A Biblioteca mantém janela própria e deixa de perder a consulta ao reduzir largura. Conquistas mantém seu layout específico para a etapa das demais telas. Próxima etapa: Home Cinematográfica (6).
 
+## Etapa 6: Home Cinematográfica
+
+Home migrada para a base visual nos temas claro e escuro, com banner acionável, estados vazios, pôsteres e texto externo. Arte original gerada com referências de anime. Preferências e layout detalhados em [cinematic-home.md](cinematic-home.md). Próxima etapa: Biblioteca/detalhes/cards (7); DPI físico e desempenho representativo seguem para validação final.
+
 ## Fila de migração orientada por risco
 
 | Item | Prioridade | Etapa prevista | Ação concreta | Aceitação |

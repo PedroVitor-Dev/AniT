@@ -50,6 +50,9 @@ jobs:
       - name: Check cinematic shell
         run: dotnet run --project tests/AniT.UiChecks -c Release --no-build -- --check-shell
 
+      - name: Check cinematic Home in light and dark
+        run: dotnet run --project tests/AniT.UiChecks -c Release --no-build -- --check-home-cinematic
+
       - name: Test signing preflight
         shell: pwsh
         run: .\scripts\Test-InstallerSigning.ps1

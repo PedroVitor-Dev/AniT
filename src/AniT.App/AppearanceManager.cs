@@ -135,6 +135,11 @@ internal static class AppearanceManager
     private static void ApplyImageAppearance(Image image, AniTSystemSettings settings)
     {
         if (AppearanceScope.GetIsManaged(image)) return;
+        ApplyArtworkAppearance(image, settings);
+    }
+
+    internal static void ApplyArtworkAppearance(Image image, AniTSystemSettings settings)
+    {
         // Optimization wraps BitmapImage in TransformedBitmap, whose ToString() loses the URI.
         // Follow bitmap wrappers so packaged logos/mascots never inherit cover cropping.
         ImageSource? original = image.Source;
