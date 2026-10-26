@@ -1,0 +1,257 @@
+<div id="anit-direction">
+  <style>
+    #anit-direction { color-scheme: light dark; }
+    #anit-direction *, #anit-direction *::before, #anit-direction *::after { box-sizing: border-box; }
+    #anit-direction [hidden] { display: none !important; }
+    #anit-direction .anit-app {
+      --page: light-dark(#f5f7fa, #0c1017); --side: light-dark(#ffffff, #10151e);
+      --surface: light-dark(#ffffff, #171e29); --raised: light-dark(#eef2f7, #1e2735);
+      --ink: light-dark(#172334, #edf2f8); --subtle: light-dark(#536477, #9aaabd);
+      --line: light-dark(#dce3eb, #273140); --brand: #3b82f6; --on-brand: #081427;
+      --link: light-dark(#1559ba, #83b9ff); --radius: 14px; --space: 28px;
+      font: 400 14px/1.5 "Segoe UI", Inter, system-ui, sans-serif;
+      color: var(--ink); background: var(--page); min-width: 0;
+      display: grid; grid-template-columns: 192px minmax(0, 1fr); min-height: 1000px;
+      border: 1px solid var(--line); border-radius: var(--radius); position: relative;
+    }
+    #anit-direction .anit-sidebar { background: var(--side); border-right: 1px solid var(--line); padding: 24px 14px; border-radius: var(--radius) 0 0 var(--radius); display: flex; flex-direction: column; gap: 28px; min-width: 0; }
+    #anit-direction .anit-logo { display: flex; align-items: center; gap: 9px; padding: 0 10px; font-size: 25px; letter-spacing: -1px; font-weight: 700; }
+    #anit-direction .anit-logo svg { color: var(--brand); width: 25px; height: 25px; }
+    #anit-direction .anit-caption { font-size: 11px; color: var(--subtle); letter-spacing: .08em; text-transform: uppercase; padding: 0 12px; margin-bottom: 10px; }
+    #anit-direction .anit-nav { display: grid; gap: 5px; }
+    #anit-direction button, #anit-direction input { font: inherit; }
+    #anit-direction button { color: inherit; }
+    #anit-direction .anit-nav-button { display: flex; align-items: center; gap: 11px; width: 100%; padding: 11px 12px; border: 0; border-radius: 9px; background: transparent; text-align: left; color: var(--subtle); }
+    #anit-direction .anit-nav-button svg { width: 17px; height: 17px; flex: none; }
+    #anit-direction .anit-nav-button:hover:not(:disabled) { background: var(--raised); color: var(--ink); }
+    #anit-direction .anit-nav-button[aria-current="page"] { background: color-mix(in srgb, var(--brand) 13%, var(--side)); color: var(--link); font-weight: 600; }
+    #anit-direction .anit-nav-button:disabled { opacity: .65; }
+    #anit-direction .anit-local { margin-top: auto; padding: 18px 10px 0; border-top: 1px solid var(--line); color: var(--subtle); font-size: 12px; }
+    #anit-direction .anit-local svg { width: 14px; height: 14px; vertical-align: -2px; margin-right: 5px; }
+    #anit-direction .anit-baki { display: flex; align-items: center; gap: 10px; margin-top: 20px; font-size: 12px; }
+    #anit-direction .anit-baki img { width: 54px; height: 62px; object-fit: contain; flex: none; }
+    #anit-direction .anit-baki strong { display: block; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+    #anit-direction .anit-body { min-width: 0; }
+    #anit-direction .anit-topbar { min-height: 72px; padding: 15px var(--space); display: flex; align-items: center; gap: 18px; border-bottom: 1px solid var(--line); }
+    #anit-direction .anit-crumb { color: var(--subtle); white-space: nowrap; font-size: 12px; }
+    #anit-direction .anit-search { display: flex; align-items: center; gap: 9px; margin-left: auto; min-width: 0; width: min(100%, 270px); color: var(--subtle); }
+    #anit-direction .anit-search svg { width: 16px; height: 16px; flex: none; }
+    #anit-direction .anit-search input { width: 100%; min-width: 0; border: 0; border-radius: 7px; padding: 7px 2px; background: transparent; color: var(--ink); outline-offset: 4px; }
+    #anit-direction .anit-search input::placeholder { color: var(--subtle); }
+    #anit-direction .anit-avatar { width: 32px; height: 32px; display: grid; place-items: center; background: var(--raised); border-radius: 50%; font-weight: 600; flex: none; }
+    #anit-direction .anit-main { padding: var(--space); display: grid; gap: 27px; }
+    #anit-direction .anit-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; }
+    #anit-direction h1 { font-size: 26px; line-height: 1.2; font-weight: 650; letter-spacing: -.7px; margin: 0; }
+    #anit-direction h2 { font-size: 18px; line-height: 1.3; font-weight: 600; letter-spacing: -.35px; margin: 0; }
+    #anit-direction p { margin: 6px 0 0; color: var(--subtle); }
+    #anit-direction .anit-heading p { font-size: 13px; }
+    #anit-direction .anit-small { font-size: 12px; color: var(--subtle); }
+    #anit-direction .anit-chip { font-size: 11px; padding: 5px 9px; border-radius: 6px; background: var(--raised); color: var(--subtle); white-space: nowrap; }
+    #anit-direction .anit-hero { position: relative; isolation: isolate; overflow: hidden; border-radius: calc(var(--radius) + 3px); background: #141e32; color: #f4f6fb; min-height: 248px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(150px, .9fr); }
+    #anit-direction .anit-hero-copy { position: relative; z-index: 2; padding: 28px; display: flex; flex-direction: column; align-items: start; justify-content: center; }
+    #anit-direction .anit-eyebrow { display: flex; align-items: center; gap: 7px; text-transform: uppercase; font-size: 10px; letter-spacing: .1em; font-weight: 600; color: #b1cfff; }
+    #anit-direction .anit-eyebrow svg { width: 12px; height: 12px; }
+    #anit-direction .anit-hero h2 { font-size: clamp(26px, 3vw, 36px); line-height: 1.08; letter-spacing: -1px; margin: 15px 0 10px; font-weight: 650; }
+    #anit-direction .anit-hero p { color: #b8c5d9; font-size: 12px; max-width: 320px; margin: 0; }
+    #anit-direction .anit-actions { display: flex; gap: 10px; margin-top: 21px; flex-wrap: wrap; }
+    #anit-direction .anit-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); font-size: 12px; font-weight: 600; }
+    #anit-direction .anit-button svg { width: 15px; height: 15px; }
+    #anit-direction .anit-primary { color: var(--on-brand); background: var(--brand); border-color: transparent; }
+    #anit-direction .anit-hero .anit-secondary { color: #edf2f8; background: #263349; border-color: #3b4c65; }
+    #anit-direction .anit-button:hover { filter: brightness(1.08); }
+    #anit-direction .anit-landscape { position: relative; min-height: 200px; overflow: hidden; background: linear-gradient(140deg, #151d34 0%, #3c5572 52%, #bb7767 100%); }
+    #anit-direction .anit-landscape::before { content: ""; position: absolute; width: 100px; height: 100px; border-radius: 50%; right: 26%; top: 16%; background: #edbda0; }
+    #anit-direction .anit-landscape::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, #141e32, transparent 42%), linear-gradient(0deg, #141e32 2%, transparent 50%); }
+    #anit-direction .anit-mountain { position: absolute; inset: 20% -25% -1%; background: #263148; clip-path: polygon(0 88%, 27% 13%, 42% 51%, 64% 0, 100% 89%, 100% 100%, 0 100%); }
+    #anit-direction .anit-mountain.near { inset: 47% -20% -2%; background: #131c2c; transform: scaleX(-1); }
+    #anit-direction .anit-hero-note { position: absolute; z-index: 3; bottom: 22px; right: 20px; font-size: 10px; color: #e1cbbd; letter-spacing: .08em; text-transform: uppercase; }
+    #anit-direction .anit-section-head { display: flex; align-items: baseline; gap: 12px; justify-content: space-between; margin-bottom: 14px; }
+    #anit-direction .anit-text-button { padding: 3px 0; border: 0; background: transparent; color: var(--link); font-size: 12px; display: inline-flex; align-items: center; gap: 5px; }
+    #anit-direction .anit-text-button svg { width: 13px; height: 13px; }
+    #anit-direction .anit-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+    #anit-direction .anit-anime { min-width: 0; position: relative; }
+    #anit-direction .anit-cover-button { padding: 0; display: block; width: 100%; text-align: left; border: 0; background: transparent; border-radius: var(--radius); }
+    #anit-direction .anit-poster { aspect-ratio: 3/4; border-radius: var(--radius); position: relative; overflow: hidden; background: var(--art-bg); isolation: isolate; }
+    #anit-direction .anit-poster::before { content: ""; position: absolute; width: 74%; aspect-ratio: 1; border-radius: 50%; background: var(--art-sun); right: -13%; top: 9%; opacity: .8; }
+    #anit-direction .anit-poster::after { content: ""; position: absolute; inset: 20% -20% 0; background: var(--art-front); clip-path: polygon(0 100%, 0 66%, 22% 15%, 41% 48%, 62% 0, 100% 49%, 100% 100%); }
+    #anit-direction .anit-poster-letter { position: absolute; z-index: 2; bottom: 17px; left: 15px; right: 12px; font-size: clamp(18px, 2.2vw, 28px); line-height: .98; letter-spacing: -1px; font-weight: 650; color: #fff; text-shadow: 0 1px 10px #0005; }
+    #anit-direction .anit-poster-top { position: absolute; top: 12px; left: 12px; z-index: 3; color: #fff; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; }
+    #anit-direction .anit-play-overlay { position: absolute; z-index: 4; inset: 0; display: grid; place-items: center; background: #07111a60; opacity: 0; }
+    #anit-direction .anit-play-overlay svg { width: 35px; height: 35px; padding: 8px; box-sizing: content-box; border-radius: 50%; background: #f8fafc; color: #162132; }
+    #anit-direction .anit-cover-button:hover .anit-play-overlay, #anit-direction .anit-cover-button:focus-visible .anit-play-overlay { opacity: 1; }
+    #anit-direction .anit-progress { height: 3px; background: var(--raised); margin-top: 8px; border-radius: 4px; overflow: hidden; }
+    #anit-direction .anit-progress span { display: block; height: 100%; background: var(--brand); }
+    #anit-direction .anit-card-line { display: flex; align-items: start; gap: 7px; margin: 10px 0 3px; }
+    #anit-direction .anit-card-title { display: block; min-width: 0; flex: 1; font-size: 13px; font-weight: 600; }
+    #anit-direction .anit-card-meta { display: block; font-size: 11px; color: var(--subtle); }
+    #anit-direction .anit-heart { display: grid; place-items: center; flex: none; width: 22px; height: 22px; padding: 3px; border: 0; background: transparent; color: var(--subtle); }
+    #anit-direction .anit-heart svg { width: 15px; height: 15px; }
+    #anit-direction .anit-heart[aria-pressed="true"] { color: var(--link); }
+    #anit-direction .anit-heart[aria-pressed="true"] svg { fill: currentColor; }
+    #anit-direction .anit-next { display: flex; align-items: center; gap: 15px; padding: 18px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+    #anit-direction .anit-next-icon { display: grid; place-items: center; color: var(--link); }
+    #anit-direction .anit-next-icon svg { width: 20px; height: 20px; }
+    #anit-direction .anit-next-copy { flex: 1; min-width: 0; }
+    #anit-direction .anit-next strong { display: block; font-size: 13px; font-weight: 600; }
+    #anit-direction .anit-next p { font-size: 12px; margin: 3px 0 0; }
+    #anit-direction .anit-empty { grid-column: 1/-1; padding: 40px 0; text-align: center; color: var(--subtle); }
+    #anit-direction .anit-toast { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); max-width: calc(100% - 30px); background: var(--raised); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 12px 18px; z-index: 12; font-size: 12px; box-shadow: 0 8px 30px #0002; }
+    #anit-direction .anit-details { position: absolute; z-index: 10; inset: 0; display: flex; justify-content: flex-end; border-radius: var(--radius); background: #0208139c; }
+    #anit-direction .anit-sheet { background: var(--surface); width: min(390px, 100%); padding: 25px; border-radius: 0 var(--radius) var(--radius) 0; align-self: stretch; display: flex; flex-direction: column; gap: 20px; }
+    #anit-direction .anit-sheet-head { display: flex; justify-content: space-between; align-items: center; gap: 15px; }
+    #anit-direction .anit-sheet-poster { max-width: 180px; width: 100%; }
+    #anit-direction .anit-sheet .anit-progress { margin-top: 12px; }
+    #anit-direction .anit-sheet p { font-size: 13px; }
+    #anit-direction .anit-compact { grid-template-columns: 74px minmax(0, 1fr); }
+    #anit-direction .anit-compact .anit-sidebar { padding: 24px 10px; align-items: center; }
+    #anit-direction .anit-compact .anit-logo { padding: 0; }
+    #anit-direction .anit-compact .anit-logo span, #anit-direction .anit-compact .anit-caption, #anit-direction .anit-compact .anit-nav-label, #anit-direction .anit-compact .anit-local-text, #anit-direction .anit-compact .anit-baki-copy { display: none; }
+    #anit-direction .anit-compact .anit-nav-button { justify-content: center; padding: 13px; }
+    #anit-direction .anit-compact .anit-local { padding: 18px 0 0; }
+    #anit-direction .anit-compact .anit-baki { margin-top: 20px; }
+    #anit-direction .anit-compact .anit-baki img { width: 45px; height: 52px; }
+    #anit-direction .anit-compact .anit-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    #anit-direction .anit-compact .anit-poster { aspect-ratio: 4/3; }
+    #anit-direction .anit-compact .anit-main { gap: 25px; }
+    #anit-direction .anit-picks { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 17px 0 0; }
+    #anit-direction .anit-filter { padding: 6px 12px; border: 1px solid var(--line); border-radius: 7px; background: transparent; color: var(--subtle); font-size: 12px; }
+    #anit-direction .anit-filter[aria-pressed="true"] { background: var(--raised); color: var(--ink); }
+    #anit-direction .anit-demo-label { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--line); padding-top: 16px; font-size: 11px; color: var(--subtle); }
+    #anit-direction .anit-motion .anit-cover-button { transition: transform 160ms ease; }
+    #anit-direction .anit-motion .anit-cover-button:hover { transform: translateY(-3px); }
+    #anit-direction .anit-motion .anit-play-overlay { transition: opacity 160ms ease; }
+    #anit-direction .anit-motion .anit-nav-button { transition: background 140ms ease, color 140ms ease; }
+    #anit-direction .anit-motion .anit-sheet { animation: anit-panel-in 180ms ease-out; }
+    @keyframes anit-panel-in { from { transform: translateX(20px); opacity: .4; } to { transform: translateX(0); opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { #anit-direction *, #anit-direction *::before, #anit-direction *::after { transition: none !important; animation: none !important; } }
+    @media (max-width: 760px) {
+      #anit-direction .anit-app { grid-template-columns: 68px minmax(0, 1fr); min-height: 1450px; --space: 20px; }
+      #anit-direction .anit-sidebar { padding: 22px 9px; align-items: center; }
+      #anit-direction .anit-logo { padding: 0; }
+      #anit-direction .anit-logo span, #anit-direction .anit-caption, #anit-direction .anit-nav-label, #anit-direction .anit-local-text, #anit-direction .anit-baki-copy { display: none; }
+      #anit-direction .anit-nav-button { justify-content: center; padding: 12px; }
+      #anit-direction .anit-local { padding: 16px 0 0; }
+      #anit-direction .anit-baki img { width: 44px; height: 52px; }
+      #anit-direction .anit-grid, #anit-direction .anit-compact .anit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      #anit-direction .anit-crumb { display: none; }
+      #anit-direction .anit-hero { grid-template-columns: minmax(0, 1fr); }
+      #anit-direction .anit-landscape { position: absolute; inset: 0 0 0 30%; z-index: -1; opacity: .5; }
+      #anit-direction .anit-hero-copy { background: linear-gradient(90deg, #141e32, #141e32ba 55%, transparent); }
+      #anit-direction .anit-hero-note { display: none; }
+    }
+    @media (max-width: 460px) {
+      #anit-direction .anit-app { grid-template-columns: minmax(0, 1fr); }
+      #anit-direction .anit-sidebar { padding: 14px; border-right: 0; border-bottom: 1px solid var(--line); border-radius: var(--radius) var(--radius) 0 0; flex-direction: row; gap: 12px; align-items: center; }
+      #anit-direction .anit-sidebar > div:nth-child(3), #anit-direction .anit-local { display: none; }
+      #anit-direction .anit-nav { display: flex; }
+      #anit-direction .anit-nav-button { padding: 9px; }
+      #anit-direction .anit-nav-label { display: none; }
+      #anit-direction .anit-topbar { min-height: 58px; padding: 10px 16px; }
+      #anit-direction .anit-main { padding: 18px; }
+      #anit-direction .anit-hero-copy { padding: 23px; }
+      #anit-direction .anit-next { flex-wrap: wrap; padding: 15px; }
+      #anit-direction .anit-next .anit-button { margin-left: 35px; }
+    }
+  </style>
+  <div class="viz-carousel" aria-label="Direções visuais do AniT" data-previous-label="Anterior" data-next-label="Próxima">
+    <section data-variant="Cinematográfica" aria-label="AniT cinematográfico"><div class="anit-app anit-motion" data-design="cinema" aria-label="Direção cinematográfica"></div></section>
+    <section data-variant="Essencial" aria-label="AniT essencial" hidden><div class="anit-app anit-compact anit-motion" data-design="compact" aria-label="Direção essencial"></div></section>
+  </div>
+  <script>
+    (() => {
+      const root = document.getElementById('anit-direction');
+      const library = [
+        { id:'horizonte', title:'Além do horizonte', genre:'Aventura', subtitle:'Ep. 08 · 12 episódios', episode:'Episódio 08', progress:64, colors:['linear-gradient(150deg,#274153,#668380 55%,#d7b090)','#e8c394','#213747'], description:'Uma viagem por lugares desconhecidos e pelas histórias de quem ficou pelo caminho.' },
+        { id:'neon', title:'Cidade de néon', genre:'Ficção', subtitle:'Ep. 03 · 24 episódios', episode:'Episódio 03', progress:28, colors:['linear-gradient(150deg,#242741,#4d3f69 55%,#b17787)','#d6a0b4','#27263f'], description:'Entre luzes e segredos, um encontro muda o destino de uma cidade que nunca dorme.' },
+        { id:'estrelas', title:'Entre estrelas', genre:'Ficção', subtitle:'12 episódios · Não iniciado', episode:'Episódio 01', progress:0, colors:['linear-gradient(150deg,#132b44,#285979 60%,#6e9baf)','#c6dce5','#102b43'], description:'Um pequeno grupo encontra novos mundos e descobre o significado de voltar para casa.' },
+        { id:'verao', title:'O último verão', genre:'Drama', subtitle:'12 episódios · Não iniciado', episode:'Episódio 01', progress:0, colors:['linear-gradient(150deg,#774a43,#a97c5e 55%,#dfbe80)','#f8dfa1','#5c4743'], description:'Promessas antigas e novas amizades se encontram em um verão que ninguém quer esquecer.' }
+      ];
+      const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
+      const saved = window.openai?.widgetState?.privateContent || {};
+      const favoriteIds = new Set(Array.isArray(saved.favorites) ? saved.favorites : ['neon']);
+      const models = [];
+      const state = { accent:'#3b82f6', radius:14, spacing:28, motion:true, theme:'Sistema' };
+      function remember() {
+        window.openai?.setWidgetState?.({modelContent:{visualDirection:'AniT · etapa 1',accent:state.accent},privateContent:{favorites:[...favoriteIds]}})?.catch?.(()=>{});
+      }
+      function icons() { globalThis.lucide?.createIcons?.({attrs:{width:16,height:16}}); }
+      function poster(item) {
+        return `<div class="anit-poster" style="--art-bg:${item.colors[0]};--art-sun:${item.colors[1]};--art-front:${item.colors[2]}"><span class="anit-poster-top">AniT · biblioteca</span><span class="anit-poster-letter">${item.title}</span><span class="anit-play-overlay">${icon('play')}</span></div>`;
+      }
+      function cards(model) {
+        const items = library.filter(item => (model.view!=='favorites' || favoriteIds.has(item.id)) && (!model.genre || item.genre===model.genre) && item.title.toLocaleLowerCase('pt-BR').includes(model.search.toLocaleLowerCase('pt-BR')));
+        model.element.querySelector('.anit-grid').innerHTML = items.length ? items.map(item=>`<article class="anit-anime"><button class="anit-cover-button cursor-interaction" data-card="${item.id}" aria-label="Ver detalhes de ${item.title}">${poster(item)}</button><div class="anit-progress" role="progressbar" aria-label="Progresso em ${item.title}" aria-valuenow="${item.progress}" aria-valuemin="0" aria-valuemax="100"><span style="width:${item.progress}%"></span></div><div class="anit-card-line"><span class="anit-card-title">${item.title}</span><button class="anit-heart cursor-interaction" data-favorite="${item.id}" aria-label="Favoritar ${item.title}" aria-pressed="${favoriteIds.has(item.id)}">${icon('heart')}</button></div><span class="anit-card-meta">${item.subtitle}</span></article>`).join('') : '<div class="anit-empty">Nenhum título por aqui.<br>Escolha outra busca ou adicione um favorito.</div>';
+        model.element.querySelector('.anit-result-count').textContent = `${items.length} títulos`;
+        icons();
+      }
+      function view(model, value) {
+        model.view=value;
+        model.element.querySelectorAll('[data-view]').forEach(button=>button.setAttribute('aria-current',button.dataset.view===value?'page':'false'));
+        model.element.querySelector('.anit-page-title').textContent = ({home:'Sua próxima história.',library:'Sua biblioteca.',favorites:'Os seus favoritos.'})[value];
+        model.element.querySelector('.anit-page-description').textContent = ({home:'Um bom momento para continuar de onde parou.',library:'Todas as suas histórias, organizadas do seu jeito.',favorites:'Os títulos que ganharam um lugar especial.'})[value];
+        const home = value==='home';
+        model.element.querySelector('.anit-feature').hidden=!home;
+        model.element.querySelector('.anit-section-title').textContent = home?'Na sua estante':value==='favorites'?'Seus favoritos':'Todos os animes';
+        cards(model);
+      }
+      function toast(model, text) {
+        const el=model.element.querySelector('.anit-toast');
+        el.textContent=text; el.hidden=false;
+        clearTimeout(model.timeout); model.timeout=setTimeout(()=>el.hidden=true,3200);
+      }
+      function details(model,id) {
+        const item=library.find(entry=>entry.id===id);
+        if(!item)return;
+        const panel=model.element.querySelector('.anit-details');
+        model.returnFocus=document.activeElement;
+        panel.innerHTML=`<div class="anit-sheet" role="dialog" aria-modal="true" aria-label="Detalhes de ${item.title}"><div class="anit-sheet-head"><span class="anit-small">Na sua biblioteca</span><button class="anit-button cursor-interaction" data-close aria-label="Fechar detalhes">${icon('x')} Fechar</button></div><div class="anit-sheet-poster">${poster(item)}</div><div><span class="anit-small">${item.genre}</span><h2>${item.title}</h2><p>${item.description}</p></div><div><span class="anit-small">${item.subtitle}</span><div class="anit-progress"><span style="width:${item.progress}%"></span></div></div><button class="anit-button anit-primary cursor-interaction" data-play="${item.id}">${icon('play')} ${item.progress?'Continuar assistindo':'Começar a assistir'}</button></div>`;
+        panel.hidden=false; icons(); panel.querySelector('[data-close]').focus();
+      }
+      function close(model) { model.element.querySelector('.anit-details').hidden=true; model.returnFocus?.focus?.(); }
+      root.querySelectorAll('[data-design]').forEach(element=>{
+        const compact=element.dataset.design==='compact';
+        const model={element,view:'home',search:'',genre:'',timeout:null}; models.push(model);
+        element.innerHTML=`<aside class="anit-sidebar"><div class="anit-logo">${icon('flame')}<span>AniT</span></div><div><div class="anit-caption">Sua jornada</div><nav class="anit-nav" aria-label="Navegação principal"><button class="anit-nav-button cursor-interaction" data-view="home" aria-current="page" aria-label="Início">${icon('house')}<span class="anit-nav-label">Início</span></button><button class="anit-nav-button cursor-interaction" data-view="library" aria-label="Biblioteca">${icon('library')}<span class="anit-nav-label">Biblioteca</span></button><button class="anit-nav-button cursor-interaction" data-view="favorites" aria-label="Favoritos">${icon('heart')}<span class="anit-nav-label">Favoritos</span></button></nav></div><div><div class="anit-caption">Organizar</div><div class="anit-nav"><button class="anit-nav-button" disabled aria-label="Calendário, fora do escopo desta prévia">${icon('calendar-days')}<span class="anit-nav-label">Calendário</span></button><button class="anit-nav-button" disabled aria-label="Histórico, fora do escopo desta prévia">${icon('history')}<span class="anit-nav-label">Histórico</span></button><button class="anit-nav-button" disabled aria-label="Conquistas, fora do escopo desta prévia">${icon('trophy')}<span class="anit-nav-label">Conquistas</span></button></div></div><div class="anit-local">${icon('hard-drive')}<span class="anit-local-text">Sua coleção, neste PC.</span><div class="anit-baki"><img src="https://cdn.jsdelivr.net/gh/PedroVitor-Dev/AniT@39aad509139fab976db960246d6e2606f96596b7/website/assets/baki-normal.png" alt="Baki-Pi" loading="lazy"><div class="anit-baki-copy"><strong>Um episódio por vez.</strong>O resto pode esperar.</div></div></div></aside><div class="anit-body"><header class="anit-topbar"><span class="anit-crumb">Sua biblioteca pessoal</span><label class="anit-search">${icon('search')}<input aria-label="Buscar na biblioteca de demonstração" placeholder="Buscar na sua estante…"></label><span class="anit-avatar" aria-label="Perfil demonstrativo">P</span></header><main class="anit-main"><div class="anit-heading"><div><h1 class="anit-page-title">Sua próxima história.</h1><p class="anit-page-description">Um bom momento para continuar de onde parou.</p></div><span class="anit-chip">Biblioteca local</span></div><div class="anit-feature">${compact?`<section class="anit-next" aria-label="Retomar episódio"><span class="anit-next-icon">${icon('circle-play')}</span><div class="anit-next-copy"><span class="anit-small">Continue de onde parou</span><strong>Além do horizonte · Episódio 08</strong><p>Faltam 8 minutos para o próximo capítulo.</p></div><button class="anit-button anit-primary cursor-interaction" data-play="horizonte">${icon('play')} Retomar</button></section>`:`<section class="anit-hero" aria-label="Episódio em destaque"><div class="anit-hero-copy"><div class="anit-eyebrow">${icon('play')} Continue sua jornada</div><h2>Além do<br>horizonte</h2><p>Temporada 1 · Episódio 08<br>Faltam 8 minutos para descobrir o que vem depois.</p><div class="anit-actions"><button class="anit-button anit-primary cursor-interaction" data-play="horizonte">${icon('play')} Continuar</button><button class="anit-button anit-secondary cursor-interaction" data-card="horizonte">Ver detalhes</button></div></div><div class="anit-landscape" aria-hidden="true"><div class="anit-mountain"></div><div class="anit-mountain near"></div></div><span class="anit-hero-note">Uma história de cada vez</span></section>`}</div><section><div class="anit-section-head"><h2 class="anit-section-title">Na sua estante</h2><button class="anit-text-button cursor-interaction" data-all>Ver biblioteca ${icon('arrow-right')}</button></div>${compact?'<div class="anit-small">Uma visão mais direta de toda a coleção.</div>':''}<div class="anit-grid" style="${compact?'margin-top:18px':''}"></div><div class="anit-picks" aria-label="Filtrar por gênero"><button class="anit-filter cursor-interaction" data-genre="" aria-pressed="true">Todos</button><button class="anit-filter cursor-interaction" data-genre="Aventura" aria-pressed="false">Aventura</button><button class="anit-filter cursor-interaction" data-genre="Ficção" aria-pressed="false">Ficção</button><button class="anit-filter cursor-interaction" data-genre="Drama" aria-pressed="false">Drama</button></div></section>${compact?`<section class="anit-next"><span class="anit-next-icon">${icon('sparkles')}</span><div class="anit-next-copy"><strong>Os seus favoritos, sempre à mão.</strong><p>Uma seleção feita por você.</p></div><button class="anit-button cursor-interaction" data-open-favorites>Ver favoritos</button></section>`:''}<footer class="anit-demo-label"><span>Proposta visual · títulos e capas ilustrativos</span><span class="anit-result-count">4 títulos</span></footer></main></div><div class="anit-details" hidden></div><div class="anit-toast" role="status" aria-live="polite" hidden></div>`;
+        element.querySelector('input').addEventListener('input',event=>{model.search=event.target.value;cards(model);});
+        element.addEventListener('click',event=>{
+          const button=event.target.closest('button');
+          if(button){
+            if(button.dataset.view)view(model,button.dataset.view);
+            else if(button.hasAttribute('data-all'))view(model,'library');
+            else if(button.hasAttribute('data-open-favorites'))view(model,'favorites');
+            else if(button.dataset.card)details(model,button.dataset.card);
+            else if(button.dataset.favorite){const id=button.dataset.favorite;favoriteIds.has(id)?favoriteIds.delete(id):favoriteIds.add(id);models.forEach(cards);remember();}
+            else if(button.hasAttribute('data-genre')){model.genre=button.dataset.genre;element.querySelectorAll('[data-genre]').forEach(item=>item.setAttribute('aria-pressed',String(item.dataset.genre===model.genre)));cards(model);}
+            else if(button.hasAttribute('data-close'))close(model);
+            else if(button.dataset.play){const item=library.find(entry=>entry.id===button.dataset.play);close(model);toast(model,`Prévia de retomada: ${item.title} · ${item.episode}`);}
+          } else if(event.target.classList.contains('anit-details'))close(model);
+        });
+        element.addEventListener('keydown',event=>{
+          const panel=element.querySelector('.anit-details');
+          if(panel.hidden)return;
+          if(event.key==='Escape'){close(model);event.preventDefault();}
+          if(event.key==='Tab'){
+            const focusable=[...panel.querySelectorAll('button')];const first=focusable[0],last=focusable.at(-1);
+            if(event.shiftKey&&document.activeElement===first){last.focus();event.preventDefault();}
+            else if(!event.shiftKey&&document.activeElement===last){first.focus();event.preventDefault();}
+          }
+        });
+        cards(model);
+      });
+      function applyDesign(){
+        const rgb=state.accent.match(/[0-9a-f]{2}/gi).map(hex=>parseInt(hex,16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);
+        const luminance=.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];
+        for(const model of models){const el=model.element;el.style.setProperty('--brand',state.accent);el.style.setProperty('--on-brand',luminance>.179?'#081427':'#ffffff');el.style.setProperty('--radius',`${state.radius}px`);el.style.setProperty('--space',`${state.spacing}px`);el.style.colorScheme=state.theme==='Sistema'?'light dark':state.theme==='Escuro'?'dark':'light';el.classList.toggle('anit-motion',state.motion);}
+      }
+      applyDesign();icons();
+      if(globalThis.Tweak){
+        const tweak=new Tweak({container:root,onChange:()=>{applyDesign();remember();}});
+        tweak.addColorPicker(state,'accent',{label:'Azul de destaque',reference:'anit.accent'});
+        tweak.addSlider(state,'radius',{label:'Cantos dos cards',min:6,max:20,unit:'px'});
+        tweak.addSlider(state,'spacing',{label:'Respiro do conteúdo',min:18,max:36,unit:'px'});
+        tweak.addToggle(state,'motion',{label:'Movimentos discretos'});
+        tweak.addSelect(state,'theme',{label:'Aparência',options:['Sistema','Escuro','Claro']});
+      }
+    })();
+  </script>
+</div>
