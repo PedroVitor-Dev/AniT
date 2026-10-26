@@ -31,6 +31,10 @@ Criar uma prova de integração isolada do WPF UI, com dados fictícios, sem red
 
 Critério de saída: a biblioteca está fixada e documentada, os componentes piloto funcionam com temas/preferências/teclado, os checks passam e as limitações de renderização estão conhecidas. Se houver incompatibilidade, registrar a evidência e ajustar a proposta antes de migrar telas.
 
+## Etapa 4: base visual compartilhada
+
+Tokens, componentes e adapter de preferências implementados em AniT.Presentation. Contratos e validações: [design-system.md](design-system.md). O piloto passou a consumir essa base. Próxima etapa: shell compartilhado (5), preservando o contrato da Biblioteca; DPI físico 125/150% segue pendente.
+
 ## Fila de migração orientada por risco
 
 | Item | Prioridade | Etapa prevista | Ação concreta | Aceitação |

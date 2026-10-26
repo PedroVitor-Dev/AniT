@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
-  <ItemGroup><PackageReference Include="WPF-UI" Version="[4.3.0]" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../AniT.Presentation/AniT.Presentation.csproj" /></ItemGroup>
   <ItemGroup>
     <Resource Include="../../assets/baki-pi/normal-sf.png" Link="Assets/baki-pi.png" />
     <Content Include="Licenses/*" CopyToOutputDirectory="PreserveNewest" />

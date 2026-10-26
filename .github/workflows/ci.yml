@@ -44,6 +44,9 @@ jobs:
       - name: Check isolated Fluent pilot
         run: dotnet run --project tests/AniT.UiChecks -c Release --no-build -- --check-fluent
 
+      - name: Check cinematic design system
+        run: dotnet run --project tests/AniT.UiChecks -c Release --no-build -- --check-design-system
+
       - name: Test signing preflight
         shell: pwsh
         run: .\scripts\Test-InstallerSigning.ps1

@@ -193,7 +193,8 @@
         "dependencies": {
           "AniT.Core": "[1.0.2, )",
           "AniT.Infrastructure": "[1.0.2, )",
-          "AniT.Player": "[1.0.2, )"
+          "AniT.Player": "[1.0.2, )",
+          "AniT.Presentation": "[1.0.2, )"
         }
       },
       "anit.core": {
@@ -212,10 +213,16 @@
           "AniT.Core": "[1.0.2, )"
         }
       },
-      "anit.presentation.pilot": {
+      "anit.presentation": {
         "type": "Project",
         "dependencies": {
           "WPF-UI": "[4.3.0, 4.3.0]"
+        }
+      },
+      "anit.presentation.pilot": {
+        "type": "Project",
+        "dependencies": {
+          "AniT.Presentation": "[1.0.2, )"
         }
       }
     }

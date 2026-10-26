@@ -3,8 +3,7 @@
   "dependencies": {
     "net10.0-windows7.0": {
       "WPF-UI": {
-        "type": "Direct",
-        "requested": "[4.3.0, 4.3.0]",
+        "type": "Transitive",
         "resolved": "4.3.0",
         "contentHash": "SIHhc8lIrhEQ/1cLFZN6Dtf8cqsLm4myBULj9obnacd9TyDs2vizhKYzRzTlcPEcnzb3L4EstvPN3M6kcXbJCA==",
         "dependencies": {
@@ -15,6 +14,12 @@
         "type": "Transitive",
         "resolved": "4.3.0",
         "contentHash": "7Kj9DmCCo4SOCd1jAiw4+EcMFP2nR8rLLvitAYzVtzbWToTsodkbie24+8x9C4LDLxkopWEUGX62szqqNy7oeg=="
+      },
+      "anit.presentation": {
+        "type": "Project",
+        "dependencies": {
+          "WPF-UI": "[4.3.0, 4.3.0]"
+        }
       }
     }
   }

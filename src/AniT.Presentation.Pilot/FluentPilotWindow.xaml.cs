@@ -3,26 +3,27 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
-using Wpf.Ui.Appearance;
+
 using Wpf.Ui.Controls;
-using Wpf.Ui.Markup;
+
 
 namespace AniT.Presentation.Pilot;
 
-public partial class FluentPilotWindow : Window
+public partial class FluentPilotWindow : Window, IAppearanceHost
 {
     private bool ready;
-    private readonly ThemesDictionary theme = new();
+    private string accent = "#77B5FF";
+    private readonly CinematicTheme visualTheme;
     public PilotDraft Draft { get; } = new();
     public PilotOptions Options { get; private set; } = new();
-    public ContentDialog? CurrentDialog { get; private set; }
+    private readonly CinematicDialog dialogs;
+    public ContentDialog? CurrentDialog => dialogs.Current;
 
     public FluentPilotWindow()
     {
-        Resources.MergedDictionaries.Add(theme);
-
-        Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/AniT.Presentation.Pilot;component/PilotTokens.xaml", UriKind.Relative) });
+        visualTheme = new CinematicTheme(this);
         InitializeComponent();
+        dialogs = new CinematicDialog(this, DialogHost);
         DataContext = this;
         ThemePicker.ItemsSource = Enum.GetValues<PilotTheme>();
         InterfacePicker.ItemsSource = new[] { 80, 100, 125 };
@@ -46,24 +47,15 @@ public partial class FluentPilotWindow : Window
         RendererPicker.SelectedItem = options.Renderer;
         MotionSwitch.IsChecked = options.ReduceMotion;
         ready = true;
-        var dark = options.Theme == PilotTheme.Dark || options.Theme == PilotTheme.System && ApplicationThemeManager.GetSystemTheme().ToString() is "Dark" or "CapturedMotion" or "Glow";
-        theme.Theme = dark ? ApplicationTheme.Dark : ApplicationTheme.Light;
-        string[] roles = ["Background", "Surface", "Raised", "Text", "Muted", "Border", "Accent", "Error"];
-        string[] colors = dark
-            ? ["#0C1017", "#171E29", "#1E2735", "#EDF2F8", "#A7B5C7", "#364256", "#77B5FF", "#FF9AAA"]
-            : ["#F3F5F9", "#FFFFFF", "#E7EDF5", "#182337", "#4B5D73", "#B5C2D3", "#175CB4", "#A92336"];
-        for (var i = 0; i < roles.Length; i++) Resources[$"Pilot.{roles[i]}"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(colors[i]));
-        foreach (var key in new[] { "AccentButtonBackground", "AccentButtonBackgroundPointerOver", "AccentButtonBackgroundPressed", "AccentControlElevationBorderBrush" }) Resources[key] = Resources["Pilot.Accent"];
-        foreach (var key in new[] { "AccentButtonForeground", "AccentButtonForegroundPointerOver" }) Resources[key] = new SolidColorBrush(dark ? Color.FromRgb(8,20,39) : Colors.White);
-        Resources["Pilot.Radius"] = new CornerRadius(options.Radius);
-        Resources["ControlCornerRadius"] = new CornerRadius(Math.Min(options.Radius, 16));
-        foreach (var (role, size) in new[] { ("Title", 28d), ("Section", 19d), ("Body", 14d), ("Caption", 12d) })
-            Resources[$"Pilot.{role}Size"] = size * options.TextScale / 100;
-        PilotRoot.LayoutTransform = new ScaleTransform(options.InterfaceScale / 100d, options.InterfaceScale / 100d);
-        if (options.ReduceMotion) MotionSwitch.Template = (ControlTemplate)FindResource("Pilot.StaticToggle");
-        else MotionSwitch.ClearValue(Control.TemplateProperty);
+        visualTheme.Apply(new AppearanceOptions((VisualTheme)options.Theme, accent, options.InterfaceScale, options.TextScale, options.Radius, options.ReduceMotion));
         ApplyRenderer();
         AdaptSidebar();
+    }
+
+    public void ApplyAppearance(AppearanceOptions options)
+    {
+        accent = options.Accent;
+        ApplyOptions(Options with { Theme = (PilotTheme)options.Theme, InterfaceScale = options.InterfaceScale, TextScale = options.TextScale, Radius = options.Radius, ReduceMotion = options.ReduceMotion });
     }
 
     private void ApplyRenderer()
@@ -91,26 +83,7 @@ public partial class FluentPilotWindow : Window
         else CollectionName.Focus();
     }
     private async void Dialog_Click(object sender, RoutedEventArgs e) => await OpenDialogAsync();
-    public async Task<ContentDialogResult> OpenDialogAsync()
-    {
-        if (CurrentDialog is not null) return ContentDialogResult.None;
-        var previous = Keyboard.FocusedElement;
-        var dialog = new ContentDialog(DialogHost)
-        {
-            Title = "Uma pausa para sua próxima história",
-            Content = new System.Windows.Controls.TextBlock { Text = "Esta é uma prévia de diálogo. Sua biblioteca e seus perfis continuam intactos.", TextWrapping = TextWrapping.Wrap },
-            PrimaryButtonText = "Entendi", CloseButtonText = "Voltar", DefaultButton = ContentDialogButton.Primary,
-            DialogMaxWidth = 480, DialogMargin = new Thickness(16)
-        };
-        KeyboardNavigation.SetTabNavigation(dialog, KeyboardNavigationMode.Cycle);
-        CurrentDialog = dialog;
-        dialog.Loaded += (_, _) => Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, new Action(() => { dialog.ApplyTemplate(); if (dialog.Template.FindName("PrimaryButton", dialog) is UIElement button) Keyboard.Focus(button); }));
-        try { return await dialog.ShowAsync(); }
-        finally { CurrentDialog = null; if (previous is UIElement element && element.IsEnabled) element.Focus(); }
-    }
-    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
-    {
-        if (CurrentDialog is null) return;
-        if (e.Key == Key.Escape) { CurrentDialog.Hide(); e.Handled = true; }
-    }
+    public Task<ContentDialogResult> OpenDialogAsync() => dialogs.ShowAsync(
+        "Uma pausa para sua próxima história",
+        "Esta é uma prévia de diálogo. Sua biblioteca e seus perfis continuam intactos.");
 }

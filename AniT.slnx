@@ -5,6 +5,7 @@
     <Project Path="src/AniT.Infrastructure/AniT.Infrastructure.csproj" />
     <Project Path="src/AniT.Player/AniT.Player.csproj" />
     <Project Path="src/AniT.Presentation.Pilot/AniT.Presentation.Pilot.csproj" />
+    <Project Path="src/AniT.Presentation/AniT.Presentation.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/AniT.Tests/AniT.Tests.csproj" />

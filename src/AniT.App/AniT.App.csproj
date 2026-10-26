@@ -1,7 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\AniT.Core\AniT.Core.csproj" />
+    <ProjectReference Include="..\AniT.Presentation\AniT.Presentation.csproj" />
     <ProjectReference Include="..\AniT.Infrastructure\AniT.Infrastructure.csproj" />
     <ProjectReference Include="..\AniT.Player\AniT.Player.csproj" />
   </ItemGroup>

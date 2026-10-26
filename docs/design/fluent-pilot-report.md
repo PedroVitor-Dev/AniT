@@ -54,3 +54,7 @@ O primeiro modo inclui inicialização a frio; o segundo reutiliza caches. Não 
 ## Próxima etapa
 
 Etapa 4: consolidar tokens e componentes, resolver fronteira do AppearanceManager, testar teclado/contraste em todos os estados e conferir DPI físico. Depois disso, migrar shell/Home conforme backlog. Nenhum instalador foi gerado.
+
+## Atualização da etapa 4
+
+A base foi extraída para AniT.Presentation. Agora há adapter para AppearanceManager e check com os handlers reais ativos. O foco/teclado do diálogo foi conferido visualmente no desktop; detalhes e limites em [design-system.md](design-system.md). A descrição acima registra o estado da etapa 3.

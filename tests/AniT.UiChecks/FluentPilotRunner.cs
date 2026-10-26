@@ -18,6 +18,7 @@ internal static class FluentPilotRunner
         var legacyStyle = new Button().TryFindResource(typeof(Button));
         try
         {
+            if (args.Contains("--check-design-system")) { DesignSystemChecks.Run(app); return 0; }
             if (args.Contains("--preview-fluent")) { app.Run(new FluentPilotWindow()); return 0; }
             if (args.Contains("--benchmark-fluent")) { Benchmark(); return 0; }
             SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
@@ -40,7 +41,7 @@ internal static class FluentPilotRunner
                     var panel = (Border)window.FindName("FormPanel");
                     Require(panel.CornerRadius.TopLeft == radius, "Panel radius");
                     var toggle = (Wpf.Ui.Controls.ToggleSwitch)window.FindName("MotionSwitch");
-                    if (reduced) Require(ReferenceEquals(toggle.Template, window.FindResource("Pilot.StaticToggle")), "Reduced motion template");
+                    if (reduced) Require(ReferenceEquals(toggle.Template, window.FindResource("AniT.StaticToggle")), "Reduced motion template");
                     Require(((HwndSource)PresentationSource.FromVisual(window)).CompositionTarget.RenderMode == (renderer == PilotRenderer.Software ? RenderMode.SoftwareOnly : RenderMode.Default), "Window renderer");
                     checks++;
                 }
@@ -75,7 +76,7 @@ internal static class FluentPilotRunner
             }
             Require(app.Resources.MergedDictionaries.Count == count, "Application dictionaries unchanged");
             Require(ReferenceEquals(legacyStyle, new Button().TryFindResource(typeof(Button))), "Legacy button style unchanged");
-            Require(app.TryFindResource("Pilot.Background") is null, "Pilot resources do not leak");
+            Require(app.TryFindResource("AniT.Background") is null, "Pilot resources do not leak");
             Console.WriteLine($"PASS: {checks} theme/scale/text/radius/motion/render combinations; 24 logical viewport checks; validation, modal lifecycle and resource isolation.");
             return 0;
         }

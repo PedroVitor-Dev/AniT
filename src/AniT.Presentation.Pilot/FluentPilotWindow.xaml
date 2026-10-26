@@ -1,59 +1,60 @@
 <Window x:Class="AniT.Presentation.Pilot.FluentPilotWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" xmlns:local="clr-namespace:AniT.Presentation.Pilot"
         Title="AniT · Piloto Cinematográfico" Width="1120" Height="840" MinWidth="580" MinHeight="420"
         WindowStartupLocation="CenterScreen" UseLayoutRounding="True" SnapsToDevicePixels="True"
-        FontFamily="Segoe UI" Background="{DynamicResource Pilot.Background}" Foreground="{DynamicResource Pilot.Text}"
-        PreviewKeyDown="Window_PreviewKeyDown">
+        FontFamily="Segoe UI" Background="{DynamicResource AniT.Background}" Foreground="{DynamicResource AniT.Text}"
+        >
     <Grid x:Name="PilotRoot" SizeChanged="Root_SizeChanged">
         <Grid.ColumnDefinitions><ColumnDefinition x:Name="SidebarWidth" Width="210"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-        <Border x:Name="Sidebar" Background="{DynamicResource Pilot.Surface}" BorderBrush="{DynamicResource Pilot.Border}" BorderThickness="0,0,1,0" Padding="24">
+        <Border x:Name="Sidebar" Background="{DynamicResource AniT.Sidebar}" BorderBrush="{DynamicResource AniT.Border}" BorderThickness="0,0,1,0" Padding="24">
             <Grid>
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                <StackPanel><TextBlock Text="AniT" FontSize="30" FontWeight="Bold" Foreground="{DynamicResource Pilot.Text}"/><TextBlock Text="SUA PRÓXIMA HISTÓRIA" Style="{DynamicResource Pilot.Caption}" Margin="0,6,0,26"/><TextBlock Text="Início" Style="{DynamicResource Pilot.Section}"/><TextBlock Text="Biblioteca" Style="{DynamicResource Pilot.Body}" Margin="0,20,0,0"/><TextBlock Text="Favoritos" Style="{DynamicResource Pilot.Body}" Margin="0,20,0,0"/></StackPanel>
-                <StackPanel Grid.Row="2"><Image Source="/AniT.Presentation.Pilot;component/Assets/baki-pi.png" Width="68" Height="76" Stretch="Uniform" HorizontalAlignment="Left"/><TextBlock Text="Um episódio por vez." Style="{DynamicResource Pilot.Body}" Margin="0,12,0,0"/><TextBlock Text="Sua coleção, neste PC." Style="{DynamicResource Pilot.Caption}" Margin="0,5,0,0"/></StackPanel>
+                <StackPanel><TextBlock Text="AniT" FontSize="30" FontWeight="Bold" Foreground="{DynamicResource AniT.Text}"/><TextBlock Text="SUA PRÓXIMA HISTÓRIA" Style="{DynamicResource AniT.Caption}" Margin="0,6,0,26"/><RadioButton Content="Início" GroupName="SampleNav" IsChecked="True" Style="{DynamicResource AniT.NavigationItem}"/><RadioButton Content="Biblioteca" GroupName="SampleNav" Style="{DynamicResource AniT.NavigationItem}" Margin="0,8,0,0"/><RadioButton Content="Favoritos" GroupName="SampleNav" Style="{DynamicResource AniT.NavigationItem}" Margin="0,8,0,0"/></StackPanel>
+                <StackPanel Grid.Row="2"><Image Source="/AniT.Presentation.Pilot;component/Assets/baki-pi.png" Width="68" Height="76" Stretch="Uniform" HorizontalAlignment="Left"/><TextBlock Text="Um episódio por vez." Style="{DynamicResource AniT.Body}" Margin="0,12,0,0"/><TextBlock Text="Sua coleção, neste PC." Style="{DynamicResource AniT.Caption}" Margin="0,5,0,0"/></StackPanel>
             </Grid>
         </Border>
         <Grid Grid.Column="1" Margin="24,20">
             <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
             <ScrollViewer x:Name="PilotScroller" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" BorderThickness="0" Focusable="False">
                 <StackPanel Margin="8,8,20,20">
-                    <TextBlock Text="Sua próxima história." FontSize="{DynamicResource Pilot.TitleSize}" FontWeight="SemiBold" Foreground="{DynamicResource Pilot.Text}" TextWrapping="Wrap"/>
-                    <TextBlock Text="Direção Cinematográfica · prévia de componentes" Style="{DynamicResource Pilot.Caption}" Margin="0,7,0,20"/>
-                    <Border Style="{DynamicResource Pilot.Panel}" Background="#141E32" Margin="0,0,0,22">
+                    <TextBlock Text="Sua próxima história." FontSize="{DynamicResource AniT.TitleSize}" FontWeight="SemiBold" Foreground="{DynamicResource AniT.Text}" TextWrapping="Wrap"/>
+                    <TextBlock Text="Direção Cinematográfica · prévia de componentes" Style="{DynamicResource AniT.Caption}" Margin="0,7,0,20"/>
+                    <Border Style="{DynamicResource AniT.Panel}" Background="#141E32" Margin="0,0,0,22">
                         <Grid>
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="110"/></Grid.ColumnDefinitions>
-                            <StackPanel><TextBlock Text="CONTINUE SUA JORNADA" FontSize="{DynamicResource Pilot.CaptionSize}" Foreground="#B1CFFF"/><TextBlock Text="Além do horizonte" FontSize="{DynamicResource Pilot.TitleSize}" Foreground="#F4F6FB" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,10,0,5"/><TextBlock Text="Temporada 1 · Episódio 08" FontSize="{DynamicResource Pilot.CaptionSize}" Foreground="#C1CDDD" TextWrapping="Wrap"/><ui:Button Content="Ver prévia" Appearance="Primary" Style="{DynamicResource Pilot.Button}" HorizontalAlignment="Left" Margin="0,16,0,0" Click="Dialog_Click" AutomationProperties.Name="Ver prévia do episódio fictício"/></StackPanel>
+                            <StackPanel><TextBlock Text="CONTINUE SUA JORNADA" FontSize="{DynamicResource AniT.CaptionSize}" Foreground="#B1CFFF"/><TextBlock Text="Além do horizonte" FontSize="{DynamicResource AniT.TitleSize}" Foreground="#F4F6FB" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,10,0,5"/><TextBlock Text="Temporada 1 · Episódio 08" FontSize="{DynamicResource AniT.CaptionSize}" Foreground="#C1CDDD" TextWrapping="Wrap"/><ui:Button Content="Ver prévia" Appearance="Primary" Style="{DynamicResource AniT.Button}" Margin="0,0,12,8" HorizontalAlignment="Left" Click="Dialog_Click" AutomationProperties.Name="Ver prévia do episódio fictício"/></StackPanel>
                             <Grid Grid.Column="1" IsHitTestVisible="False" Margin="12,0,0,0"><Ellipse Fill="#B98977" Width="64" Height="64" VerticalAlignment="Center" HorizontalAlignment="Center"/><Path Data="M0,140 L25,65 48,108 78,40 110,140Z" Fill="#263148" Stretch="Uniform" VerticalAlignment="Bottom" Height="100"/></Grid>
                         </Grid>
                     </Border>
-                    <TextBlock Text="Seu espaço, do seu jeito" Style="{DynamicResource Pilot.Section}" Margin="0,0,0,14"/>
-                    <Border x:Name="FormPanel" Style="{DynamicResource Pilot.Panel}">
+                    <TextBlock Text="Seu espaço, do seu jeito" Style="{DynamicResource AniT.Section}" Margin="0,0,0,14"/>
+                    <Border x:Name="FormPanel" Style="{DynamicResource AniT.Panel}">
                         <StackPanel>
-                            <Label Content="Nome da _coleção" Target="{Binding ElementName=CollectionName}" Foreground="{DynamicResource Pilot.Text}" FontSize="{DynamicResource Pilot.BodySize}" Padding="0"/>
-                            <ui:TextBox x:Name="CollectionName" Text="{Binding Draft.Name, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, NotifyOnValidationError=True}" PlaceholderText="Como você chama sua estante?" ClearButtonEnabled="False" Style="{DynamicResource Pilot.Input}" Margin="0,8,0,0" AutomationProperties.Name="Nome da coleção de demonstração" AutomationProperties.HelpText="Digite um nome de até 32 caracteres."/>
-                            <TextBlock x:Name="NameError" Text="{Binding Draft.ValidationMessage}" Style="{DynamicResource Pilot.Caption}" Foreground="{DynamicResource Pilot.Error}" Margin="0,6,0,8" AutomationProperties.LiveSetting="Polite"/>
+                            <Label Content="Nome da _coleção" Target="{Binding ElementName=CollectionName}" Foreground="{DynamicResource AniT.Text}" FontSize="{DynamicResource AniT.BodySize}" Padding="0"/>
+                            <ui:TextBox x:Name="CollectionName" Text="{Binding Draft.Name, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, NotifyOnValidationError=True}" PlaceholderText="Como você chama sua estante?" ClearButtonEnabled="False" Style="{DynamicResource AniT.Input}" Margin="0,8,0,0" AutomationProperties.Name="Nome da coleção de demonstração" AutomationProperties.HelpText="Digite um nome de até 32 caracteres."/>
+                            <TextBlock x:Name="NameError" Text="{Binding Draft.ValidationMessage}" Style="{DynamicResource AniT.Caption}" Foreground="{DynamicResource AniT.Error}" Margin="0,6,0,8" AutomationProperties.LiveSetting="Polite"/>
                             <WrapPanel>
-                                <ui:Button x:Name="ApplyButton" Content="Aplicar à prévia" Appearance="Primary" Style="{DynamicResource Pilot.Button}" Click="Apply_Click" IsDefault="True" AutomationProperties.Name="Aplicar nome somente à prévia"/>
-                                <ui:Button x:Name="DialogButton" Content="Abrir diálogo" Appearance="Secondary" Style="{DynamicResource Pilot.Button}" Click="Dialog_Click"/>
-                                <ui:Button x:Name="DisabledButton" Content="Indisponível" Appearance="Secondary" Style="{DynamicResource Pilot.Button}" IsEnabled="False"/>
+                                <ui:Button x:Name="ApplyButton" Content="Aplicar à prévia" Appearance="Primary" Style="{DynamicResource AniT.Button}" Margin="0,0,12,8" Click="Apply_Click" IsDefault="True" AutomationProperties.Name="Aplicar nome somente à prévia"/>
+                                <ui:Button x:Name="DialogButton" Content="Abrir diálogo" Appearance="Secondary" Style="{DynamicResource AniT.Button}" Margin="0,0,12,8" Click="Dialog_Click"/>
+                                <ui:Button x:Name="DisabledButton" Content="Indisponível" Appearance="Secondary" Style="{DynamicResource AniT.Button}" Margin="0,0,12,8" IsEnabled="False"/>
                             </WrapPanel>
-                            <TextBlock x:Name="ActionStatus" Text="Dados ilustrativos. Nenhum arquivo será alterado." Style="{DynamicResource Pilot.Caption}" Margin="0,4,0,0" AutomationProperties.LiveSetting="Polite"/>
+                            <TextBlock x:Name="ActionStatus" Text="Dados ilustrativos. Nenhum arquivo será alterado." Style="{DynamicResource AniT.Caption}" Margin="0,4,0,0" AutomationProperties.LiveSetting="Polite"/>
                         </StackPanel>
                     </Border>
-                    <TextBlock Text="Aparência da prévia" Style="{DynamicResource Pilot.Section}" Margin="0,24,0,14"/>
+                    <TextBlock Text="Aparência da prévia" Style="{DynamicResource AniT.Section}" Margin="0,24,0,14"/>
                     <WrapPanel x:Name="OptionsPanel">
-                        <StackPanel Width="130" Margin="0,0,14,14"><Label Content="_Tema" Target="{Binding ElementName=ThemePicker}" Padding="0" Foreground="{DynamicResource Pilot.Muted}" FontSize="{DynamicResource Pilot.CaptionSize}"/><ComboBox x:Name="ThemePicker" Style="{DynamicResource Pilot.Select}" SelectionChanged="Options_Changed" AutomationProperties.Name="Tema da prévia"/></StackPanel>
-                        <StackPanel Width="130" Margin="0,0,14,14"><Label Content="_Interface" Target="{Binding ElementName=InterfacePicker}" Padding="0" Foreground="{DynamicResource Pilot.Muted}" FontSize="{DynamicResource Pilot.CaptionSize}"/><ComboBox x:Name="InterfacePicker" Style="{DynamicResource Pilot.Select}" SelectionChanged="Options_Changed" AutomationProperties.Name="Escala da interface"/></StackPanel>
-                        <StackPanel Width="130" Margin="0,0,14,14"><Label Content="Te_xto" Target="{Binding ElementName=TextPicker}" Padding="0" Foreground="{DynamicResource Pilot.Muted}" FontSize="{DynamicResource Pilot.CaptionSize}"/><ComboBox x:Name="TextPicker" Style="{DynamicResource Pilot.Select}" SelectionChanged="Options_Changed" AutomationProperties.Name="Escala do texto"/></StackPanel>
-                        <StackPanel Width="130" Margin="0,0,14,14"><Label Content="_Cantos" Target="{Binding ElementName=RadiusPicker}" Padding="0" Foreground="{DynamicResource Pilot.Muted}" FontSize="{DynamicResource Pilot.CaptionSize}"/><ComboBox x:Name="RadiusPicker" Style="{DynamicResource Pilot.Select}" SelectionChanged="Options_Changed" AutomationProperties.Name="Raio dos cantos"/></StackPanel>
-                        <StackPanel Width="155" Margin="0,0,14,14"><Label Content="_Renderização" Target="{Binding ElementName=RendererPicker}" Padding="0" Foreground="{DynamicResource Pilot.Muted}" FontSize="{DynamicResource Pilot.CaptionSize}"/><ComboBox x:Name="RendererPicker" Style="{DynamicResource Pilot.Select}" SelectionChanged="Options_Changed" AutomationProperties.Name="Modo de renderização"/></StackPanel>
+                        <StackPanel Width="130" Margin="0,0,14,14"><Label Content="_Tema" Target="{Binding ElementName=ThemePicker}" Padding="0" Foreground="{DynamicResource AniT.Muted}" FontSize="{DynamicResource AniT.CaptionSize}"/><ComboBox x:Name="ThemePicker" Style="{DynamicResource AniT.Select}" SelectionChanged="Options_Changed" AutomationProperties.Name="Tema da prévia"/></StackPanel>
+                        <StackPanel Width="130" Margin="0,0,14,14"><Label Content="_Interface" Target="{Binding ElementName=InterfacePicker}" Padding="0" Foreground="{DynamicResource AniT.Muted}" FontSize="{DynamicResource AniT.CaptionSize}"/><ComboBox x:Name="InterfacePicker" Style="{DynamicResource AniT.Select}" SelectionChanged="Options_Changed" AutomationProperties.Name="Escala da interface"/></StackPanel>
+                        <StackPanel Width="130" Margin="0,0,14,14"><Label Content="Te_xto" Target="{Binding ElementName=TextPicker}" Padding="0" Foreground="{DynamicResource AniT.Muted}" FontSize="{DynamicResource AniT.CaptionSize}"/><ComboBox x:Name="TextPicker" Style="{DynamicResource AniT.Select}" SelectionChanged="Options_Changed" AutomationProperties.Name="Escala do texto"/></StackPanel>
+                        <StackPanel Width="130" Margin="0,0,14,14"><Label Content="_Cantos" Target="{Binding ElementName=RadiusPicker}" Padding="0" Foreground="{DynamicResource AniT.Muted}" FontSize="{DynamicResource AniT.CaptionSize}"/><ComboBox x:Name="RadiusPicker" Style="{DynamicResource AniT.Select}" SelectionChanged="Options_Changed" AutomationProperties.Name="Raio dos cantos"/></StackPanel>
+                        <StackPanel Width="155" Margin="0,0,14,14"><Label Content="_Renderização" Target="{Binding ElementName=RendererPicker}" Padding="0" Foreground="{DynamicResource AniT.Muted}" FontSize="{DynamicResource AniT.CaptionSize}"/><ComboBox x:Name="RendererPicker" Style="{DynamicResource AniT.Select}" SelectionChanged="Options_Changed" AutomationProperties.Name="Modo de renderização"/></StackPanel>
                     </WrapPanel>
-                    <ui:ToggleSwitch x:Name="MotionSwitch" Content="Reduzir movimento" Checked="Motion_Changed" Unchecked="Motion_Changed" FontSize="{DynamicResource Pilot.BodySize}" Foreground="{DynamicResource Pilot.Text}" AutomationProperties.Name="Reduzir movimento na prévia"/>
+                    <ui:ToggleSwitch Style="{DynamicResource AniT.Toggle}" x:Name="MotionSwitch" Content="Reduzir movimento" Checked="Motion_Changed" Unchecked="Motion_Changed" FontSize="{DynamicResource AniT.BodySize}" Foreground="{DynamicResource AniT.Text}" AutomationProperties.Name="Reduzir movimento na prévia"/>
+                    <local:ComponentSamples />
                 </StackPanel>
             </ScrollViewer>
-            <TextBlock Grid.Row="1" Text="Prévia isolada · sem acesso à biblioteca ou aos perfis" Style="{DynamicResource Pilot.Caption}" Margin="8,14,8,0"/>
+            <TextBlock Grid.Row="1" Text="Prévia isolada · sem acesso à biblioteca ou aos perfis" Style="{DynamicResource AniT.Caption}" Margin="8,14,8,0"/>
         </Grid>
         <ui:ContentDialogHost x:Name="DialogHost" Grid.ColumnSpan="2" IsDisableSiblingsEnabled="True" KeyboardNavigation.TabNavigation="Cycle"/>
     </Grid>
