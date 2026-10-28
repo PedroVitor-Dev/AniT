@@ -346,5 +346,26 @@ public sealed class OnlineAnimeTests
         await seed.StopAsync();
     }
 
+    [Fact]
+    public async Task AutomaticImportCleansTitleOrdersEpisodesAndKeepsExistingLibraryIdentity()
+    {
+        var root=Path.Combine(Path.GetTempPath(),"AniT.Online.Automatic",Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
+        var original=Path.Combine(root,"SPY.x.FAMILY.S02.1080p.WEBRip.MULTi.x265-group");Directory.CreateDirectory(original);
+        foreach(var number in new[]{12,3,1})await File.WriteAllBytesAsync(Path.Combine(original,$"[Group] SPY.x.FAMILY.S02E{number:00}.1080p.WEBRip.x265-releasegroup.mkv"),new byte[4096]);
+        var torrent=await new TorrentCreator{PieceLength=32768}.CreateAsync(new TorrentFileSource(original));var metadata=Path.Combine(root,"test.torrent");await File.WriteAllBytesAsync(metadata,torrent.Encode());
+        var database=Path.Combine(root,"db.sqlite");
+        Guid animeId;
+        using(var db=AniTDatabase.Create(database)) {var anime=new Anime {Title="Spy x Family"};animeId=anime.Id;db.Anime.Add(anime);await db.SaveChangesAsync();}
+        await using var service=new OnlineAnimeService(database,Path.Combine(root,"state"),OfflineSettings(Path.Combine(root,"cache")));
+        await service.AddAsync(metadata,root,"",true);
+        using(var db=AniTDatabase.Create(database)) {
+            var anime=Assert.Single(await db.Anime.ToListAsync());Assert.Equal(animeId,anime.Id);
+            Assert.All(await db.Episodes.ToListAsync(),episode=>Assert.StartsWith("Episódio ",episode.Title));
+            Assert.All(await db.Seasons.ToListAsync(),season=>Assert.Equal(2,season.Number));
+        }
+        var snapshot=Assert.Single(await service.SnapshotAsync());Assert.Equal(new[]{"S02E01","S02E03","S02E12"},snapshot.Episodes.Select(episode=>episode.Title));
+        Assert.True(snapshot.WaitingForSelection);
+    }
+
     static int FreePort() { var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0); listener.Start(); var port = ((IPEndPoint)listener.LocalEndpoint).Port; listener.Stop(); return port; }
 }

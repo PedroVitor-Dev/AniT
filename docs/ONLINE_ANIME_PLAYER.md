@@ -4,17 +4,17 @@ O menu do AniT abre uma janela dedicada para magnet links, URLs HTTP/HTTPS de ar
 
 ## Uso
 
-1. Leia o aviso e confirme que tem autorização para baixar e compartilhar o material. A tela explica que BitTorrent também envia partes do conteúdo para outros participantes.
-2. Informe a fonte, opcionalmente o nome do anime e a pasta de destino.
-3. Clique em **Adicionar lista à biblioteca**. Magnet links precisam obter metadados dos participantes; a preparação pode ser cancelada e tem limite de dois minutos.
-4. Confira os episódios e clique em **Assistir em streaming**. Uma janela de preparação permite cancelar a espera pelos trechos iniciais e pelo índice do vídeo.
-5. A reprodução progressiva usa o mpv integrado e o fluxo normal de histórico, progresso, Baki-Pi e conquistas. O aplicativo padrão do Windows continua disponível para arquivos completos; arquivos incompletos exigem o motor de streaming integrado.
+1. Leia o aviso e confirme que possui autorização para baixar e compartilhar o material.
+2. Escolha **Arquivo .torrent** (arquivo local ou URL HTTP/HTTPS) ou **Link magnético**. Selecionar um arquivo inicia a importação; para links, cole e clique em **Adicionar à biblioteca**.
+3. O destino é a primeira pasta habilitada e disponível da biblioteca, usada como pasta base. O seletor aparece somente quando não existe pasta disponível; a escolha é salva para as próximas importações.
+4. Um popup mostra leitura da fonte, organização e identificação via integrações existentes. O nome vem do parser e do AniList, sem campo manual; a capa e os metadados são salvos antes da conclusão quando o serviço responde. Depois do cadastro, **Concluir agora** permite encerrar a busca de arte sem perder os episódios.
+5. Ao exibir **Carregado!**, o importador fecha e retorna ao Início atualizado. Abra os episódios pela Home ou Biblioteca; somente o episódio aberto inicia o download.
 
 **Cloud** indica um arquivo ainda em download, não armazenamento remoto. A tag aparece nos cartões de início, na biblioteca, nos episódios e nos downloads. Ao concluir e verificar o arquivo, ele passa a ser reproduzido do disco, preservando o mesmo ID de episódio e seu progresso.
 
 Adicionar a lista obtém apenas metadados, sem selecionar vídeos. Abrir um episódio inicia somente esse vídeo e suas legendas correspondentes; trocar de episódio pausa o anterior. A preparação mostra velocidade, fontes, dados recebidos e tempo decorrido. Fechar o player pausa o download sem apagar dados. Reabrir o AniT aguarda nova escolha, inclusive para listas antigas. Não há download automático do próximo episódio.
 
-Fechar apenas a janela de gerenciamento mantém o episódio ativo. O botão de pausa interrompe o download selecionado. A troca de perfil encerra o motor anterior.
+Fechar apenas a janela de gerenciamento mantém o episódio ativo. A tela de importação não exibe uma segunda lista de reprodução nem controles de transferência. A troca de perfil encerra o motor anterior.
 
 ## Implementação
 
@@ -116,3 +116,11 @@ Os binários do mpv ficam fora do Git e são incluídos na publicação pelo pro
 O índice também é preparado em segundo plano quando há ao menos cinco segundos de mídia em cache. O cursor e as faixas escolhidas são preservados ao ativá-lo, permitindo que os controles nativos do mpv usem as buscas precisas. Trocar de episódio cancela essa preparação, e eventos antigos de reprodução não são aplicados ao novo episódio. O ensaio nativo final validou a busca enviada diretamente ao mpv, sem passar pelo método de busca do AniT.
 
 Verificação final: 348 testes automatizados; cobertura de linhas de 72,09% (acima do piso de 70%); 28 cenários visuais; reprodução real em cache pelo serviço; fluxo de player nativo com abertura parcial, checkpoint no fim, controles nativos, fechamento e reabertura.
+
+## Fluxo de importação simplificado
+
+O consentimento usa o estilo de checkbox do AniT, com fundo e texto vinculados ao tema. O ajuste automático de contraste não reinterpreta seu texto contra um fundo branco inexistente. A interface não solicita nome, pasta ou gestão de episódios em cada uso.
+
+A importação limpa nomes técnicos, ordena temporada e número, conserva nomes alternativos ao adotar o título identificado e reutiliza animes existentes. Episódios sem título descritivo recebem “Episódio 01”, preservando o nome físico do arquivo. A integração de metadados registra aliases explicitamente como novos objetos, corrigindo uma falha de gravação encontrada no ensaio.
+
+Verificação: 349 testes automatizados, 48 layouts em claro/escuro e fonte 100%/140%, e `--check-online-import` com HTTP simulado para AniList/capa. O ensaio confere nome canônico, capa salva, cadastro sem vídeo baixando, conclusão sem arte após cancelamento e importações posteriores sem duplicar o anime. O popup respeita redução de movimento. Falhas de rede mantêm o nome reconhecido e a lista utilizável; capas podem ser completadas depois.

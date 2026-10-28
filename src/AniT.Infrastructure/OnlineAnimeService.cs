@@ -134,10 +134,11 @@ public sealed class OnlineAnimeService : IAsyncDisposable
         }
     }
 
-    public async Task<string> AddAsync(string source, string destination, string title, bool authorized, CancellationToken token = default)
+    public async Task<string> AddAsync(string source, string destination, string title, bool authorized, CancellationToken token = default, IProgress<OnlineImportProgress>? progress = null)
     {
         if (!authorized) throw new InvalidOperationException("Confirme que possui autorização para baixar e compartilhar este conteúdo.");
         if (string.IsNullOrWhiteSpace(destination) || !Directory.Exists(destination)) throw new DirectoryNotFoundException("Escolha uma pasta existente para os episódios.");
+        progress?.Report(new(8,"Lendo a fonte","Obtendo a lista de arquivos, sem baixar os episódios."));
         source = source.Trim();
         if (source.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase)) source = NormalizeMagnet(source);
         else if (!File.Exists(source) && (!Uri.TryCreate(source, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https")))
@@ -179,12 +180,18 @@ public sealed class OnlineAnimeService : IAsyncDisposable
             if (!File.Exists(durableMetadata) && File.Exists(manager.MetadataPath)) File.Copy(manager.MetadataPath, durableMetadata);
             if (File.Exists(durableMetadata)) job = job with { Source = durableMetadata };
             if (!manager.Files.Any(f => f.Length > 0 && IsVideo(f.Path))) throw new InvalidDataException("O torrent não contém episódios em um formato de vídeo compatível.");
-            job = job with { Title = string.IsNullOrWhiteSpace(job.Title) ? manager.Name : job.Title };
+            var inferredTitle = manager.Files.Where(file => IsVideo(file.Path))
+                .Select(file => EpisodeFileNameParser.Parse(file.DownloadCompleteFullPath, job.SavePath).CandidateTitle)
+                .Where(value => !string.IsNullOrWhiteSpace(value)).GroupBy(value => value!, StringComparer.OrdinalIgnoreCase)
+                .OrderByDescending(group => group.Count()).Select(group => group.Key).FirstOrDefault();
+            job = job with { Title = string.IsNullOrWhiteSpace(job.Title) ? inferredTitle ?? manager.Name : job.Title };
+            progress?.Report(new(40,"Organizando os episódios",job.Title));
             savedJobs[id] = job;
             await SaveAsync(token);
             await ImportAsync(job, manager, token);
             downloads.Add(id, (job, manager));
             prepared.Add(id);
+            progress?.Report(new(65,"Lista adicionada","Buscando nome, capa e informações do anime."));
             return id;
         } catch {
             if (pendingId is not null && !downloads.ContainsKey(pendingId) && savedJobs.Remove(pendingId)) await SaveAsync(CancellationToken.None);
@@ -201,8 +208,12 @@ public sealed class OnlineAnimeService : IAsyncDisposable
         if (await db.MediaFiles.AnyAsync(f => f.OnlineTorrentId == job.Id, token)) return;
         var root = new LibraryRoot { Path = job.SavePath, DisplayName = "Online Anime Player · " + job.Title, IsEnabled = false };
         db.LibraryRoots.Add(root);
-        var anime = await db.Anime.Include(a => a.Seasons).ThenInclude(s => s.Episodes).FirstOrDefaultAsync(a => a.Title == job.Title, token);
+        var normalized = AnimeTitleNormalizer.Normalize(job.Title);
+        var catalog = await db.Anime.Include(a => a.Aliases).ToListAsync(token);
+        var anime = normalized.Length == 0 ? null : catalog.FirstOrDefault(a => AnimeTitleNormalizer.Normalize(a.Title) == normalized
+            || AnimeTitleNormalizer.Normalize(a.EnglishTitle) == normalized || a.Aliases.Any(alias => alias.NormalizedAlias == normalized));
         if (anime is null) { anime = new Anime { Title = job.Title }; db.Anime.Add(anime); }
+        else await db.Entry(anime).Collection(a => a.Seasons).Query().Include(season => season.Episodes).LoadAsync(token);
         var ordered = manager.Files.Select((file, index) => (file, index)).Where(x => x.file.Length > 0 && IsVideo(x.file.Path)).OrderBy(x => x.file.Path, StringComparer.OrdinalIgnoreCase).ToList();
         var ordinal = 0;
         foreach (var (file, index) in ordered) {
@@ -210,10 +221,12 @@ public sealed class OnlineAnimeService : IAsyncDisposable
             var parsed = EpisodeFileNameParser.Parse(file.DownloadCompleteFullPath, job.SavePath);
             var seasonNumber = parsed.CanAutoImport ? parsed.SeasonNumber : 1;
             var number = parsed.CanAutoImport ? (int)parsed.EpisodeNumber!.Value : ordinal;
+            var parsedTitle = System.Text.RegularExpressions.Regex.IsMatch(Path.GetFileNameWithoutExtension(file.Path),
+                @"(?i)(?:S\d+E\d+|-\s*\d+)[\s._\-\[\](]*(?:\d{3,4}p|WEB.?Rip|WEB.?DL|BDRip|Blu.?Ray|x26[45]|h.?26[45])") ? null : parsed.EpisodeTitle;
             var season = anime.Seasons.FirstOrDefault(s => s.Number == seasonNumber);
             if (season is null) { season = new Season { AnimeId = anime.Id, Number = seasonNumber }; anime.Seasons.Add(season); db.Seasons.Add(season); }
             var episode = season.Episodes.FirstOrDefault(e => e.Number == number);
-            if (episode is null) { episode = new Episode { SeasonId = season.Id, Number = number, Title = parsed.EpisodeTitle }; season.Episodes.Add(episode); db.Episodes.Add(episode); }
+            if (episode is null) { episode = new Episode { SeasonId = season.Id, Number = number, Title = parsedTitle ?? $"Episódio {number:00}" }; season.Episodes.Add(episode); db.Episodes.Add(episode); }
             db.MediaFiles.Add(new MediaFile {
                 EpisodeId = episode.Id, LibraryRootId = root.Id,
                 RelativePath = Path.GetRelativePath(job.SavePath, file.DownloadCompleteFullPath),
@@ -241,7 +254,7 @@ public sealed class OnlineAnimeService : IAsyncDisposable
                     prepared.Add(id);
                 }
                 var episodes = new List<OnlineEpisode>();
-                foreach (var file in files.Where(f => f.OnlineTorrentId == id)) {
+                foreach (var file in files.Where(f => f.OnlineTorrentId == id).OrderBy(f => f.Episode!.Season!.Number).ThenBy(f => f.Episode!.Number).ThenBy(f => f.FileName)) {
                     if (file.OnlineFileIndex < 0 || file.OnlineFileIndex >= manager.Files.Count) continue;
                     var torrentFile = manager.Files[file.OnlineFileIndex];
                     var complete = torrentFile.BitField.AllTrue && File.Exists(torrentFile.DownloadCompleteFullPath);
@@ -432,3 +445,5 @@ public sealed class OnlineAnimeService : IAsyncDisposable
 }
 
 public sealed record OnlinePreparationProgress(long ReceivedBytes, long BytesPerSecond, int Peers, double Percent, string? Error, long InitialPieceBytes = 0, bool InitialPieceReady = false, string? Stage = null);
+
+public sealed record OnlineImportProgress(double Percent, string Title, string Detail);

@@ -8,6 +8,11 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ### Melhorado
 
+- Online Anime Player: importação por arquivo/URL `.torrent` ou magnet, sem pedir nome ou destino quando já existe pasta padrão. Popup com etapas reais, efeitos discretos e confirmação “Carregado!”, seguido do retorno ao Início.
+- Nome limpo pelo parser, metadados e capa consultados durante a importação, episódios em ordem numérica e reconhecimento por aliases para reaproveitar a entrada existente. Concluir sem arte preserva o catálogo já importado.
+- Aviso de autorização com contraste corrigido no tema escuro e controles verificados também no modo claro e com fonte ampliada.
+
+
 - Online Anime Player Beta: motor mpv dedicado para streaming progressivo, com IPC assíncrono, pausa por buffering, retomada, controles nativos e checkpoint confirmado ao fechar. MPC-HC permanece nos arquivos locais e no Movie Theater.
 - MKVs com anexos grandes abrem por uma vista HTTP que pula fontes incorporadas e metadados opcionais, preservando offsets e os arquivos originais. O primeiro trecho de imagem é preparado; o índice verificado é carregado quando necessário para retomada e buscas. Legendas usam fontes do sistema durante o streaming.
 - Respostas HTTP antigas não desviam a prioridade das novas solicitações; a espera por peças deixa de cortar o vídeo após 90 segundos. Busca de fontes consulta trackers declarados de torrents públicos, com concorrência limitada.
