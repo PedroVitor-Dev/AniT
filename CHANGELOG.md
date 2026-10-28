@@ -18,6 +18,8 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ### Corrigido
 
+- Metadados: aliases recebidos das integrações são inseridos explicitamente como novas linhas, evitando uma falha de concorrência que podia impedir a gravação do nome e da capa.
+
 - Reprodução: checkpoints no último instante ou além da duração reiniciam do começo. O MPC-HC recebe a retomada somente após informar a duração, evitando mandar um streaming incompleto diretamente para EOF. Pontos intermediários continuam preservados.
 
 - Online Anime Player: a preparação prioriza e verifica o começo do episódio, sem exigir antecipadamente peças do final. O player solicita o índice conforme o contêiner exigir. A janela informa o tamanho da peça inicial e usa progresso indeterminado durante sua verificação, com botão de cancelamento no tema do app.

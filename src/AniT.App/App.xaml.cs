@@ -997,13 +997,15 @@ public partial class App : Application
         {
             var normalizedAlias = global::AniT.Core.AnimeTitleNormalizer.Normalize(alias);
             if (normalizedAlias.Length == 0 || !knownAliases.Add(normalizedAlias)) continue;
-            anime.Aliases.Add(new global::AniT.Core.AnimeAlias
+            var importedAlias = new global::AniT.Core.AnimeAlias
             {
                 AnimeId = anime.Id,
                 Alias = alias,
                 NormalizedAlias = normalizedAlias,
                 Source = global::AniT.Core.AnimeAliasSource.Imported
-            });
+            };
+            context.Add(importedAlias);
+            anime.Aliases.Add(importedAlias);
         }
         await context.SaveChangesAsync(cancellationToken);
         return metadata;
