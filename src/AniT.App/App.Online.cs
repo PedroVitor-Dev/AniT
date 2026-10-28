@@ -57,7 +57,7 @@ public partial class App
     static async Task<Uri> PrepareOnlineStreamAsync(MediaFile file)
     {
         // A modeless preparation surface leaves cancellation accessible while peers supply the first pieces.
-        using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+        using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(5));
         var window = new OnlineBufferWindow(timeout);
         window.Show();
         var progress = new Progress<OnlinePreparationProgress>(window.Report);
@@ -82,8 +82,8 @@ internal sealed class OnlineBufferWindow : Window
         if (progress.InitialPieceBytes > 0)
             transferStatus.Text += $"\nBloco inicial: {progress.InitialPieceBytes / (1024d * 1024):0.##} MB · "
                 + (progress.InitialPieceReady ? "verificado" : "aguardando uma peça completa para verificar");
-        transferBar.IsIndeterminate = !progress.InitialPieceReady;
-        transferBar.Value = progress.InitialPieceReady ? 100 : 0;
+        if (progress.Stage is { } stage) transferStatus.Text = stage + "\n" + transferStatus.Text;
+        transferBar.IsIndeterminate = true;
     }
 
     public OnlineBufferWindow(CancellationTokenSource cancellation)

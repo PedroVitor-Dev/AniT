@@ -19,6 +19,7 @@
      <Button Content="Concordar e continuar" IsEnabled="{Binding IsChecked, ElementName=ConsentCheck}" HorizontalAlignment="Left" Click="Consent_Click"/>
     </StackPanel></Border>
     <StackPanel x:Name="Workspace" Visibility="Collapsed">
+     <TextBlock Text="Vídeo e áudio originais. Durante o streaming, as legendas usam fontes do sistema; as fontes incorporadas ficam disponíveis com o arquivo completo." FontSize="12" Foreground="{DynamicResource AniT.Brush.TextSecondary}" Margin="0,0,0,14"/>
      <Border Style="{StaticResource Panel}"><StackPanel x:Name="AddForm">
       <TextBlock Text="Adicionar episódios" FontSize="21" FontWeight="SemiBold"/>
       <TextBlock Text="Magnet link ou URL de um arquivo .torrent" Margin="0,16,0,6"/><TextBox x:Name="SourceBox" AutomationProperties.Name="URL ou magnet do torrent"/>

@@ -71,6 +71,42 @@ public sealed class OnlineAnimeTests
         Assert.Equal(64, (await main.Content.ReadAsByteArrayAsync(deadline.Token)).Length);
     }
 
+    [Fact]
+    public async Task PendingReadAheadDoesNotStealPriorityFromNewContainerRequest()
+    {
+        using var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(6));
+        var source=new CompetingReads();
+        await using var server=new OnlineStreamServer(source,"test.mkv",(offset,count)=>offset==0 ? source.MainAvailable.Task.IsCompleted : source.ProbeAvailable.Task.IsCompleted);
+        using var client=new HttpClient();using var mainRequest=new HttpRequestMessage(HttpMethod.Get,server.Address);
+        mainRequest.Headers.Range=new RangeHeaderValue(0,63);
+        using var main=await client.SendAsync(mainRequest,HttpCompletionOption.ResponseHeadersRead,timeout.Token);
+        await source.MainStarted.Task.WaitAsync(timeout.Token);
+        using var probeRequest=new HttpRequestMessage(HttpMethod.Get,server.Address);probeRequest.Headers.Range=new RangeHeaderValue(100000,100063);
+        var probeResponse=client.SendAsync(probeRequest,timeout.Token);
+        await source.ProbeStarted.Task.WaitAsync(timeout.Token);
+        var previous=source.MainReads;await Task.Delay(750,timeout.Token);
+        Assert.Equal(previous,source.MainReads);
+        source.ProbeAvailable.TrySetResult();using var probe=await probeResponse;
+        Assert.Equal(64,(await probe.Content.ReadAsByteArrayAsync(timeout.Token)).Length);
+        source.MainAvailable.TrySetResult();Assert.Equal(64,(await main.Content.ReadAsByteArrayAsync(timeout.Token)).Length);
+    }
+
+    sealed class CompetingReads : MemoryStream
+    {
+        public TaskCompletionSource MainStarted {get;}=new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ProbeStarted {get;}=new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource MainAvailable {get;}=new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ProbeAvailable {get;}=new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public int MainReads;
+        public CompetingReads():base(new byte[100064]){}
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer,CancellationToken token=default)
+        {
+            if(Position==0) {Interlocked.Increment(ref MainReads);MainStarted.TrySetResult();await MainAvailable.Task.WaitAsync(token);}
+            else {ProbeStarted.TrySetResult();await ProbeAvailable.Task.WaitAsync(token);}
+            return await base.ReadAsync(buffer,token);
+        }
+    }
+
     sealed class DelayedVideoStream : MemoryStream
     {
         public TaskCompletionSource FirstRead { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);

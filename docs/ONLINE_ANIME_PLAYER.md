@@ -8,7 +8,7 @@ O menu do AniT abre uma janela dedicada para magnet links, URLs HTTP/HTTPS de ar
 2. Informe a fonte, opcionalmente o nome do anime e a pasta de destino.
 3. Clique em **Adicionar lista à biblioteca**. Magnet links precisam obter metadados dos participantes; a preparação pode ser cancelada e tem limite de dois minutos.
 4. Confira os episódios e clique em **Assistir em streaming**. Uma janela de preparação permite cancelar a espera pelos trechos iniciais e pelo índice do vídeo.
-5. A reprodução usa o MPC-HC integrado e o fluxo normal de histórico, progresso, Baki-Pi e conquistas. O aplicativo padrão do Windows continua disponível para arquivos completos; arquivos incompletos exigem o MPC-HC integrado.
+5. A reprodução progressiva usa o mpv integrado e o fluxo normal de histórico, progresso, Baki-Pi e conquistas. O aplicativo padrão do Windows continua disponível para arquivos completos; arquivos incompletos exigem o motor de streaming integrado.
 
 **Cloud** indica um arquivo ainda em download, não armazenamento remoto. A tag aparece nos cartões de início, na biblioteca, nos episódios e nos downloads. Ao concluir e verificar o arquivo, ele passa a ser reproduzido do disco, preservando o mesmo ID de episódio e seu progresso.
 
@@ -87,3 +87,32 @@ Regressão com peças de 4 MiB: o peer sintético possui as primeiras peças, ma
 O diagnóstico do teste real encontrou posição salva em 1421,056 segundos para um episódio com duração de 1421,056 segundos. A preparação levou 39 segundos para verificar o primeiro bloco, e o player informou o contêiner carregado 21 segundos depois, mas recebeu o comando para ir ao fim. Portanto abrir o player não validava reprodução. O início do arquivo já em cache decodificou 24 quadros em diagnóstico local com FFmpeg, sem baixar mais conteúdo ou alterar o arquivo.
 
 O app descarta para retomada posições nos últimos dois segundos (com limite proporcional para clipes curtos), sem apagar o histórico. O bridge confere novamente a posição após NOWPLAYING, quando conhece a duração, e aplica somente uma busca inicial. O ensaio de MKV usa `ANIT_TEST_RESUME_AT_END=1` e `ANIT_TEST_END_POSITION_SECONDS=210` para conferir que um ponto salvo exatamente no fim do arquivo sintético de 210 segundos volta ao começo e avança de verdade. A retomada intermediária em 69,435 segundos tem ensaio separado. A velocidade de um torrent real ainda depende da rede, das fontes e das regiões exigidas pelo contêiner; esse resultado não comprova início instantâneo da fonte testada pelo usuário.
+
+## Motor de streaming e MKV com anexos grandes (28/10/2026)
+
+O caso real não estava corrigido apenas com a validação do checkpoint. O segundo episódio também saltava para o final sem retomada. A inspeção do primeiro arquivo encontrou **42.473.057 bytes de anexos antes do primeiro cluster de vídeo**, que começa no offset 42.563.264. Os 4 MiB iniciais não continham esse primeiro trecho de imagem. O MPC-HC ainda aguardava consultas ao final do contêiner durante a abertura.
+
+O Beta agora usa um processo mpv dedicado com JSON IPC, cache limitado, espera de rede e controles nativos. Arquivos locais completos e Movie Theater continuam no MPC-HC. O fluxo preserva os eventos e IDs usados pelo histórico, Baki-Pi e conquistas. Fechar o player cancela esperas de índice e pausa a transferência.
+
+Para MKV/WebM em download, uma vista HTTP transforma cabeçalhos de anexos e atalhos para metadados opcionais em elementos EBML Void **do mesmo comprimento**. O arquivo salvo e suas peças verificadas não são modificados. Offsets, vídeo, áudio, legendas, duração e capítulos são preservados; fontes incorporadas ficam temporariamente ocultas, então as legendas usam fontes do sistema. O arquivo completo é reproduzido no formato original, com suas fontes. A preparação verifica o cabeçalho e o primeiro trecho de imagem, sem baixar dezenas de MB de fontes.
+
+O índice de busca é obtido e verificado quando há retomada ou avanço. A referência original ao índice é então reativada na vista HTTP, e o player recarrega a posição com o índice correto. Isso evita tanto a leitura de metadados no fim durante toda abertura quanto buscas que varriam o vídeo inteiro por falta de índice.
+
+A entrega HTTP mantém respostas independentes, mas uma resposta antiga sem dados não disputa mais a prioridade com uma solicitação nova do contêiner. Esperas por peças não encerram mais a resposta após 90 segundos como se o vídeo tivesse acabado. Trackers declarados pelo próprio torrent público são consultados com concorrência limitada e respeitando os intervalos; torrents privados mantêm sua política original.
+
+**Evidência:** nos mesmos trechos reais já em cache, o controle integrado mpv chegou a 1,21 segundo de reprodução em 1,65 segundo e informou saída de vídeo HEVC de 1920×1080 em 10 bits. O teste completo pelo serviço MonoTorrent também avançou o vídeo real. O MPC-HC demorava cerca de 23 segundos nesse ensaio. Isso isola o custo da abertura, **não promete esse tempo para um download frio**: uma medição separada da fonte real recebeu aproximadamente 3 MB em 50 segundos. A disponibilidade da fonte continua sendo uma limitação mensurável.
+
+Validação nativa com mídia sintética: início parcial, retomada em 69,435 segundos, pausa, avanço para 150 segundos sob rede limitada, retorno a 12 segundos, conclusão do arquivo, fechamento com checkpoint confirmado e reabertura do player. Para repetir:
+
+```powershell
+./scripts/Get-Mpv.ps1 -Destination Player/MPV
+$env:ANIT_TEST_MKV = 'C:\testes\video-sintetico-hevc-opus.mkv'
+$env:ANIT_TEST_USE_MPV = '1'
+dotnet run --project tests/AniT.UiChecks -- --check-online-player --mkv --resume
+```
+
+Os binários do mpv ficam fora do Git e são incluídos na publicação pelo projeto do app. O instalador verifica a presença do motor e das licenças; nenhuma associação de arquivos ou configuração global do Windows é modificada.
+
+O índice também é preparado em segundo plano quando há ao menos cinco segundos de mídia em cache. O cursor e as faixas escolhidas são preservados ao ativá-lo, permitindo que os controles nativos do mpv usem as buscas precisas. Trocar de episódio cancela essa preparação, e eventos antigos de reprodução não são aplicados ao novo episódio. O ensaio nativo final validou a busca enviada diretamente ao mpv, sem passar pelo método de busca do AniT.
+
+Verificação final: 348 testes automatizados; cobertura de linhas de 72,09% (acima do piso de 70%); 28 cenários visuais; reprodução real em cache pelo serviço; fluxo de player nativo com abertura parcial, checkpoint no fim, controles nativos, fechamento e reabertura.

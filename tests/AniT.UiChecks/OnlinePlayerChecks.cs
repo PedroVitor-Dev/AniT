@@ -18,6 +18,7 @@ internal static class OnlinePlayerChecks
             try { var position=(await player.GetPositionAsync(token)).TotalSeconds; if(position>=minimum && position<=maximum)return; }
             catch(OperationCanceledException)when(!token.IsCancellationRequested) { }
             catch(TimeoutException)when(!token.IsCancellationRequested) { }
+            catch(IOException)when(!token.IsCancellationRequested) { }
             await Task.Delay(150,token);
         }
     }
@@ -58,7 +59,7 @@ internal static class OnlinePlayerChecks
                 var stats=Task.Run(async()=> { while(!statsCancellation.IsCancellationRequested) { Console.WriteLine($"Native torrent: {manager.State} {manager.Progress:0.0}% peers={manager.OpenConnections} rate={manager.Monitor.DownloadRate} error={manager.Error?.Reason}");try {await Task.Delay(3000,statsCancellation.Token);}catch(OperationCanceledException){break;} } });
                 var address=await Task.Run(()=>service.OpenStreamAsync(file,token));
                 statsCancellation.Cancel(); await stats;
-                using var player=new MpcHcPlayer(Path.Combine(AppContext.BaseDirectory,"Player","MPC-HC","mpc-hc64.exe"),true);
+                using var player=new MpcHcPlayer(Path.Combine(AppContext.BaseDirectory,"Player","MPC-HC","mpc-hc64.exe"),true,onlineStreaming:Environment.GetEnvironmentVariable("ANIT_TEST_USE_MPV")=="1",prepareOnlineSeek:service.PrepareSeekIndexAsync);
                 player.Diagnostic += (_, message) => Console.WriteLine(message);
                 var startup=System.Diagnostics.Stopwatch.StartNew();
                 var savedAtEnd=Environment.GetEnvironmentVariable("ANIT_TEST_RESUME_AT_END")=="1";
@@ -81,7 +82,12 @@ internal static class OnlinePlayerChecks
                     var restoreRate=Task.Run(async()=> { await Task.Delay(3000,token); Volatile.Write(ref relay.BytesPerSecond,1024*1024); });
                     var seeking=System.Diagnostics.Stopwatch.StartNew();
                     var pulses=0;
-                    var seek=player.SeekAsync(TimeSpan.FromSeconds(target),token);
+                    Task seek;
+                    if(Environment.GetEnvironmentVariable("ANIT_TEST_USE_MPV")=="1") {
+                        var native=(MpvOnlinePlayer)typeof(MpcHcPlayer).GetField("onlinePlayer",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(player)!;
+                        while(!native.SeekIndexReady)await Task.Delay(100,token);
+                        seek=native.CommandAsync(["seek",target,"absolute+exact"],token);
+                    } else seek=player.SeekAsync(TimeSpan.FromSeconds(target),token);
                     while(!seek.IsCompleted) { await Task.WhenAny(seek,Task.Delay(50,token)); pulses++; token.ThrowIfCancellationRequested(); }
                     await seek;
                     if(pulses==0)throw new Exception("Seek should yield the UI while remote data is fetched");
@@ -100,7 +106,18 @@ internal static class OnlinePlayerChecks
                 do { await Task.Delay(100,token); snapshot=(await Task.Run(()=>service.SnapshotAsync(token))).Single(); } while(snapshot.Episodes.Single(e=>e.EpisodeId==file.EpisodeId).IsCloud);
                 if(fixture is not null && snapshot.Episodes.Where(e=>e.EpisodeId!=file.EpisodeId).Any(e=>!e.IsCloud)) throw new Exception("The other episodes should remain pending");
                 await player.SeekAsync(TimeSpan.FromSeconds(20),token);player.Resume();await WaitForPosition(player,20.3,token);
-                Console.WriteLine($"Online native MPC-HC passed: play while downloading ({progressAtFirstPlayback:0.0}% of selected episode at first playback), pause, forward seek (MKV), backward seek to 12s under throttle, resume, finish download and keep playing at 20s. Synthetic media only.");
+                if(Environment.GetEnvironmentVariable("ANIT_TEST_USE_MPV")=="1") {
+                    var closed=new TaskCompletionSource<PlaybackPositionChangedEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    player.PlaybackClosed+=(_,progress)=>closed.TrySetResult(progress);
+                    var owned=(MpvOnlinePlayer)typeof(MpcHcPlayer).GetField("onlinePlayer",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(player)!;
+                    try {await owned.CommandAsync(["quit"],token);}catch(IOException){}
+                    var last=await closed.Task.WaitAsync(TimeSpan.FromSeconds(5),token);
+                    if(!last.IsPositionKnown || last.Position.TotalSeconds<20)throw new Exception("Closing mpv must preserve a confirmed checkpoint");
+                    await player.PlayStreamAsync(address,null,new MpcHcPlaybackOptions(1.25,false,"ja","off"),token);
+                    await WaitForPosition(player,1.2,token,8);
+                    Console.WriteLine("PASS mpv close preserves checkpoint and reopening starts a fresh working session.");
+                }
+                Console.WriteLine($"Online native player passed: play while downloading ({progressAtFirstPlayback:0.0}% of selected episode at first playback), pause, forward seek (MKV), backward seek to 12s under throttle, resume, finish download and keep playing at 20s. Synthetic media only.");
                 await seed.StopAsync(); result=0;
             } catch(Exception ex) { Console.Error.WriteLine(ex); }
             finally { window.Close();app.Shutdown(); }

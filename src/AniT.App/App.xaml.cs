@@ -873,6 +873,7 @@ public partial class App : Application
             .FirstOrDefault(file => file.IsCloud || global::System.IO.File.Exists(global::System.IO.Path.Combine(file.LibraryRoot!.Path, file.RelativePath)));
         if (mediaFile is null) throw new InvalidOperationException("Nenhuma versão disponível deste episódio foi encontrada. Atualize a Biblioteca ou conecte o disco onde o arquivo está salvo.");
 
+        MediaPlayer?.CancelOnlinePreparation();
         var mediaPath = global::System.IO.Path.Combine(mediaFile.LibraryRoot!.Path, mediaFile.RelativePath);
         Uri? onlineAddress = null;
         if (!mediaFile.IsCloud) await PauseOnlinePlaybackAsync();
@@ -906,7 +907,10 @@ public partial class App : Application
         var options = new global::AniT.Player.MpcHcPlaybackOptions(
             playbackSettings.DefaultPlaybackSpeed, playbackSettings.StartPlaybackFullscreen,
             playbackSettings.PreferredAudioLanguage, playbackSettings.PreferredSubtitleLanguage);
-        if (onlineAddress is not null) await MediaPlayer!.PlayStreamAsync(onlineAddress, resumeAt, options);
+        if (onlineAddress is not null) {
+            try { await MediaPlayer!.PlayStreamAsync(onlineAddress, resumeAt, options); }
+            catch { await PauseOnlinePlaybackAsync(onlineAddress); throw; }
+        }
         else await MediaPlayer!.PlayAsync(mediaFile, resumeAt, options);
         lastProgressWrite = DateTimeOffset.UtcNow;
         await MarkEpisodeAsWatchingAsync(episodeId);
@@ -1098,7 +1102,7 @@ public partial class App : Application
         if (MediaPlayer is not null) return;
         var playerPath = ResolveBundledPlayerPath();
         if (!global::System.IO.File.Exists(playerPath)) return;
-        MediaPlayer = new global::AniT.Player.MpcHcPlayer(playerPath);
+        MediaPlayer = new global::AniT.Player.MpcHcPlayer(playerPath, onlineStreaming: true, prepareOnlineSeek: (address, token) => online is { } service ? service.PrepareSeekIndexAsync(address, token) : Task.FromResult(false));
         MediaPlayer.PositionChanged += async (_, progress) => await PersistProgressAsync(progress);
         MediaPlayer.PlaybackEnded += async (_, _) => await CompleteActiveEpisodeAsync();
         MediaPlayer.PlaybackClosed += async (_, progress) =>

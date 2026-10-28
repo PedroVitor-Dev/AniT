@@ -19,6 +19,7 @@ public sealed class OnlineAnimeService : IAsyncDisposable
     readonly ClientEngine engine;
     readonly SemaphoreSlim gate = new(1, 1);
     readonly SemaphoreSlim streamGate = new(1, 1);
+    readonly List<Task> peerDiscovery = [];
     readonly Dictionary<string, (OnlineJob Job, TorrentManager Manager)> downloads = new();
     readonly CancellationTokenSource lifetime = new();
     OnlineStreamServer? stream;
@@ -302,32 +303,53 @@ public sealed class OnlineAnimeService : IAsyncDisposable
                 await SaveAsync(token);
                 await manager.StartAsync();
             } finally { gate.Release(); }
+            peerDiscovery.RemoveAll(task => task.IsCompleted);
+            peerDiscovery.Add(DiscoverPeersAsync(manager));
             var media = manager.Files[file.OnlineFileIndex];
             var initialReceived = manager.Monitor.DataBytesReceived;
             var initialPiece = media.StartPieceIndex;
             var pieceBytes = manager.Torrent!.PieceLength;
             Diagnostic?.Invoke($"Preparando episódio {file.OnlineFileIndex}: prioridade no início, peça {initialPiece}, {pieceBytes} bytes por peça; {manager.OpenConnections} conexões.");
+            var stage="Baixando o cabeçalho verificado do vídeo…";
             using var reporting = CancellationTokenSource.CreateLinkedTokenSource(token);
             var reportTask = Task.Run(async () => {
                 while (!reporting.IsCancellationRequested) {
                     progress?.Report(new OnlinePreparationProgress(manager.Monitor.DataBytesReceived - initialReceived, manager.Monitor.DownloadRate,
                         manager.OpenConnections, media.BitField.PercentComplete, manager.Error?.Reason.ToString(), pieceBytes,
-                        manager.Bitfield[initialPiece]));
+                        manager.Bitfield[initialPiece], stage));
                     try { await Task.Delay(500, reporting.Token); } catch (OperationCanceledException) { break; }
                 }
             });
             try {
                 // MonoTorrent's default prebuffer fetches the tail before the beginning.
                 // Let the container request its index on demand instead of blocking startup on it.
-                var input = await manager.StreamProvider!.CreateStreamAsync(media, false, token);
+                Stream input = await manager.StreamProvider!.CreateStreamAsync(media, false, token);
                 try {
                     // A fresh LocalStream starts at zero without informing its streaming picker.
                     input.Seek(1, SeekOrigin.Begin); input.Seek(0, SeekOrigin.Begin);
                     await input.ReadExactlyAsync(new byte[1], token);
                     input.Seek(0, SeekOrigin.Begin);
+                    if (Path.GetExtension(media.Path).ToLowerInvariant() is ".mkv" or ".webm") {
+                        stage="Localizando a imagem e pulando anexos opcionais…";
+                        var view = await MatroskaStreamingView.CreateAsync(input, token);
+                        input = view;
+                        Diagnostic?.Invoke($"Vista MKV: {view.SkippedAttachmentBytes} bytes de anexos opcionais ignorados; primeiro cluster em {view.FirstMediaOffset}.");
+                        if (view.FirstMediaOffset > 0) {
+                            stage="Baixando o primeiro trecho de imagem…";
+                            input.Position = view.FirstMediaOffset;
+                            await input.ReadExactlyAsync(new byte[1], token);
+                            input.Position = 0;
+                        }
+                    }
                 } catch { await input.DisposeAsync(); throw; }
                 Diagnostic?.Invoke($"Início verificado; liberando player para episódio {file.OnlineFileIndex} com {media.BitField.PercentComplete:0.0}% baixado.");
-                stream = new OnlineStreamServer(input, Path.GetFileName(media.Path)) { Diagnostic = message => Diagnostic?.Invoke(message) };
+                stream = new OnlineStreamServer(input, Path.GetFileName(media.Path), (offset, count) => {
+                    var first = manager.Torrent!.ByteOffsetToPieceIndex(media.OffsetInTorrent + offset);
+                    var last = offset + count == media.Length ? media.EndPieceIndex
+                        : manager.Torrent.ByteOffsetToPieceIndex(media.OffsetInTorrent + offset + count);
+                    for (var piece = first; piece <= last; piece++) if (!manager.Bitfield[piece]) return false;
+                    return true;
+                }) { Diagnostic = message => Diagnostic?.Invoke(message) };
                 return stream.Address;
             } catch {
                 await manager.PauseAsync();
@@ -340,6 +362,35 @@ public sealed class OnlineAnimeService : IAsyncDisposable
                 throw;
             } finally { reporting.Cancel(); await reportTask; }
         } finally { streamGate.Release(); }
+    }
+
+    public async Task<bool> PrepareSeekIndexAsync(Uri address,CancellationToken token)
+    {
+        using var operation=CancellationTokenSource.CreateLinkedTokenSource(token,lifetime.Token);token=operation.Token;
+        await streamGate.WaitAsync(token);
+        try {
+            if(stream?.Address!=address)return false;
+            Diagnostic?.Invoke("Preparando índice verificado para busca precisa, sem baixar os anexos de fontes.");
+            return await stream.PrepareIndexAsync(token);
+        } finally {streamGate.Release();}
+    }
+
+    async Task DiscoverPeersAsync(TorrentManager manager)
+    {
+        // A single tier normally uses one active tracker. Public magnets often put all
+        // their trackers in that tier; ask the declared alternatives without delaying playback.
+        if (manager.TrackerManager.Private) return;
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
+        timeout.CancelAfter(TimeSpan.FromSeconds(12));
+        var trackers = manager.TrackerManager.Tiers.SelectMany(tier => tier.Trackers).Distinct().Take(16).ToArray();
+        try {
+            Diagnostic?.Invoke($"Consultando {trackers.Length} trackers declarados para ampliar as fontes; respeitando seus intervalos.");
+            await Parallel.ForEachAsync(trackers, new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = timeout.Token }, async (tracker, token) => {
+                try { await manager.TrackerManager.AnnounceAsync(tracker, token); }
+                catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostic?.Invoke($"Consulta de fontes: {ex.GetType().Name}."); }
+            });
+        } catch (OperationCanceledException) { }
+        catch (Exception ex) { Diagnostic?.Invoke($"Consulta de fontes interrompida: {ex.GetType().Name}."); }
     }
 
     public async Task PausePlaybackAsync(Uri? expectedAddress = null)
@@ -373,10 +424,11 @@ public sealed class OnlineAnimeService : IAsyncDisposable
         await streamGate.WaitAsync();
         await gate.WaitAsync();
         try {
+            await Task.WhenAll(peerDiscovery);
             if (stream is not null) await stream.DisposeAsync();
             foreach (var (_, manager) in downloads.Values) await manager.StopAsync();
         } finally { engine.Dispose(); gate.Release(); streamGate.Release(); lifetime.Dispose(); }
     }
 }
 
-public sealed record OnlinePreparationProgress(long ReceivedBytes, long BytesPerSecond, int Peers, double Percent, string? Error, long InitialPieceBytes = 0, bool InitialPieceReady = false);
+public sealed record OnlinePreparationProgress(long ReceivedBytes, long BytesPerSecond, int Peers, double Percent, string? Error, long InitialPieceBytes = 0, bool InitialPieceReady = false, string? Stage = null);

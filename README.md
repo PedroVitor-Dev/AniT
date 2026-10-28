@@ -105,7 +105,8 @@ O [manual de utilização](docs/USER_GUIDE.md) detalha as telas e o fluxo comple
 - Windows 10 build 17763 ou posterior, ou Windows 11, x64;
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0);
 - Git;
-- MPC-HC 2.8.2 portátil em `Player/MPC-HC/mpc-hc64.exe` para reprodução integrada.
+- MPC-HC 2.8.2 portátil em `Player/MPC-HC/mpc-hc64.exe` para arquivos locais e Movie Theater.
+- mpv portátil em `Player/MPV/mpv.exe` para o Online Anime Player Beta: `./scripts/Get-Mpv.ps1 -Destination Player/MPV`. O download tem versão e SHA-256 fixados; licenças em `src/AniT.App/Licenses/Mpv`.
 
 ```powershell
 git clone https://github.com/PedroVitor-Dev/AniT.git

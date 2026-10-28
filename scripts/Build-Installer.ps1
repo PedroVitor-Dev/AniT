@@ -132,6 +132,8 @@ Invoke-Checked $DotNetPath @(
 
 $requiredFiles = @(
     (Join-Path $publishDirectory 'AniT.exe'),
+    (Join-Path $publishDirectory 'Player\MPV\mpv.exe'),
+    (Join-Path $publishDirectory 'Licenses\Mpv\COPYING.txt'),
     (Join-Path $publishDirectory 'Player\MPC-HC\mpc-hc64.exe'),
     (Join-Path $publishDirectory 'Player\MPC-HC\COPYING.txt')
 )

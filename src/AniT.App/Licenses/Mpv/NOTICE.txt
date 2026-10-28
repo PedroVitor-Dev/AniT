@@ -1,0 +1,10 @@
+mpv Windows build 20261021 (git e471496c56), x86_64 baseline.
+GPL version 3 or later. This player is used only for Online Anime Player progressive playback.
+Windows binary provider linked by https://mpv.io/installation/:
+https://github.com/shinchiro/mpv-winbuild-cmake/releases/tag/20261021
+Archive SHA-256: 4a355f3e89c83fabc730d33fb4e759dfec747806ed2287b61a90d1681b83e8d3
+Corresponding build instructions, dependency sources and pinned revisions:
+https://github.com/shinchiro/mpv-winbuild-cmake/tree/1f8d2e7
+https://github.com/mpv-player/mpv/tree/e471496c56
+This is a portable distribution; no file associations or global player settings are changed.
+The runtime is acquired with scripts/Get-Mpv.ps1; executable binaries are not tracked in Git.
