@@ -13,6 +13,8 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ### Corrigido
 
+- Online Anime Player: a preparação prioriza e verifica o começo do episódio, sem exigir antecipadamente peças do final. O player solicita o índice conforme o contêiner exigir. A janela informa o tamanho da peça inicial e usa progresso indeterminado durante sua verificação, com botão de cancelamento no tema do app.
+
 - MPC-HC: buscas não bloqueiam mais a interface do AniT nem falham após apenas 1,5 segundo de buffering. O envio aguarda em segundo plano, com prazo limitado, preserva a ordem das buscas e respeita o cancelamento da espera sem reenviar comandos. Retomada inicial usa o mesmo caminho.
 
 - Online Anime Player: consultas simultâneas ao índice/trechos do MKV não cancelam mais a resposta de vídeo em andamento. Leituras aguardando peças verificadas cedem a vez às outras conexões; o tipo de mídia HTTP corresponde ao contêiner. Diagnósticos registram as faixas solicitadas e falhas de leitura.

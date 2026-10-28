@@ -279,5 +279,36 @@ public sealed class OnlineAnimeTests
         await seed.StopAsync();
     }
 
+
+    [Fact]
+    public async Task StartupDoesNotWaitForUnavailableTailWithFourMiBPieces()
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var root=Path.Combine(Path.GetTempPath(),"AniT.Online.Startup",Guid.NewGuid().ToString("N"));
+        var original=Path.Combine(root,"Original"); Directory.CreateDirectory(original);
+        var path=Path.Combine(original,"Authorized - 01.mkv");
+        var data=new byte[16*1024*1024];new Random(17).NextBytes(data);await File.WriteAllBytesAsync(path,data,timeout.Token);
+        var torrent=await new TorrentCreator { PieceLength=4*1024*1024 }.CreateAsync(new TorrentFileSource(original));
+        var metadata=Path.Combine(root,"test.torrent");await File.WriteAllBytesAsync(metadata,torrent.Encode(),timeout.Token);
+        // This peer has the beginning but neither of the final two pieces. Old tail-first
+        // prebuffer cannot finish; the new path must serve a verified prefix regardless.
+        Array.Clear(data,8*1024*1024,8*1024*1024);await File.WriteAllBytesAsync(path,data,timeout.Token);
+        var port=FreePort();using var seedEngine=new ClientEngine(OfflineSettings(Path.Combine(root,"seed"),port));
+        var seed=await seedEngine.AddAsync(await Torrent.LoadAsync(metadata),original);await seed.HashCheckAsync(false);await seed.StartAsync();
+        Assert.True(seed.Bitfield[0]);Assert.False(seed.Bitfield[2]);Assert.False(seed.Bitfield[3]);
+        await using var service=new OnlineAnimeService(Path.Combine(root,"db.sqlite"),Path.Combine(root,"state"),OfflineSettings(Path.Combine(root,"client")));
+        await service.AddAsync(metadata,root,"Autorizado",true,timeout.Token);
+        var engine=(ClientEngine)typeof(OnlineAnimeService).GetField("engine",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(service)!;
+        await engine.Torrents.Single().AddPeerAsync(new PeerInfo(new Uri($"ipv4://127.0.0.1:{port}")));
+        using var db=AniTDatabase.Create(Path.Combine(root,"db.sqlite"));var file=await db.MediaFiles.SingleAsync(timeout.Token);
+        var address=await service.OpenStreamAsync(file,timeout.Token);
+        using var client=new HttpClient();using var request=new HttpRequestMessage(HttpMethod.Get,address);
+        request.Headers.Range=new RangeHeaderValue(0,1023);
+        var response=await client.SendAsync(request,timeout.Token);
+        Assert.Equal(data[..1024],await response.Content.ReadAsByteArrayAsync(timeout.Token));
+        Assert.False(engine.Torrents.Single().Bitfield[3]);
+        await seed.StopAsync();
+    }
+
     static int FreePort() { var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0); listener.Start(); var port = ((IPEndPoint)listener.LocalEndpoint).Port; listener.Stop(); return port; }
 }

@@ -75,3 +75,9 @@ O comando de busca do MPC-HC pode aguardar leituras de rede dentro do processame
 Ensaio nativo com MKV HEVC/Opus sintético de 210 segundos: início com 5,0% do episódio verificado; pausa, avanço para 150 segundos com rede limitada e lentidão adicional, retorno a 12 segundos ainda com apenas 7,5% do arquivo, conclusão do download e nova busca para 20 segundos. O avanço demorou 4,6 segundos e a UI processou 71 intervalos de verificação enquanto o envio aguardava. Esse tempo é resultado local de teste, não previsão para fontes da internet.
 
 336 testes automatizados, compilação Release sem avisos/erros e ensaios nativos do Movie Theater (P2P e streaming, incluindo recuperação de mídia interrompida) passaram. O ensaio ampliado usa os mesmos comandos `--check-online-player --mkv --resume` com um MKV sintético de pelo menos 90 segundos; a posição de avanço se adapta à duração. Não defina `ANIT_TEST_STARTUP_ONLY` ao validar buscas.
+
+## Prioridade no começo do episódio
+
+A preparação padrão do MonoTorrent 3.0.2 lia primeiro uma posição próxima ao final e só depois o começo. O AniT agora cria o stream sem esse prebuffer, posiciona explicitamente o seletor no começo e aguarda apenas a primeira leitura verificada antes de liberar o endpoint ao player. Índices e outras regiões são pedidos pelo contêiner via HTTP Range. Isso remove uma dependência desnecessária da preparação, sem ignorar hashes ou garantir início imediato quando faltam fontes.
+
+Regressão com peças de 4 MiB: o peer sintético possui as primeiras peças, mas não as duas últimas. A preparação e a resposta HTTP do começo passam mesmo com o final indisponível; o fluxo antigo ficaria esperando por ele. 337 testes e 28 cenários de UI passaram; o ensaio nativo de MKV também passou, incluindo buscas sob rede limitada. O DHT preserva seu cache entre sessões. O magnet real foi inspecionado apenas nos metadados (peças de 4 MiB); a reprodução dessa fonte depende do novo teste do usuário.

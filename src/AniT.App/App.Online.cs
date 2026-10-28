@@ -79,14 +79,19 @@ internal sealed class OnlineBufferWindow : Window
         transferStatus.Text = progress.Error is { } error ? "Falha na conexão: " + error
             : $"{progress.Peers} conexões · {progress.BytesPerSecond / 1024d:0} KB/s · {elapsed.Elapsed.Minutes:00}:{elapsed.Elapsed.Seconds:00} de espera\n"
               + (progress.Peers == 0 ? "Procurando fontes para este episódio…" : $"{progress.ReceivedBytes / (1024d * 1024):0.0} MB recebidos · {progress.Percent:0.0}% do episódio verificado");
-        transferBar.IsIndeterminate = progress.ReceivedBytes == 0;
-        transferBar.Value = progress.Percent;
+        if (progress.InitialPieceBytes > 0)
+            transferStatus.Text += $"\nBloco inicial: {progress.InitialPieceBytes / (1024d * 1024):0.##} MB · "
+                + (progress.InitialPieceReady ? "verificado" : "aguardando uma peça completa para verificar");
+        transferBar.IsIndeterminate = !progress.InitialPieceReady;
+        transferBar.Value = progress.InitialPieceReady ? 100 : 0;
     }
 
     public OnlineBufferWindow(CancellationTokenSource cancellation)
     {
         Title = "Preparando streaming · AniT"; Width = 480; Height = 380; MinWidth = 360; MinHeight = 330;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        StableWindowRendering.SetEnabled(this, true);
+        Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/AniT;component/Styles/TheaterTheme.xaml", UriKind.Relative) });
         SetResourceReference(BackgroundProperty, "AniT.Brush.Background");
         SetResourceReference(ForegroundProperty, "AniT.Brush.TextPrimary");
         var panel = new System.Windows.Controls.Grid { Margin = new Thickness(24) };
@@ -95,11 +100,11 @@ internal sealed class OnlineBufferWindow : Window
         panel.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = GridLength.Auto });
         panel.Children.Add(new System.Windows.Controls.TextBlock { Text = "Preparando seu episódio", FontSize = 22, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap });
         var body = new System.Windows.Controls.StackPanel();
-        body.Children.Add(new System.Windows.Controls.TextBlock { Text = "Cloud · Baixando somente o episódio que você abriu. Preparando os trechos iniciais e o índice do vídeo; os outros episódios ficam aguardando.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 12) });
+        body.Children.Add(new System.Windows.Controls.TextBlock { Text = "Cloud · Baixando somente o episódio que você abriu. Priorizando o começo do vídeo; os outros episódios ficam aguardando.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 12) });
         body.Children.Add(transferBar); body.Children.Add(transferStatus);
         var scroll = new System.Windows.Controls.ScrollViewer { Content = body, VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Disabled };
         System.Windows.Controls.Grid.SetRow(scroll, 1); panel.Children.Add(scroll);
-        var cancel = new System.Windows.Controls.Button { Content = "Cancelar", Margin = new Thickness(0, 18, 0, 0), Padding = new Thickness(12, 7, 12, 7), MinHeight = 40 };
+        var cancel = new System.Windows.Controls.Button { Content = "Cancelar", Style = (Style)FindResource("CinemaAction"), Margin = new Thickness(0, 18, 0, 0), Padding = new Thickness(12, 7, 12, 7), MinHeight = 40 };
         cancel.Click += (_, _) => cancellation.Cancel();
         System.Windows.Controls.Grid.SetRow(cancel, 2); panel.Children.Add(cancel); Content = panel;
         Closing += (_, _) => cancellation.Cancel();

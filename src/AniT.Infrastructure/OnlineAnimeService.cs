@@ -35,7 +35,7 @@ public sealed class OnlineAnimeService : IAsyncDisposable
         statePath = Path.Combine(stateDirectory, "downloads.json");
         engine = new ClientEngine(settings ?? new EngineSettingsBuilder {
             CacheDirectory = Path.Combine(stateDirectory, "engine"),
-            AutoSaveLoadFastResume = true, AutoSaveLoadMagnetLinkMetadata = true,
+            AutoSaveLoadFastResume = true, AutoSaveLoadMagnetLinkMetadata = true, AutoSaveLoadDhtCache = true,
             UsePartialFiles = true, AllowPortForwarding = false,
             DhtEndPoint = new IPEndPoint(IPAddress.Any, 0),
             ListenEndPoints = new Dictionary<string, IPEndPoint> { ["ipv4"] = new(IPAddress.Any, 0) }
@@ -303,16 +303,30 @@ public sealed class OnlineAnimeService : IAsyncDisposable
                 await manager.StartAsync();
             } finally { gate.Release(); }
             var media = manager.Files[file.OnlineFileIndex];
+            var initialReceived = manager.Monitor.DataBytesReceived;
+            var initialPiece = media.StartPieceIndex;
+            var pieceBytes = manager.Torrent!.PieceLength;
+            Diagnostic?.Invoke($"Preparando episódio {file.OnlineFileIndex}: prioridade no início, peça {initialPiece}, {pieceBytes} bytes por peça; {manager.OpenConnections} conexões.");
             using var reporting = CancellationTokenSource.CreateLinkedTokenSource(token);
             var reportTask = Task.Run(async () => {
                 while (!reporting.IsCancellationRequested) {
-                    progress?.Report(new OnlinePreparationProgress(manager.Monitor.DataBytesReceived, manager.Monitor.DownloadRate,
-                        manager.OpenConnections, media.BitField.PercentComplete, manager.Error?.Reason.ToString()));
+                    progress?.Report(new OnlinePreparationProgress(manager.Monitor.DataBytesReceived - initialReceived, manager.Monitor.DownloadRate,
+                        manager.OpenConnections, media.BitField.PercentComplete, manager.Error?.Reason.ToString(), pieceBytes,
+                        manager.Bitfield[initialPiece]));
                     try { await Task.Delay(500, reporting.Token); } catch (OperationCanceledException) { break; }
                 }
             });
             try {
-                var input = await manager.StreamProvider!.CreateStreamAsync(media, true, token);
+                // MonoTorrent's default prebuffer fetches the tail before the beginning.
+                // Let the container request its index on demand instead of blocking startup on it.
+                var input = await manager.StreamProvider!.CreateStreamAsync(media, false, token);
+                try {
+                    // A fresh LocalStream starts at zero without informing its streaming picker.
+                    input.Seek(1, SeekOrigin.Begin); input.Seek(0, SeekOrigin.Begin);
+                    await input.ReadExactlyAsync(new byte[1], token);
+                    input.Seek(0, SeekOrigin.Begin);
+                } catch { await input.DisposeAsync(); throw; }
+                Diagnostic?.Invoke($"Início verificado; liberando player para episódio {file.OnlineFileIndex} com {media.BitField.PercentComplete:0.0}% baixado.");
                 stream = new OnlineStreamServer(input, Path.GetFileName(media.Path)) { Diagnostic = message => Diagnostic?.Invoke(message) };
                 return stream.Address;
             } catch {
@@ -365,4 +379,4 @@ public sealed class OnlineAnimeService : IAsyncDisposable
     }
 }
 
-public sealed record OnlinePreparationProgress(long ReceivedBytes, long BytesPerSecond, int Peers, double Percent, string? Error);
+public sealed record OnlinePreparationProgress(long ReceivedBytes, long BytesPerSecond, int Peers, double Percent, string? Error, long InitialPieceBytes = 0, bool InitialPieceReady = false);
