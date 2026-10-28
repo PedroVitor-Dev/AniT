@@ -1,0 +1,13 @@
+<Window x:Class="AniT.App.TheaterPreparationWindow" x:ClassModifier="internal" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Preparação · Movie Theater" Width="460" Height="510" MinWidth="340" MinHeight="300" WindowStyle="ToolWindow" ResizeMode="CanResizeWithGrip" ShowInTaskbar="False" WindowStartupLocation="CenterOwner" Background="{DynamicResource AniT.Brush.Background}">
+    <Window.Resources><ResourceDictionary Source="Styles/TheaterFloatingTheme.xaml"/></Window.Resources>
+    <Grid Background="{DynamicResource AniT.Brush.Background}" Margin="20"><Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <ScrollViewer x:Name="ContentScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel>
+        <StackPanel><TextBlock Text="PREPARAÇÃO P2P" FontSize="11" Foreground="{DynamicResource AniT.Brush.AccentCyan}"/><TextBlock x:Name="Heading" FontSize="22" FontWeight="SemiBold" Margin="0,8,0,0"/><TextBlock x:Name="Message" Style="{StaticResource FloatingNote}"/></StackPanel>
+        <StackPanel Margin="0,16,0,12">
+            <ItemsControl x:Name="Members"><ItemsControl.ItemTemplate><DataTemplate><Border Padding="12" Margin="0,0,0,8" Background="{DynamicResource AniT.Brush.Surface}" CornerRadius="10"><StackPanel><TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"/><TextBlock Text="{Binding SessionLabel}" Style="{StaticResource FloatingNote}"/></StackPanel></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+            <ProgressBar x:Name="Progress" Minimum="0" Maximum="100" Height="6" Margin="0,8"/>
+        </StackPanel>
+        </StackPanel></ScrollViewer>
+        <StackPanel x:Name="Footer" Grid.Row="1"><TextBlock x:Name="Countdown" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource AniT.Brush.AccentCyan}" HorizontalAlignment="Center"/><TextBlock x:Name="Error" Style="{StaticResource FloatingNote}"/><Button x:Name="ConfirmButton" Content="Confirmar presença" Click="Confirm_Click" HorizontalAlignment="Stretch"/><TextBlock Text="Somente o host controla o início da reprodução." Style="{StaticResource FloatingNote}"/></StackPanel>
+    </Grid>
+</Window>

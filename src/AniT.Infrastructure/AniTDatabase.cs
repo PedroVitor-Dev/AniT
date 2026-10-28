@@ -6,21 +6,40 @@ namespace AniT.Infrastructure;
 public static class AniTDatabase
 {
     private const int SmartLibrarySchemaVersion = 3;
-    private const int CurrentSchemaVersion = 4;
+    private const int CurrentSchemaVersion = 5;
 
     public static AniTDbContext Create(string databasePath)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(databasePath)!);
-        CreateLegacyBackupOnce(databasePath);
-        var options = new DbContextOptionsBuilder<AniTDbContext>()
-            .UseSqlite($"Data Source={databasePath}")
-            .Options;
-        var context = new AniTDbContext(options);
-        context.Database.EnsureCreated();
-        EnsureLegacyColumns(context);
-        EnsureSmartLibrarySchema(context);
-        EnsureAchievementSchema(context);
-        return context;
+        databasePath = Path.GetFullPath(databasePath);
+        var identity = OperatingSystem.IsWindows() ? databasePath.ToUpperInvariant() : databasePath;
+        var key = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(identity)));
+        using var initialization = new Mutex(false, "AniT.Database." + key);
+        var acquired = false;
+        try
+        {
+            try { acquired = initialization.WaitOne(TimeSpan.FromSeconds(30)); }
+            catch (AbandonedMutexException) { acquired = true; }
+            if (!acquired) throw new TimeoutException("O banco do AniT está sendo preparado por outra instância. Aguarde e tente novamente.");
+            Directory.CreateDirectory(Path.GetDirectoryName(databasePath)!);
+            var options = new DbContextOptionsBuilder<AniTDbContext>()
+                .UseSqlite(new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder { DataSource = databasePath }.ToString()).Options;
+            var context = new AniTDbContext(options);
+            try
+            {
+                // Current databases need neither schema probing per column nor a legacy backup.
+                var existingDatabase = File.Exists(databasePath) && new FileInfo(databasePath).Length > 0;
+                if (GetSchemaVersion(context) >= CurrentSchemaVersion) return context;
+                if (existingDatabase) CreateLegacyBackupOnce(databasePath);
+                context.Database.EnsureCreated();
+                EnsureLegacyColumns(context);
+                EnsureSmartLibrarySchema(context);
+                EnsureOnlineColumns(context);
+                EnsureAchievementSchema(context);
+                return context;
+            }
+            catch { context.Dispose(); throw; }
+        }
+        finally { if (acquired) initialization.ReleaseMutex(); }
     }
 
     private static void CreateLegacyBackupOnce(string databasePath)
@@ -28,6 +47,13 @@ public static class AniTDatabase
         if (!File.Exists(databasePath) || new FileInfo(databasePath).Length == 0) return;
         var backupPath = databasePath + ".pre-smart-library.bak";
         if (!File.Exists(backupPath)) File.Copy(databasePath, backupPath, overwrite: false);
+    }
+
+    private static void EnsureOnlineColumns(AniTDbContext context)
+    {
+        EnsureColumn(context, "MediaFiles", "OnlineTorrentId", "TEXT NULL");
+        EnsureColumn(context, "MediaFiles", "OnlineFileIndex", "INTEGER NOT NULL DEFAULT 0");
+        EnsureColumn(context, "MediaFiles", "IsCloud", "INTEGER NOT NULL DEFAULT 0");
     }
 
     private static void EnsureLegacyColumns(AniTDbContext context)

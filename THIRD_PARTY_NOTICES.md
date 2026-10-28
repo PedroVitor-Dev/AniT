@@ -1,12 +1,15 @@
 # Avisos de terceiros
 
-O AniT é distribuído sob a GNU General Public License v3.0. O instalador oficial 1.0.2 inclui os componentes de execução abaixo, que permanecem sujeitos às respectivas licenças e direitos autorais.
+O AniT é distribuído sob a GNU General Public License v3.0. As compilações desta árvore usam os componentes de execução abaixo, que permanecem sujeitos às respectivas licenças e direitos autorais.
 
 ## Componentes de execução
 
 | Componente | Versão homologada | Licença | Uso |
 | --- | --- | --- | --- |
 | Microsoft.EntityFrameworkCore.Sqlite e dependências Microsoft.Data.Sqlite | 10.0.12 | MIT | Persistência SQLite via Entity Framework Core |
+| WPF-UI e WPF-UI.Abstractions | 4.3.0 | MIT | Controles Fluent somente no onboarding; textos em `Licenses/WpfUi/` |
+| NAudio.WinMM e NAudio.Core | 2.2.1 | MIT | Captura e reprodução do chat de voz; texto em `Licenses/Voice/NAudio.txt` |
+| Concentus | 2.2.2 | BSD-3-Clause e avisos dos autores incorporados | Codec Opus do chat; texto completo em `Licenses/Voice/Concentus.txt` |
 | SQLitePCLRaw | 2.1.12 | Apache-2.0 | Integração nativa com SQLite |
 | MPC-HC e componentes incluídos em sua distribuição portátil | 2.8.2 | GPL-3.0 e licenças indicadas pelo projeto upstream | Reprodução integrada |
 

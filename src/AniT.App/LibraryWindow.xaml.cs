@@ -225,6 +225,7 @@ public partial class LibraryWindow : Window, INotifyPropertyChanged
                 catalogStatus,
                 item.CreatedAt,
                 global::AniT.Core.LibraryFreshness.GetLatestImportAt(item));
+            viewItem.IsCloud = episodes.Any(e => e.MediaFiles.Any(f => f.IsCloud));
             viewItem.PropertyChanged += AnimeItem_PropertyChanged;
             allAnime.Add(viewItem);
             if (!hasUsableCover
@@ -879,6 +880,8 @@ public sealed class AnimeLibraryItem(
 
     public string EnglishTitleDisplay => string.IsNullOrWhiteSpace(EnglishTitle) ? string.Empty : $"({EnglishTitle})";
     public string Initial { get; } = initial;
+    public bool IsCloud { get; set; }
+    public Visibility CloudVisibility => IsCloud ? Visibility.Visible : Visibility.Collapsed;
     public string EpisodeSummary { get; } = episodeSummary;
     public string Status { get; } = status;
     public double ProgressPercent { get; } = progressPercent;

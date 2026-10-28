@@ -135,3 +135,7 @@ Desinstalar o aplicativo preserva `%LOCALAPPDATA%\AniT`. Para apagar tudo, expor
 ## 13. Precisa de ajuda?
 
 Consulte [Solução de problemas](TROUBLESHOOTING.md). Ao abrir uma issue, informe a versão, o Windows e os passos mínimos, mas revise logs e capturas para não publicar caminhos ou dados pessoais.
+
+## Movie Theater (prévia)
+
+Abra Movie Theater na navegação e escolha **Streaming direto do seu PC** ou **Sincronização P2P**. Em seguida, escolha **Host** ou **Convidado**; só os campos do seu papel serão exibidos. No P2P, convidados que já tenham o vídeo podem marcar **Já tenho o episódio neste PC**. No streaming, só o host seleciona o vídeo; o convidado entra por convite e usa **Abrir transmissão**, recebendo os trechos enquanto assiste, sem salvar um episódio completo. O host precisa manter uma conexão e upload suficientes para a qualidade original do arquivo. No P2P, os dois reproduzem o mesmo arquivo local. Ao criar a sala, o host pode autorizar o envio do episódio; nesse caso, o convidado entra sem arquivo e escolhe onde salvar. O host usa **Iniciar preparação**; o AniT baixa, verifica e abre os vídeos pausados. O convidado usa **Confirmar presença** e o host dá o aval em **Autorizar e iniciar**. Uma contagem de cinco segundos precede a reprodução. O painel mostra cadeado, etapas, progresso e tempo decorrido para os dois. O host cria a sala e controla a reprodução; o convidado recebe uma tela sem controles. Esta versão usa conexão direta, inicialmente em rede local. Veja [instruções e limites](MOVIE_THEATER.md).

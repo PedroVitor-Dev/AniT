@@ -11,6 +11,7 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        if (args.Length >= 2 && args[0] is "--probe-instance" or "--probe-restart") return StartupChecks.Probe(args);
         // Load the same theme dictionaries, image optimization and appearance hooks as the app.
         // Never run App.OnStartup or open the user's profiles/database during layout checks.
         var application = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
@@ -18,6 +19,40 @@ internal static class Program
             application.Resources.MergedDictionaries.Add(new ResourceDictionary
             { Source = new Uri($"pack://application:,,,/AniT;component/Themes/{theme}.xaml") });
         AppearanceManager.Initialize(application);
+        if (args.Contains("--check-online-player")) return OnlinePlayerChecks.Run(application);
+        if (args.Contains("--check-online"))
+        {
+            try { OnlineAnimeVisualChecks.Run(); return 0; }
+            catch (Exception error) { Console.Error.WriteLine(error); return 1; }
+            finally { application.Shutdown(); }
+        }
+        if (args.Contains("--check-theater-floating"))
+        {
+            try { TheaterFloatingChecks.Run(); return 0; }
+            catch (Exception error) { Console.Error.WriteLine(error); return 1; }
+            finally { application.Shutdown(); }
+        }
+        if (args.Contains("--check-startup"))
+        {
+            try { StartupChecks.Run(); return 0; }
+            catch (Exception error) { Console.Error.WriteLine(error); return 1; }
+            finally { application.Shutdown(); }
+        }
+        if(args.Contains("--preview-theater-viewer"))return TheaterPlayerChecks.Preview(application);
+        if(args.Contains("--check-theater-player"))return TheaterPlayerChecks.Run(application);
+        if(args.Contains("--check-theater-only"))
+        {
+            try {TheaterVisualChecks.Run();return 0;}
+            catch(Exception error){Console.Error.WriteLine(error);return 1;}
+            finally{application.Shutdown();}
+        }
+        if(args.Contains("--preview-theater"))
+        {
+            AppearanceManager.Apply(AniTSystemSettings.Default with{ThemeMode=args.Contains("--light")?AppearanceThemeMode.Light:AppearanceThemeMode.Dark});
+            var theater=TheaterVisualChecks.Preview(args.Contains("--host"));
+            theater.Title="AniT · Prévia Movie Theater";theater.Closed+=(_,_)=>application.Shutdown();
+            application.Run(theater);return 0;
+        }
         if (args.Contains("--preview-home"))
         {
             AppearanceManager.Apply(AniTSystemSettings.Default);
@@ -31,13 +66,15 @@ internal static class Program
         }
         if (args.Contains("--preview"))
         {
-            AppearanceManager.Apply(AniTSystemSettings.Default);
+            AppearanceManager.Apply(AniTSystemSettings.Default with { ThemeMode = args.Contains("--light") ? AppearanceThemeMode.Light : AppearanceThemeMode.Dark });
             var preview = NewWindow();
-            preview.Title = "AniT · Prévia de layout";
+            preview.Title = args.Contains("--light") ? "AniT · Onboarding Fluent claro" : "AniT · Onboarding Fluent escuro";
             application.Run(preview);
             return 0;
         }
 
+        var dictionaryCount = application.Resources.MergedDictionaries.Count;
+        var legacyButton = application.TryFindResource(typeof(Button));
         var configurations = 0;
         try
         {
@@ -71,8 +108,13 @@ internal static class Program
                 window.Close();
                 configurations++;
             }
+            CheckFluentFlow();
+            if (!args.Contains("--check-onboarding-only")) TheaterVisualChecks.Run();
+            Require(application.Resources.MergedDictionaries.Count == dictionaryCount, "Onboarding must not install global dictionaries.");
+            Require(ReferenceEquals(legacyButton, application.TryFindResource(typeof(Button))), "Legacy button style must stay unchanged.");
+            Require(application.TryFindResource("OnboardingButton") is null, "Fluent styles must remain scoped to onboarding.");
             CheckOptimizedBrandImage();
-            HomeVisualChecks.Run();
+            if (!args.Contains("--check-onboarding-only")) HomeVisualChecks.Run();
             Console.WriteLine($"PASS: {configurations} layout configurations, four steps each; optimized brand image keeps its layout.");
             return 0;
         }
@@ -91,6 +133,12 @@ internal static class Program
     private static void CheckLayout(OnboardingWindow window)
     {
         window.UpdateLayout();
+        var headingSize = Find<TextBlock>(window, "Heading").FontSize;
+        AppearanceManager.ApplyToWindow(window);
+        Require(Find<TextBlock>(window, "Heading").FontSize == headingSize, "Repeated appearance must not compound text scaling.");
+        Require(Find<Button>(window, "NextButton") is Wpf.Ui.Controls.Button, "Navigation uses Fluent controls.");
+        Require(Find<TextBox>(window, "NameBox") is Wpf.Ui.Controls.TextBox, "Profile input uses Fluent control.");
+        Require(Find<Button>(window, "NextButton").MinHeight >= 44, "Navigation hit target.");
         var root = Find<Grid>(window, "RootGrid");
         var scroller = Find<ScrollViewer>(window, "StepScroller");
         Require(scroller.ViewportWidth > 180, "Content viewport is too narrow.");
@@ -109,6 +157,24 @@ internal static class Program
         Require(scroller.VerticalOffset + scroller.ViewportHeight >= scroller.ExtentHeight - 1,
             "The end of the content cannot be reached.");
         scroller.ScrollToTop();
+    }
+
+    private static void CheckFluentFlow()
+    {
+        var window = NewWindow();
+        window.ShowActivated = false; window.ShowInTaskbar = false; window.Opacity = 0;
+        window.Show(); Pump();
+        void Click(string name) { Find<Button>(window, name).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump(); }
+        Click("NextButton");
+        Find<TextBox>(window, "NameBox").Text = "Perfil de teste";
+        Click("NextButton");
+        Require(!Find<Button>(window, "NextButton").IsEnabled, "Folder step requires a choice or explicit skip.");
+        Click("SkipFolderButton");
+        Require(Find<TextBlock>(window, "SummaryName").Text == "Perfil de teste", "Review keeps the chosen profile.");
+        Click("BackButton"); Click("BackButton");
+        Require(Find<TextBox>(window, "NameBox").Text == "Perfil de teste", "Back navigation preserves profile input.");
+        window.Close();
+        Console.WriteLine("PASS: Fluent controls, appearance idempotence, scoped resources and profile/skip/back flow without saving.");
     }
 
     private static void CheckOptimizedBrandImage()

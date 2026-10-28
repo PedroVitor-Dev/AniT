@@ -322,7 +322,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
         var percent = progress is { DurationSeconds: > 0 }
             ? Math.Clamp(progress.PositionSeconds / progress.DurationSeconds * 100, 0, 100)
             : 0;
-        return new DashboardCard(anime.Id, episode.Id, preferredTitle, OrganizationPreferences.EpisodeCode(episode.Season?.Number ?? 1, episode.Number, settings.EpisodeNumberDisplayFormat), anime.EnglishTitle ?? "Anime local", IsUsableCover(anime.CoverPath) ? anime.CoverPath! : App.UpdatingArtworkPath, percent, $"{percent:0}%", string.Empty, global::AniT.Core.LibraryFreshness.IsNew(anime, DateTimeOffset.UtcNow));
+        return new DashboardCard(anime.Id, episode.Id, preferredTitle, OrganizationPreferences.EpisodeCode(episode.Season?.Number ?? 1, episode.Number, settings.EpisodeNumberDisplayFormat), anime.EnglishTitle ?? "Anime local", IsUsableCover(anime.CoverPath) ? anime.CoverPath! : App.UpdatingArtworkPath, percent, $"{percent:0}%", string.Empty, global::AniT.Core.LibraryFreshness.IsNew(anime, DateTimeOffset.UtcNow), episode.MediaFiles.Any(f => f.IsCloud));
     }
 
     private static DashboardCard CreateAnimeCard(global::AniT.Core.Anime anime, string scoreLabel = "")
@@ -331,7 +331,7 @@ public partial class DashboardWindow : Window, INotifyPropertyChanged
         var preferredTitle = OrganizationPreferences.PreferredTitle(anime, settings.AnimeTitlePreference);
         var episodeCount = anime.Seasons.SelectMany(season => season.Episodes)
             .Count(global::AniT.Core.LibraryCatalogPresence.IsPresent);
-        return new DashboardCard(anime.Id, null, preferredTitle, string.Empty, anime.EnglishTitle ?? $"{episodeCount} episódio{(episodeCount == 1 ? string.Empty : "s")}", IsUsableCover(anime.CoverPath) ? anime.CoverPath! : App.UpdatingArtworkPath, 0, string.Empty, scoreLabel, global::AniT.Core.LibraryFreshness.IsNew(anime, DateTimeOffset.UtcNow));
+        return new DashboardCard(anime.Id, null, preferredTitle, string.Empty, anime.EnglishTitle ?? $"{episodeCount} episódio{(episodeCount == 1 ? string.Empty : "s")}", IsUsableCover(anime.CoverPath) ? anime.CoverPath! : App.UpdatingArtworkPath, 0, string.Empty, scoreLabel, global::AniT.Core.LibraryFreshness.IsNew(anime, DateTimeOffset.UtcNow), anime.Seasons.SelectMany(s => s.Episodes).Any(e => e.MediaFiles.Any(f => f.IsCloud)));
     }
 
     private static bool IsUsableCover(string? path) => !string.IsNullOrWhiteSpace(path) && File.Exists(path);
@@ -474,8 +474,10 @@ public sealed record DashboardCard(
     double ProgressPercent,
     string ProgressLabel,
     string ScoreLabel,
-    bool IsNew)
+    bool IsNew,
+    bool IsCloud = false)
 {
+    public Visibility CloudVisibility => IsCloud ? Visibility.Visible : Visibility.Collapsed;
     public Visibility NewBadgeVisibility => IsNew ? Visibility.Visible : Visibility.Collapsed;
 }
 

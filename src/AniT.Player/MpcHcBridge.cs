@@ -32,8 +32,16 @@ internal sealed class MpcHcBridge : IDisposable
     private const int CmdSetSpeed = unchecked((int)0xA0004008);
 
     private readonly HwndSource hostWindow;
+    private readonly bool independent;
+    private readonly bool viewerOnly;
+    private Process? ownedProcess;
+    private TaskCompletionSource? filePrepared;
+    private bool pauseOnLoad;
+    private bool playbackAllowed = true;
+    private bool disposed;
     private TaskCompletionSource<IntPtr>? connection;
     private TaskCompletionSource<TimeSpan>? positionRequest;
+    private readonly SemaphoreSlim positionGate = new(1, 1);
     private IntPtr playerWindow;
     private TimeSpan? pendingStartPosition;
     private TimeSpan? resumePosition;
@@ -43,6 +51,9 @@ internal sealed class MpcHcBridge : IDisposable
     private MpcHcPlaybackOptions playbackOptions = MpcHcPlaybackOptions.Default;
     private bool playbackOptionsApplied;
     private bool fullscreenApplied;
+    private bool playing;
+    private double requestedSpeed = 1;
+    private double? appliedSpeed;
 
     public event EventHandler<TimeSpan>? PositionReceived;
     public event EventHandler? EndOfStream;
@@ -51,8 +62,10 @@ internal sealed class MpcHcBridge : IDisposable
     public event EventHandler<TimeSpan?>? Disconnected;
     public event EventHandler<string>? Diagnostic;
 
-    public MpcHcBridge()
+    public MpcHcBridge(bool independent = false, bool viewerOnly = false)
     {
+        this.independent = independent;
+        this.viewerOnly = viewerOnly;
         var parameters = new HwndSourceParameters("AniT.MpcHcHost")
         {
             ParentWindow = new IntPtr(-3), // HWND_MESSAGE
@@ -67,11 +80,13 @@ internal sealed class MpcHcBridge : IDisposable
     {
         if (!File.Exists(executablePath)) throw new FileNotFoundException("O executável integrado do MPC-HC não foi encontrado.", executablePath);
         if (playerWindow != IntPtr.Zero) return;
+        if (independent) executablePath = await TheaterPlayerRuntime.PrepareAsync(executablePath, viewerOnly, cancellationToken);
         var pendingConnection = new TaskCompletionSource<IntPtr>(TaskCreationOptions.RunContinuationsAsynchronously);
         connection = pendingConnection;
 
-        var process = Process.Start(new ProcessStartInfo(executablePath, $"/slave {hostWindow.Handle}") { UseShellExecute = false });
+        var process = Process.Start(new ProcessStartInfo(executablePath, $"{(independent ? "/new /nocrashreporter " : "")}{(viewerOnly ? "/viewpreset 1 /minimized /nofocus " : independent ? "/viewpreset 3 " : "")}/slave {hostWindow.Handle}") { UseShellExecute = false });
         if (process is null) throw new InvalidOperationException("Não foi possível iniciar o MPC-HC.");
+        if (independent) ownedProcess = process;
         Trace($"MPC-HC iniciado; aguardando conexão (PID {process.Id}).");
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -88,14 +103,56 @@ internal sealed class MpcHcBridge : IDisposable
         resumeSeekReapplied = false;
         lastPosition = null;
         duration = null;
+        AudioTrack = SubtitleTrack = null;
+        CurrentFilePath = null;
         playbackOptions = options ?? MpcHcPlaybackOptions.Default;
+        requestedSpeed = playbackOptions.Speed; appliedSpeed = null; playing = false;
         playbackOptionsApplied = false;
         Trace($"Abrindo arquivo: {path}; posição para retomar: {startPosition?.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture) ?? "0"}s.");
         Send(CmdOpenFile, path);
     }
 
+    public async Task PrepareFileAsync(string path, CancellationToken cancellationToken, TimeSpan? preparationTimeout = null)
+    {
+        filePrepared = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        pauseOnLoad = true;
+        try
+        {
+            OpenFile(path, TimeSpan.Zero, MpcHcPlaybackOptions.Default);
+            await filePrepared.Task.WaitAsync(preparationTimeout ?? TimeSpan.FromSeconds(15), cancellationToken);
+            await Task.Delay(100, cancellationToken);
+            Pause();
+            Seek(TimeSpan.Zero);
+            RefreshTracks();
+        }
+        finally { pauseOnLoad = false; filePrepared = null; }
+    }
+
+    public void SetSpeed(double speed)
+    {
+        if (!double.IsFinite(speed) || speed is < .5 or > 2) throw new ArgumentOutOfRangeException(nameof(speed));
+        requestedSpeed = speed;
+        ApplyPendingSpeed();
+    }
+
+    private void ApplyPendingSpeed()
+    {
+        // MPC-HC's CMD_SETSPEED implicitly starts playback, even when the rate is unchanged.
+        // Queue rate changes while paused and send them once, only after playback resumes.
+        if (!playbackAllowed || !playing || pauseOnLoad || appliedSpeed == requestedSpeed) return;
+        appliedSpeed = requestedSpeed;
+        Send(CmdSetSpeed, requestedSpeed.ToString("0.##", CultureInfo.InvariantCulture));
+    }
+
     public void Pause() => Send(CmdPause);
-    public void Play() => Send(CmdPlay);
+    public void SetPlaybackPermission(bool allowed)
+    {
+        var changed = playbackAllowed != allowed;
+        playbackAllowed = allowed;
+        if (!allowed && playerWindow != IntPtr.Zero && (changed || playing)) Pause();
+    }
+
+    public void Play() { if (!playbackAllowed) return; Send(CmdPlay); ApplyPendingSpeed(); }
     public void Seek(TimeSpan position)
     {
         Trace($"Enviando seek: {position.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture)}s.");
@@ -104,13 +161,24 @@ internal sealed class MpcHcBridge : IDisposable
 
     public async Task<TimeSpan> GetPositionAsync(CancellationToken cancellationToken)
     {
-        positionRequest = new TaskCompletionSource<TimeSpan>(TaskCreationOptions.RunContinuationsAsynchronously);
-        Trace("Solicitando posição atual.");
-        Send(CmdGetCurrentPosition);
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(2));
-        using var registration = timeout.Token.Register(() => positionRequest.TrySetCanceled(timeout.Token));
-        return await positionRequest.Task;
+        await positionGate.WaitAsync(cancellationToken);
+        var pending = new TaskCompletionSource<TimeSpan>(TaskCreationOptions.RunContinuationsAsynchronously);
+        try
+        {
+            ObjectDisposedException.ThrowIf(disposed, this);
+            positionRequest = pending;
+            Trace("Solicitando posição atual.");
+            Send(CmdGetCurrentPosition);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(TimeSpan.FromSeconds(2));
+            using var registration = timeout.Token.Register(() => pending.TrySetCanceled(timeout.Token));
+            return await pending.Task;
+        }
+        finally
+        {
+            if (ReferenceEquals(positionRequest, pending)) positionRequest = null;
+            positionGate.Release();
+        }
     }
 
     private IntPtr WindowProcedure(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -136,20 +204,27 @@ internal sealed class MpcHcBridge : IDisposable
                 if (payload == "2") ApplyPendingSeek();
                 break;
             case CmdPlayMode:
+                playing = payload == "0";
                 StateChanged?.Invoke(this, payload switch { "0" => global::AniT.Core.PlayerState.Playing, "1" => global::AniT.Core.PlayerState.Paused, _ => global::AniT.Core.PlayerState.Stopped });
+                if ((pauseOnLoad || !playbackAllowed) && playing) Pause();
+                else ApplyPendingSpeed();
                 break;
             case CmdNowPlaying:
-                var parts = payload.Split('|');
+                var parts = SplitFields(payload);
+                if (parts.Length >= 5) CurrentFilePath = parts[3];
                 if (parts.Length >= 5 && double.TryParse(parts[4], NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds)) duration = TimeSpan.FromSeconds(seconds);
                 Trace($"Arquivo carregado; duração: {duration?.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture) ?? "desconhecida"}s.");
                 ScheduleResumeSeekAfterGraphInitialization();
                 ApplyPlaybackOptions();
+                if (pauseOnLoad) { Pause(); filePrepared?.TrySetResult(); }
                 NowPlaying?.Invoke(this, payload);
                 break;
             case CmdListAudioTracks:
+                AudioTrack = int.TryParse(payload.Split('|')[^1], out var audioIndex) && audioIndex >= 0 ? audioIndex : null;
                 SelectPreferredTrack(payload, playbackOptions.PreferredAudioLanguage, CmdSetAudioTrack, allowDisabled: false);
                 break;
             case CmdListSubtitleTracks:
+                SubtitleTrack = int.TryParse(payload.Split('|')[^1], out var subtitleIndex) && subtitleIndex >= -1 ? subtitleIndex : null;
                 SelectPreferredTrack(payload, playbackOptions.PreferredSubtitleLanguage, CmdSetSubtitleTrack, allowDisabled: true);
                 break;
             case CmdCurrentPosition:
@@ -169,6 +244,8 @@ internal sealed class MpcHcBridge : IDisposable
             case CmdDisconnect:
                 Trace($"MPC-HC desconectado; última posição: {lastPosition?.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture) ?? "indisponível"}s.");
                 Disconnected?.Invoke(this, lastPosition);
+                filePrepared?.TrySetException(new IOException("O player foi fechado durante a preparação."));
+                playing = false; appliedSpeed = null;
                 playerWindow = IntPtr.Zero;
                 connection = null;
                 fullscreenApplied = false;
@@ -176,11 +253,25 @@ internal sealed class MpcHcBridge : IDisposable
         }
     }
 
+    private static string[] SplitFields(string payload)
+    {
+        var fields = new System.Collections.Generic.List<string>();
+        var text = new System.Text.StringBuilder();
+        for (var i = 0; i < payload.Length; i++)
+        {
+            if (payload[i] == '\\' && i + 1 < payload.Length && payload[i + 1] == '|') { text.Append('|'); i++; }
+            else if (payload[i] == '|') { fields.Add(text.ToString()); text.Clear(); }
+            else text.Append(payload[i]);
+        }
+        fields.Add(text.ToString());
+        return fields.ToArray();
+    }
+
     private void ApplyPlaybackOptions()
     {
         if (playbackOptionsApplied) return;
         playbackOptionsApplied = true;
-        Send(CmdSetSpeed, playbackOptions.Speed.ToString("0.##", CultureInfo.InvariantCulture));
+        SetSpeed(playbackOptions.Speed);
         if (playbackOptions.StartFullscreen && !fullscreenApplied)
         {
             Send(CmdToggleFullscreen);
@@ -253,7 +344,12 @@ internal sealed class MpcHcBridge : IDisposable
             // dwData is an unsigned pointer-sized field. Commands such as CMD_OPENFILE have the high bit set;
             // zero-extension is required on x64 or MPC-HC will not recognize the command.
             Marshal.StructureToPtr(new CopyDataStruct { Data = new IntPtr(unchecked((long)(uint)command)), DataLength = text.Length * sizeof(char), DataPointer = dataPointer }, structPointer, false);
-            SendMessage(playerWindow, WmCopyData, hostWindow.Handle, structPointer);
+            if (independent)
+            {
+                if (SendMessageTimeout(playerWindow, WmCopyData, hostWindow.Handle, structPointer, 2, 1500, out _) == IntPtr.Zero)
+                    throw new TimeoutException("O player da sala não respondeu.");
+            }
+            else SendMessage(playerWindow, WmCopyData, hostWindow.Handle, structPointer);
         }
         finally
         {
@@ -262,12 +358,60 @@ internal sealed class MpcHcBridge : IDisposable
         }
     }
 
+    public int? AudioTrack { get; private set; }
+    public int? SubtitleTrack { get; private set; }
+    public string? CurrentFilePath { get; private set; }
+    public void RefreshTracks() { Send(CmdGetAudioTracks); Send(CmdGetSubtitleTracks); }
+    public void SetTracks(int? audio, int? subtitle)
+    {
+        if (audio is >= 0 and <= 1024 && audio != AudioTrack) { Send(CmdSetAudioTrack, audio.Value.ToString(CultureInfo.InvariantCulture)); AudioTrack = audio; }
+        if (subtitle is >= -1 and <= 1024 && subtitle != SubtitleTrack) { Send(CmdSetSubtitleTrack, subtitle.Value.ToString(CultureInfo.InvariantCulture)); SubtitleTrack = subtitle; }
+    }
     public TimeSpan? Duration => duration;
+    public IntPtr WindowHandle => playerWindow;
 
     public void Dispose()
     {
+        if (disposed) return;
+        disposed = true;
+        if (ownedProcess is not null)
+        {
+            try
+            {
+                if (!ownedProcess.HasExited)
+                {
+                    if (playerWindow != IntPtr.Zero) PostMessage(playerWindow, 0x0010, IntPtr.Zero, IntPtr.Zero);
+                    else if (!ownedProcess.CloseMainWindow()) ownedProcess.Kill();
+                }
+            }
+            catch (InvalidOperationException) { }
+            var closing = ownedProcess;
+            ownedProcess = null;
+            if (independent) _ = FinishClosingOwnedProcessAsync(closing);
+            else closing.Dispose();
+        }
+        filePrepared?.TrySetCanceled();
+        positionRequest?.TrySetCanceled();
         hostWindow.RemoveHook(WindowProcedure);
         hostWindow.Dispose();
+    }
+
+    private static async Task FinishClosingOwnedProcessAsync(Process process)
+    {
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+            try { await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false); }
+            catch (OperationCanceledException)
+            {
+                // Only /new Movie Theater instances created and owned by this bridge reach this path.
+                if (!process.HasExited) process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync().ConfigureAwait(false);
+            }
+        }
+        catch (InvalidOperationException) { }
+        catch (System.ComponentModel.Win32Exception) { }
+        finally { process.Dispose(); }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -277,6 +421,12 @@ internal sealed class MpcHcBridge : IDisposable
         public int DataLength;
         public IntPtr DataPointer;
     }
+
+    [DllImport("user32.dll")]
+    private static extern bool PostMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr SendMessageTimeout(IntPtr window, int message, IntPtr wParam, IntPtr lParam, uint flags, uint timeout, out IntPtr result);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam);

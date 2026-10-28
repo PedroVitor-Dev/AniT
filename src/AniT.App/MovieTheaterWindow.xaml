@@ -1,0 +1,332 @@
+<Window xmlns:local="clr-namespace:AniT.App" local:StableWindowRendering.Enabled="True" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="AniT.App.MovieTheaterWindow" Title="Movie Theater · AniT" Width="1080" Height="840" MinWidth="580" MinHeight="420" Background="{DynamicResource AniT.Brush.Background}" Foreground="{DynamicResource AniT.Brush.TextPrimary}" WindowStartupLocation="CenterScreen" Icon="/AniT;component/Assets/anit.ico" UseLayoutRounding="True" SnapsToDevicePixels="True">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Styles/HomeTheme.xaml" />
+                <ResourceDictionary Source="Styles/TheaterTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="ScrollBar" BasedOn="{StaticResource CinemaScrollBar}"/>
+            <Style TargetType="Expander">
+                <Setter Property="HeaderTemplate"><Setter.Value><DataTemplate>
+                    <TextBlock Text="{Binding}" Foreground="{DynamicResource AniT.Brush.TextPrimary}" FontWeight="SemiBold"/>
+                </DataTemplate></Setter.Value></Setter>
+            </Style>
+            <Style TargetType="TextBlock">
+                <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="FontSize" Value="14" />
+            </Style>
+            <Style x:Key="Panel" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource AniT.Brush.Surface}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource AniT.Brush.Border}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="18" />
+                <Setter Property="Padding" Value="24" />
+                <Setter Property="Margin" Value="0,0,0,16" />
+            </Style>
+            <Style x:Key="Title" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="20" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="Margin" Value="0,0,0,12" />
+            </Style>
+            <Style x:Key="Note" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextSecondary}" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="Margin" Value="0,8,0,0" />
+            </Style>
+            <Style x:Key="TheaterButton" TargetType="Button" BasedOn="{StaticResource CinemaAction}">
+                <Setter Property="MinHeight" Value="44" />
+                <Setter Property="Margin" Value="0,0,10,8" />
+                <Setter Property="FocusVisualStyle">
+                    <Setter.Value>
+                        <Style TargetType="Control">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate>
+                                        <Rectangle Stroke="{DynamicResource AniT.Brush.TextPrimary}" StrokeThickness="2" Margin="-3" StrokeDashArray="2,2" />
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="TheaterPrimary" TargetType="Button" BasedOn="{StaticResource TheaterButton}">
+                <Setter Property="Background" Value="#155EEF" />
+                <Setter Property="BorderBrush" Value="#155EEF" />
+                <Setter Property="Foreground" Value="White" />
+            </Style>
+            <Style x:Key="CinemaArt" TargetType="Image" BasedOn="{StaticResource {x:Type Image}}">
+                <Setter Property="Stretch" Value="Uniform"/><Setter Property="IsHitTestVisible" Value="False"/>
+                <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
+            </Style>
+            <Style x:Key="TheaterInput" TargetType="TextBox" BasedOn="{StaticResource AniT.Input.TextBox}">
+                <Setter Property="MinHeight" Value="44" />
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Border Background="{DynamicResource AniT.Brush.Background}">
+    <Grid x:Name="TheaterRoot" Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <ScrollViewer x:Name="TheaterScroller" Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="4,4,14,12">
+            <StackPanel MaxWidth="1040" HorizontalAlignment="Stretch">
+                <Border x:Name="CinemaHero" CornerRadius="20" Background="{DynamicResource AniT.Brush.SurfaceAlt}" BorderBrush="{DynamicResource AniT.Brush.Border}" BorderThickness="1" Padding="28,24" Margin="0,0,0,28" MinHeight="184">
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="AniT  /  CINEMA" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AniT.Brush.TextSecondary}" Margin="0,0,0,10"/>
+                            <TextBlock Text="Movie Theater" FontSize="34" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                            <TextBlock x:Name="HeroDescription" Text="Escolha como assistir. Convide alguém. O host cuida da reprodução." Foreground="{DynamicResource AniT.Brush.TextSecondary}" MaxWidth="480" HorizontalAlignment="Left"/>
+                            <WrapPanel x:Name="HeroBadges" Margin="0,16,0,0">
+                                <Border CornerRadius="8" Background="{DynamicResource AniT.Brush.Surface}" Padding="10,5" Margin="0,0,8,4"><TextBlock Text="Até 4 convidados + o host" FontSize="11"/></Border>
+                                <Border CornerRadius="8" Background="{DynamicResource AniT.Brush.Surface}" Padding="10,5" Margin="0,0,0,4"><TextBlock Text="Conexão privada" FontSize="11"/></Border>
+                            </WrapPanel>
+                        </StackPanel>
+                        <Image x:Name="HeroArt" Grid.Column="1" Source="/AniT;component/Assets/Cinema/cinema1.png" Width="144" Height="144" Margin="24,0,0,0" Style="{StaticResource CinemaArt}"/>
+                    </Grid>
+                </Border>
+                <StackPanel x:Name="ModePanel" Margin="0,0,0,16">
+                    <TextBlock Text="Como vocês querem assistir?" Style="{StaticResource Title}"/>
+                    <TextBlock Text="Escolha o modo da sua sala." Foreground="{DynamicResource AniT.Brush.TextSecondary}" Margin="0,0,0,20"/>
+                    <WrapPanel x:Name="ModeCards" HorizontalAlignment="Stretch">
+                        <RadioButton x:Name="StreamingModeOption" GroupName="TheaterMode" Style="{StaticResource CinemaMode}" MinHeight="284" Margin="0,0,16,16" AutomationProperties.Name="Streaming direto do seu PC">
+                            <StackPanel>
+                                <Image Source="/AniT;component/Assets/Cinema/cinema7.png" Width="88" Height="88" HorizontalAlignment="Left" Margin="0,0,0,18" Style="{StaticResource CinemaArt}"/>
+                                <TextBlock Text="Streaming direto" FontSize="21" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                                <TextBlock Text="Só o host precisa do episódio. O convidado recebe os trechos enquanto assiste." Foreground="{DynamicResource AniT.Brush.TextSecondary}" Margin="0,0,0,16"/>
+                                <TextBlock Text="Comece sem baixar tudo" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource AniT.Brush.AccentCyan}"/>
+                                <TextBlock Text="Requer upload e conexão contínuos." Style="{StaticResource Note}" FontSize="12"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="SyncModeOption" GroupName="TheaterMode" Style="{StaticResource CinemaMode}" MinHeight="284" Margin="0,0,0,16" AutomationProperties.Name="Sincronização P2P">
+                            <StackPanel>
+                                <Image Source="/AniT;component/Assets/Cinema/cinema4.png" Width="88" Height="88" HorizontalAlignment="Left" Margin="0,0,0,18" Style="{StaticResource CinemaArt}"/>
+                                <TextBlock Text="Sincronização P2P" FontSize="21" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                                <TextBlock Text="Cada PC reproduz uma cópia completa. Use seu arquivo ou baixe do host antes de iniciar." Foreground="{DynamicResource AniT.Brush.TextSecondary}" Margin="0,0,0,16"/>
+                                <TextBlock Text="Reprodução local em cada PC" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource AniT.Brush.AccentCyan}"/>
+                                <TextBlock Text="Download disponível quando autorizado." Style="{StaticResource Note}" FontSize="12"/>
+                            </StackPanel>
+                        </RadioButton>
+                    </WrapPanel>
+
+                </StackPanel>
+                <StackPanel x:Name="ModeSummaryPanel" Visibility="Collapsed" Margin="0,0,0,16">
+                    <TextBlock x:Name="FlowStep" FontSize="11" Foreground="{DynamicResource AniT.Brush.TextSecondary}" Margin="0,0,0,8"/>
+                    <TextBlock x:Name="ModeSummary" FontSize="18" FontWeight="SemiBold" />
+                    <WrapPanel><Button x:Name="ChangeModeButton" Content="_Alterar modo" Click="ChangeMode_Click" Style="{StaticResource TheaterButton}" Margin="0,12,0,0" /></WrapPanel>
+                </StackPanel>
+                <StackPanel x:Name="RolePanel" Visibility="Collapsed" Margin="0,0,0,16">
+                    <TextBlock Text="Qual será o seu papel?" Style="{StaticResource Title}"/>
+                    <TextBlock Text="Vamos mostrar somente o que você precisa configurar." Style="{StaticResource Note}" Margin="0,0,0,20"/>
+                    <WrapPanel>
+                        <RadioButton x:Name="HostRoleOption" GroupName="TheaterRole" Style="{StaticResource CinemaMode}" MinHeight="220" Margin="0,0,16,16" AutomationProperties.Name="Quero ser Host">
+                            <StackPanel><Image Source="/AniT;component/Assets/Cinema/cinema1.png" Width="72" Height="72" HorizontalAlignment="Left" Style="{StaticResource CinemaArt}" Margin="0,0,0,16"/>
+                                <TextBlock Text="Quero ser Host" FontSize="21" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                                <TextBlock Text="Tenho o episódio e vou criar a sala, enviar o convite e controlar a reprodução." Foreground="{DynamicResource AniT.Brush.TextSecondary}"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="GuestRoleOption" GroupName="TheaterRole" Style="{StaticResource CinemaMode}" MinHeight="220" Margin="0,0,0,16" AutomationProperties.Name="Quero ser Convidado">
+                            <StackPanel><Image Source="/AniT;component/Assets/Cinema/cinema2.png" Width="72" Height="72" HorizontalAlignment="Left" Style="{StaticResource CinemaArt}" Margin="0,0,0,16"/>
+                                <TextBlock Text="Quero ser Convidado" FontSize="21" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                                <TextBlock Text="Vou entrar com o convite recebido. O host cuida do episódio e dos controles." Foreground="{DynamicResource AniT.Brush.TextSecondary}"/>
+                            </StackPanel>
+                        </RadioButton>
+                    </WrapPanel>
+                </StackPanel>
+                <StackPanel x:Name="SetupPanel" Visibility="Collapsed">
+                    <CheckBox x:Name="UseLocalCopyCheck" Visibility="Collapsed" MinHeight="44" Margin="0,0,0,16" Foreground="{DynamicResource AniT.Brush.TextPrimary}">
+                        <TextBlock Text="Já tenho o episódio neste PC e quero usar minha cópia"/>
+                    </CheckBox>
+                    <Border x:Name="MediaPanel" Style="{StaticResource Panel}">
+                        <StackPanel>
+                            <TextBlock x:Name="MediaSectionTitle" Text="1. Escolha o episódio" Style="{StaticResource Title}"/>
+                            <TextBlock x:Name="MediaLabel" Text="Nenhum vídeo selecionado" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="MediaDetail" Style="{StaticResource Note}"/>
+                            <WrapPanel Margin="0,16,0,0"><Button x:Name="SelectFileButton" Content="_Selecionar vídeo" Click="SelectFile_Click" Style="{StaticResource TheaterPrimary}"/></WrapPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border x:Name="ConnectionPanel" Style="{StaticResource Panel}">
+                        <StackPanel>
+                            <StackPanel x:Name="HostSetupPanel">
+                                <TextBlock Text="2. Crie sua sala" Style="{StaticResource Title}"/>
+                                <TextBlock x:Name="CreateModeNote" Style="{StaticResource Note}" Margin="0,0,0,12"/>
+                                <CheckBox x:Name="ShareEpisodeCheck" MinHeight="44" Margin="0,0,0,16" Foreground="{DynamicResource AniT.Brush.TextPrimary}">
+                                    <TextBlock x:Name="ShareConsentText"/>
+                                </CheckBox>
+                                <Expander x:Name="HostConnectionOptions" Header="Configurações de conexão" Foreground="{DynamicResource AniT.Brush.TextPrimary}" Margin="0,0,0,16">
+                                    <StackPanel Margin="0,12,0,0">
+                                        <TextBlock Style="{StaticResource Note}" Text="Use a mesma rede local ou uma conexão direta configurada. Esta prévia não atravessa CGNAT automaticamente." Margin="0,0,0,12"/>
+                                        <WrapPanel>
+                                            <StackPanel Margin="0,0,16,12"><Label Content="Seu endereço _IPv4" Target="{Binding ElementName=HostAddress}" Foreground="{DynamicResource AniT.Brush.TextSecondary}"/><TextBox x:Name="HostAddress" Width="180" MaxLength="15" Style="{StaticResource TheaterInput}" AutomationProperties.Name="Endereço IPv4 do host"/></StackPanel>
+                                            <StackPanel Margin="0,0,16,12"><Label Content="_Porta TCP" Target="{Binding ElementName=HostPort}" Foreground="{DynamicResource AniT.Brush.TextSecondary}"/><TextBox x:Name="HostPort" Text="45678" Width="100" MaxLength="5" Style="{StaticResource TheaterInput}" AutomationProperties.Name="Porta TCP da sala"/></StackPanel>
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Expander>
+                                <WrapPanel><Button x:Name="CreateRoomButton" Content="_Criar sala" Click="CreateRoom_Click" Style="{StaticResource TheaterPrimary}" IsEnabled="False"/></WrapPanel>
+                            </StackPanel>
+                            <StackPanel x:Name="GuestSetupPanel">
+                                <TextBlock Text="Entre com o convite do host" Style="{StaticResource Title}"/>
+                                <TextBlock x:Name="JoinModeNote" Style="{StaticResource Note}" Margin="0,0,0,16"/>
+                                <Label Content="_Convite recebido" Target="{Binding ElementName=JoinInvite}" Foreground="{DynamicResource AniT.Brush.TextSecondary}"/>
+                                <TextBox x:Name="JoinInvite" Style="{StaticResource TheaterInput}" TextWrapping="Wrap" MaxLength="512" MinHeight="90" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Convite da sala"/>
+                                <WrapPanel Margin="0,16,0,0"><Button x:Name="JoinRoomButton" Content="_Entrar na sala" Click="JoinRoom_Click" Style="{StaticResource TheaterPrimary}" IsEnabled="False"/></WrapPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+                <Border x:Name="SessionPanel" Style="{StaticResource Panel}" Visibility="Collapsed">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center"><TextBlock Text="SALA DE PREPARAÇÃO" FontSize="11" Foreground="{DynamicResource AniT.Brush.TextSecondary}" Margin="0,0,0,8"/><TextBlock x:Name="RoomTitle" Text="Sala" Style="{StaticResource Title}"/></StackPanel>
+                            <Image Grid.Column="1" Source="/AniT;component/Assets/Cinema/cinema2.png" Width="72" Height="72" Margin="16,0,0,0" Style="{StaticResource CinemaArt}"/>
+                        </Grid>
+                        <StackPanel x:Name="VoicePanel" Visibility="Collapsed" Margin="0,0,0,16">
+                            <TextBlock Text="CHAT DE VOZ" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AniT.Brush.TextSecondary}"/>
+                            <TextBlock x:Name="VoiceStateLabel" Style="{StaticResource Note}"/>
+                            <WrapPanel Margin="0,8,0,4">
+                                <Button x:Name="OpenVoicePopupButton" Content="Abrir painel de voz ↗" Click="OpenVoicePopup_Click" Style="{StaticResource TheaterButton}"/>
+                                <Button x:Name="OpenPreparationPopupButton" Content="Preparação sobre o vídeo ↗" Click="OpenPreparationPopup_Click" Style="{StaticResource TheaterButton}"/>
+                            </WrapPanel>
+                            <TextBlock Text="Dispositivos padrão do Windows · use fones para evitar eco." Style="{StaticResource Note}"/>
+                        </StackPanel>
+                        <Expander x:Name="HostManagerPanel" Header="Gerenciador do host" IsExpanded="True" Visibility="Collapsed" Foreground="{DynamicResource AniT.Brush.TextPrimary}" Margin="0,0,0,16">
+                            <StackPanel Margin="0,12,0,0">
+                                <TextBlock x:Name="HostManagerCount" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Note}" Text="Até 4 convidados + o host. Você controla o vídeo, os microfones e a participação."/>
+                                <ItemsControl x:Name="HostParticipantList" Margin="0,12,0,0">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border x:Name="ParticipantCard" Background="{DynamicResource AniT.Brush.SurfaceAlt}" BorderBrush="{DynamicResource AniT.Brush.Border}" BorderThickness="2" CornerRadius="10" Padding="14" Margin="0,0,0,10">
+                                                <StackPanel>
+                                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="18"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Ellipse x:Name="VoiceIndicator" Width="10" Height="10" Fill="{DynamicResource AniT.Brush.TextSecondary}" VerticalAlignment="Top" Margin="0,5,8,0"/><TextBlock Grid.Column="1" Text="{Binding DisplayName}" TextWrapping="Wrap" FontWeight="SemiBold" FontSize="16"/></Grid>
+                                                    <TextBlock Text="{Binding RoleLabel}" Style="{StaticResource Note}"/>
+                                                    <TextBlock Text="{Binding SessionLabel}" Style="{StaticResource Note}"/>
+                                                    <TextBlock Text="{Binding VoiceLabel}" Style="{StaticResource Note}"/>
+                                                    <WrapPanel x:Name="ParticipantActions" Margin="0,10,0,0">
+                                                        <Button Content="{Binding MicrophoneAction}" Tag="{Binding Id}" Click="MuteParticipant_Click" Style="{StaticResource TheaterButton}" ToolTip="Bloqueia ou libera o microfone deste convidado na sala."/>
+                                                        <Button Content="Expulsar" Tag="{Binding Id}" Click="RemoveParticipant_Click" Style="{StaticResource TheaterButton}" ToolTip="Encerra a participação e invalida o convite anterior."/>
+                                                    </WrapPanel>
+                                                </StackPanel>
+                                            </Border>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding Speaking}" Value="True">
+                                                    <Setter TargetName="VoiceIndicator" Property="Fill" Value="#22C55E"/>
+                                                    <Setter TargetName="ParticipantCard" Property="BorderBrush" Value="#22C55E"/>
+                                                    <Setter TargetName="ParticipantCard" Property="BorderThickness" Value="2"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsHost}" Value="True">
+                                                    <Setter TargetName="ParticipantActions" Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock x:Name="HostManagerEmpty" Style="{StaticResource Note}" Text="Nenhum convidado conectado. Compartilhe o convite da sala."/>
+                            </StackPanel>
+                        </Expander>
+                        <StackPanel x:Name="GuestVoicePolicyPanel" Visibility="Collapsed" Margin="0,0,0,12">
+                            <TextBlock x:Name="GuestVoicePolicyLabel" Style="{StaticResource Note}"/>
+                            <ItemsControl x:Name="GuestVoiceMembers" Margin="0,8,0,0">
+                                <ItemsControl.ItemTemplate><DataTemplate>
+                                    <Grid Margin="0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="18"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <Ellipse x:Name="GuestSpeakerLight" Width="8" Height="8" Fill="{DynamicResource AniT.Brush.TextSecondary}" VerticalAlignment="Top" Margin="0,5,8,0"/>
+                                        <StackPanel Grid.Column="1"><TextBlock Text="{Binding DisplayName}" TextWrapping="Wrap" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding VoiceLabel}" Foreground="{DynamicResource AniT.Brush.TextSecondary}" TextWrapping="Wrap"/></StackPanel>
+                                    </Grid>
+                                    <DataTemplate.Triggers><DataTrigger Binding="{Binding Speaking}" Value="True"><Setter TargetName="GuestSpeakerLight" Property="Fill" Value="#22C55E"/></DataTrigger></DataTemplate.Triggers>
+                                </DataTemplate></ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                        </StackPanel>
+                        <Expander x:Name="HostInvitePanel" Header="Convite da sala" IsExpanded="True" Visibility="Collapsed" Foreground="{DynamicResource AniT.Brush.TextPrimary}">
+                            <StackPanel Margin="0,12,0,0">
+                            <TextBlock Text="Envie o convite apenas ao participante desejado. Quem o recebe pode entrar nesta sala." Style="{StaticResource Note}" />
+                            <TextBox x:Name="RoomInvite" Style="{StaticResource TheaterInput}" IsReadOnly="True" TextWrapping="Wrap" MinHeight="90" Margin="0,12,0,12" AutomationProperties.Name="Convite para compartilhar" />
+                            <WrapPanel>
+                                <Button x:Name="CopyInviteButton" Content="Copiar _convite" Click="CopyInvite_Click" Style="{StaticResource TheaterButton}" />
+                            </WrapPanel>
+                        </StackPanel>
+                        </Expander>
+                        <Border x:Name="P2pPreparationPanel" Visibility="Collapsed" Background="{DynamicResource AniT.Brush.SurfaceAlt}" BorderBrush="{DynamicResource AniT.Brush.Border}" BorderThickness="1" CornerRadius="12" Padding="18" Margin="0,12,0,16">
+                            <StackPanel>
+                                <WrapPanel Margin="0,0,0,12">
+                                    <Path x:Name="P2pLockIcon" Data="M7,10 V7 C7,0 17,0 17,7 V10 M5,10 H19 V22 H5 Z" Stroke="{DynamicResource AniT.Brush.Warning}" StrokeThickness="2" Width="18" Height="22" Stretch="Uniform" Margin="0,0,10,0"/>
+                                    <TextBlock x:Name="P2pLockLabel" Text="Início bloqueado" FontSize="18" FontWeight="SemiBold"/>
+                                </WrapPanel>
+                                <TextBlock x:Name="P2pNextAction" TextWrapping="Wrap" Margin="0,0,0,12" AutomationProperties.LiveSetting="Polite"/>
+                                <ProgressBar x:Name="P2pSessionProgress" Background="{DynamicResource AniT.Brush.Border}" Style="{StaticResource CinemaProgress}" Height="8" Minimum="0" Maximum="100" AutomationProperties.Name="Etapas da preparação P2P"/>
+                                <TextBlock x:Name="P2pElapsedLabel" Style="{StaticResource Note}" Margin="0,10,0,16"/>
+                                <TextBlock x:Name="P2pStepRelease" Text="1. Liberação do host" Margin="0,0,0,8"/>
+                                <TextBlock x:Name="P2pStepFile" Text="2. Download e verificação do episódio" Margin="0,0,0,8"/>
+                                <TextBlock x:Name="P2pStepConfirmation" Text="3. Confirmação do convidado" Margin="0,0,0,8"/>
+                                <TextBlock x:Name="P2pStepApproval" Text="4. Aval do host" Margin="0,0,0,8"/>
+                                <TextBlock x:Name="P2pStepCountdown" Text="5. Contagem regressiva e reprodução"/>
+                            </StackPanel>
+                        </Border>
+                        <StackPanel x:Name="TransferPanel" Visibility="Collapsed" Margin="0,12,0,12">
+                            <TextBlock x:Name="TransferTimingLabel" Style="{StaticResource Note}" Margin="0,0,0,8"/>
+                            <TextBlock x:Name="TransferLabel" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                            <ProgressBar Style="{StaticResource CinemaProgress}" x:Name="TransferProgress" Minimum="0" Maximum="100" Height="8" Margin="0,10,0,12" AutomationProperties.Name="Progresso de transferência do episódio" />
+                                                        <TextBlock x:Name="TransferGuestHint" Style="{StaticResource Note}" Text="Escolha onde salvar. O AniT baixa quando o host liberar, verifica e abre o vídeo pausado. Cancelar sai da sala e remove o parcial; a próxima tentativa começa do início." />
+                        </StackPanel>
+                        <Border x:Name="StreamBufferPanel" Visibility="Collapsed" Background="{DynamicResource AniT.Brush.SurfaceAlt}" BorderBrush="{DynamicResource AniT.Brush.Border}" BorderThickness="1" CornerRadius="12" Padding="18" Margin="0,12,0,16">
+                            <StackPanel>
+                                <TextBlock x:Name="StreamBufferTitle" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" Foreground="{DynamicResource AniT.Brush.Warning}" AutomationProperties.LiveSetting="Polite"/>
+                                <TextBlock x:Name="StreamBufferMessage" Style="{StaticResource Note}" Margin="0,8,0,12"/>
+                                <ProgressBar x:Name="StreamBufferProgress" Style="{StaticResource CinemaProgress}" Height="8" Minimum="0" Maximum="100" AutomationProperties.Name="Progresso da reserva de vídeo para retomar a sessão"/>
+                                <TextBlock x:Name="StreamBufferDetails" Style="{StaticResource Note}" Margin="0,10,0,0"/>
+                            </StackPanel>
+                        </Border>
+                        <TextBlock x:Name="ConnectionLabel" TextWrapping="Wrap" Text="Aguardando participante" FontWeight="SemiBold" Margin="0,12,0,8" AutomationProperties.LiveSetting="Polite" />
+                        <WrapPanel Margin="0,0,0,12">
+                            <TextBlock x:Name="LocalReadyLabel" Text="Você: aguardando" Margin="0,0,20,8" />
+                            <TextBlock x:Name="RemoteReadyLabel" Text="Participante: aguardando" Margin="0,0,0,8" />
+                        </WrapPanel>
+                        <TextBlock x:Name="ReadyActionHint" Style="{StaticResource Note}" Text="Abra o episódio. Ele ficará pausado até o host iniciar a sessão." />
+                        <WrapPanel Margin="0,16,0,0">
+                            <Button x:Name="LeaveRoomButton" Content="_Sair da sala" Click="LeaveRoom_Click" Style="{StaticResource TheaterButton}" />
+                        </WrapPanel>
+                        <Border BorderBrush="{DynamicResource AniT.Brush.Border}" BorderThickness="0,1,0,0" Margin="0,12,0,0" Padding="0,16,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Reprodução" Style="{StaticResource Title}" />
+                                <TextBlock x:Name="PositionLabel" Text="00:00 / 00:00" FontSize="22" FontWeight="SemiBold" Margin="0,0,0,12" />
+                                <TextBlock x:Name="SyncLabel" Text="Aguardando abertura do vídeo" Style="{StaticResource Note}" Margin="0,0,0,12" />
+                                <WrapPanel x:Name="PlaybackButtonsPanel">
+                                    <Button x:Name="PauseButton" Content="_Pausar" Click="Pause_Click" Style="{StaticResource TheaterButton}" IsEnabled="False" />
+                                </WrapPanel>
+                                <WrapPanel x:Name="SeekPanel">
+                                    <StackPanel Margin="0,0,12,8">
+                                        <Label Content="Ir para (_hh:mm:ss)" Target="{Binding ElementName=SeekPosition}" Foreground="{DynamicResource AniT.Brush.TextSecondary}" />
+                                        <TextBox x:Name="SeekPosition" Text="00:00:00" Width="145" MaxLength="8" Style="{StaticResource TheaterInput}" AutomationProperties.Name="Posição para avançar ou voltar" />
+                                    </StackPanel>
+                                    <Button x:Name="SeekButton" Content="_Ir para posição" Click="Seek_Click" Style="{StaticResource TheaterButton}" VerticalAlignment="Bottom" IsEnabled="False" />
+                                </WrapPanel>
+                                <TextBlock x:Name="RoleNote" Style="{StaticResource Note}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+        <StackPanel Grid.Row="1" Margin="4,12,4,0">
+            <ScrollViewer x:Name="StatusScroller" MaxHeight="90" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <TextBlock x:Name="TheaterStatus" Text="Escolha um modo para começar." Foreground="{DynamicResource AniT.Brush.TextSecondary}" AutomationProperties.LiveSetting="Polite" />
+            </ScrollViewer>
+            <WrapPanel Margin="0,12,0,0">
+                <Button x:Name="BackStepButton" Content="← _Voltar" Click="BackStep_Click" Style="{StaticResource TheaterButton}" Visibility="Collapsed"/>
+                <Button x:Name="ChooseModeButton" Content="_Continuar  →" Click="ChooseMode_Click" Style="{StaticResource TheaterPrimary}" MinWidth="160"/>
+                <Button x:Name="DownloadButton" Content="_Baixar episódio" Click="Download_Click" Style="{StaticResource TheaterPrimary}" />
+                <Button x:Name="PreparePlayerButton" Content="_Abrir episódio" Click="PreparePlayer_Click" Style="{StaticResource TheaterPrimary}" />
+                <Button x:Name="ConfirmPresenceButton" Content="_Confirmar presença" Click="ConfirmPresence_Click" Style="{StaticResource TheaterPrimary}" Visibility="Collapsed"/>
+                <Button x:Name="PlayButton" Content="_Iniciar juntos" Click="Play_Click" Style="{StaticResource TheaterPrimary}" IsEnabled="False" />
+                <Button x:Name="CancelOperationButton" Content="Cancelar _operação" Click="CancelOperation_Click" Style="{StaticResource TheaterButton}" Visibility="Collapsed" />
+                <Button x:Name="ReturnButton" Content="Voltar ao _AniT" Click="Return_Click" Style="{StaticResource TheaterButton}" />
+            </WrapPanel>
+        </StackPanel>
+    </Grid>
+    </Border>
+</Window>

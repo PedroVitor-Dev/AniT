@@ -83,19 +83,32 @@ Name: "{group}\AniT"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; Icon
 Name: "{autodesktop}\AniT"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\{#AppExeName}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,AniT}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; Description: "{cm:StartAniT}"; Flags: nowait postinstall skipifsilent runasoriginaluser
 
 [CustomMessages]
+brazilianportuguese.StartAniT=Iniciar o AniT
+english.StartAniT=Start AniT
 brazilianportuguese.WelcomeTitle=Bem-vindo ao AniT
 brazilianportuguese.WelcomeBody=Sua biblioteca de animes está prestes a ganhar um novo lar.%n%nO assistente instalará tudo o que o AniT precisa para funcionar. É rápido, seguro e seus dados pessoais continuarão sob o seu controle.
 brazilianportuguese.FinishedTitle=Tudo pronto para a próxima história!
-brazilianportuguese.FinishedBody=O AniT foi instalado com sucesso. Abra o aplicativo, escolha sua estante e deixe o Baki-Pi organizar sua jornada.
+brazilianportuguese.FinishedBody=Clique em Concluir com a opção Iniciar o AniT marcada para abrir o aplicativo. Na primeira utilização, configure seu perfil e a pasta dos seus animes.
 english.WelcomeTitle=Welcome to AniT
 english.WelcomeBody=Your anime library is about to get a new home.%n%nThis wizard installs everything AniT needs. It is fast, safe, and your personal data remains under your control.
 english.FinishedTitle=Ready for your next story!
-english.FinishedBody=AniT was installed successfully. Open the app, choose your library folders, and let Baki-Pi organize your journey.
+english.FinishedBody=Click Finish with Start AniT checked to open the app. On first use, set up your profile and anime folder.
 
 [Code]
+var FinishLaunchInitialized: Boolean;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if (CurPageID = wpFinished) and not FinishLaunchInitialized and (WizardForm.RunList.Items.Count > 0) then
+  begin
+    WizardForm.RunList.Checked[0] := True;
+    FinishLaunchInitialized := True;
+  end;
+end;
+
 procedure InitializeWizard;
 begin
   WizardForm.Caption := 'AniT ' + '{#AppVersion}';

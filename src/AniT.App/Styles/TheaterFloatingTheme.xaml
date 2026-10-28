@@ -1,0 +1,7 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="HomeTheme.xaml"/><ResourceDictionary Source="TheaterTheme.xaml"/></ResourceDictionary.MergedDictionaries>
+    <Style TargetType="TextBlock"><Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/><Setter Property="TextWrapping" Value="Wrap"/><Setter Property="FontSize" Value="14"/></Style>
+    <Style x:Key="FloatingNote" TargetType="TextBlock"><Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextSecondary}"/><Setter Property="TextWrapping" Value="Wrap"/><Setter Property="FontSize" Value="12"/><Setter Property="Margin" Value="0,6,0,0"/></Style>
+    <Style TargetType="Button" BasedOn="{StaticResource CinemaAction}"><Setter Property="MinHeight" Value="44"/><Setter Property="Margin" Value="0,4,8,4"/></Style>
+    <Style TargetType="ScrollBar" BasedOn="{StaticResource CinemaScrollBar}"/>
+</ResourceDictionary>

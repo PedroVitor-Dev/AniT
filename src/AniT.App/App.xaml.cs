@@ -45,6 +45,8 @@ public partial class App : Application
     private static DispatcherTimer? automaticBackupTimer;
     private static readonly object startupMetadataSync = new();
     private static Task? startupMetadataTask;
+    private ApplicationInstance? applicationInstance;
+    private static bool startupCompleted;
     public static event EventHandler? LibraryArtworkUpdated;
     public static event EventHandler? FavoritesUpdated;
 
@@ -88,15 +90,17 @@ public partial class App : Application
                 dataRootPath,
                 databasePath,
                 CurrentVersion,
-                () =>
+                async () =>
                 {
                     playbackMonitorCancellation?.Cancel();
                     activeEpisodeId = null;
+                    AppNavigation.CloseOnline();
+                    await StopOnlineAsync();
+                    AppNavigation.CloseTheater();
                     MediaPlayer?.Dispose();
                     MediaPlayer = null;
                     Database?.Dispose();
                     SqliteConnection.ClearAllPools();
-                    return Task.CompletedTask;
                 },
                 cancellationToken);
 
@@ -122,10 +126,9 @@ public partial class App : Application
     {
         var processPath = Environment.ProcessPath ?? throw new InvalidOperationException("Não foi possível localizar o executável do AniT.");
         var entryAssembly = Assembly.GetEntryAssembly()?.Location;
-        var startInfo = Path.GetFileNameWithoutExtension(processPath).Equals("dotnet", StringComparison.OrdinalIgnoreCase)
-                        && !string.IsNullOrWhiteSpace(entryAssembly)
-            ? new ProcessStartInfo(processPath, $"\"{entryAssembly}\"") { UseShellExecute = true }
-            : new ProcessStartInfo(processPath) { UseShellExecute = true };
+        var startInfo = new ProcessStartInfo(processPath) { UseShellExecute = true };
+        if (Path.GetFileNameWithoutExtension(processPath).Equals("dotnet", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(entryAssembly)) startInfo.ArgumentList.Add(entryAssembly);
+        startInfo.ArgumentList.Add("--restart");
         Process.Start(startInfo);
         Current.Shutdown();
     }
@@ -160,6 +163,9 @@ public partial class App : Application
         {
             playbackMonitorCancellation?.Cancel();
             backgroundLibraryScanTimer?.Stop();
+            AppNavigation.CloseOnline();
+            await StopOnlineAsync();
+            AppNavigation.CloseTheater();
             MediaPlayer?.Dispose();
             MediaPlayer = null;
             Database?.Dispose();
@@ -323,6 +329,9 @@ public partial class App : Application
             backgroundLibraryScanTimer?.Stop();
             automaticBackupTimer?.Stop();
             activeEpisodeId = null;
+            AppNavigation.CloseOnline();
+            await StopOnlineAsync();
+            AppNavigation.CloseTheater();
             MediaPlayer?.Dispose();
             MediaPlayer = null;
             Database?.Dispose();
@@ -435,7 +444,26 @@ public partial class App : Application
     {
         base.OnStartup(e);
         DispatcherUnhandledException += OnDispatcherUnhandledException;
+        try { StartApplication(e); }
+        catch (Exception exception)
+        {
+            global::AniT.Infrastructure.AniTDiagnostics.Write("INICIALIZAÇÃO", "Não foi possível iniciar o AniT.", exception);
+            MessageBox.Show("Não foi possível iniciar o AniT. Seus dados foram preservados.\n\n" + exception.Message, "Falha na inicialização · AniT", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown(-1);
+        }
+    }
+
+    private void StartApplication(StartupEventArgs e)
+    {
         dataRootPath = global::System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AniT");
+        applicationInstance = ApplicationInstance.TryAcquire(dataRootPath, () => Dispatcher.BeginInvoke(new Action(() =>
+        {
+            if (MainWindow is not { IsLoaded: true } window) return;
+            if (window.WindowState == WindowState.Minimized) window.WindowState = WindowState.Normal;
+            if (!window.IsVisible) window.Show();
+            window.Activate();
+        })), e.Args.Contains("--restart"));
+        if (applicationInstance is null) { Shutdown(); return; }
         var dataDirectory = global::System.IO.Path.Combine(dataRootPath, "Data");
         databasePath = global::System.IO.Path.Combine(dataDirectory, "anit.db");
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -477,6 +505,14 @@ public partial class App : Application
             return;
         }
 
+        if (needsSetup)
+        {
+            // Show the first page before creating EF contexts/schemas, scanning artwork or initializing MPC.
+            // The onboarding creates the database asynchronously only when the user saves the final step.
+            var onboarding = new OnboardingWindow(setupStore, ProfileSettingsStore.Load(), null);
+            MainWindow = onboarding;
+            if (onboarding.ShowDialog() != true) { Shutdown(); return; }
+        }
         Database = global::AniT.Infrastructure.AniTDatabase.Create(databasePath);
         Achievements = new global::AniT.Infrastructure.Achievements.AchievementService(OpenFreshDatabase);
         AchievementNotificationQueue.Initialize(Achievements);
@@ -484,17 +520,6 @@ public partial class App : Application
         ArtworkCacheManager.EnsureManagedCache(settings);
         var coversDirectory = settings.ArtworkDirectory ?? global::System.IO.Path.Combine(dataRootPath, "Covers");
         animeCoverProvider = new global::AniT.Infrastructure.AnimeCoverProvider(coversDirectory);
-        if (needsSetup)
-        {
-            var onboarding = new OnboardingWindow(setupStore, ProfileSettingsStore.Load(), Database.LibraryRoots.AsNoTracking().FirstOrDefault(root => root.IsEnabled)?.Path);
-            MainWindow = onboarding;
-            if (onboarding.ShowDialog() != true)
-            {
-                Database.Dispose();
-                Shutdown();
-                return;
-            }
-        }
         InitializeMediaPlayer();
         ConfigureLibraryBackgroundScan(settings);
         ConfigureAutomaticBackup(settings);
@@ -510,6 +535,8 @@ public partial class App : Application
             else AppNavigation.PrewarmLoadingSurface(dashboard);
         };
         dashboard.Show();
+        startupCompleted = true;
+        ResumeOnlineDownloads();
         _ = InitializeAchievementsAsync();
         _ = InitializeWeeklySummaryAsync();
         _ = RunAutomaticBackupSafelyAsync();
@@ -736,6 +763,9 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        AppNavigation.CloseOnline();
+        Task.Run(StopOnlineAsync).GetAwaiter().GetResult();
+        AppNavigation.CloseTheater();
         backgroundLibraryScanTimer?.Stop();
         automaticBackupTimer?.Stop();
         ShortcutManager.Shutdown();
@@ -744,6 +774,7 @@ public partial class App : Application
         MediaPlayer?.Dispose();
         Database?.Dispose();
         global::AniT.Infrastructure.AniTDiagnostics.Write("APP", "AniT encerrado normalmente.");
+        applicationInstance?.Dispose();
         base.OnExit(e);
     }
 
@@ -800,6 +831,11 @@ public partial class App : Application
             // Diagnostics must never replace the original application error.
         }
 
+        if (!startupCompleted)
+        {
+            MessageBox.Show("Não foi possível concluir a inicialização do AniT. Seus dados foram preservados. Consulte app.log na pasta de dados do AniT.", "Falha na inicialização · AniT", MessageBoxButton.OK, MessageBoxImage.Error);
+            e.Handled = true; Current.Shutdown(-1); return;
+        }
         MessageBox.Show(
             "Uma tela do AniT encontrou um problema e não pôde ser exibida. O restante do aplicativo continuará aberto.",
             "AniT",
@@ -826,10 +862,16 @@ public partial class App : Application
             .OrderByDescending(file => file.IsPreferred)
             .ThenByDescending(file => PreferredLanguageScore(file, playbackSettings.PreferredAudioLanguage))
             .ThenByDescending(file => file.Resolution)
-            .FirstOrDefault(file => global::System.IO.File.Exists(global::System.IO.Path.Combine(file.LibraryRoot!.Path, file.RelativePath)));
+            .FirstOrDefault(file => file.IsCloud || global::System.IO.File.Exists(global::System.IO.Path.Combine(file.LibraryRoot!.Path, file.RelativePath)));
         if (mediaFile is null) throw new InvalidOperationException("Nenhuma versão disponível deste episódio foi encontrada. Atualize a Biblioteca ou conecte o disco onde o arquivo está salvo.");
 
         var mediaPath = global::System.IO.Path.Combine(mediaFile.LibraryRoot!.Path, mediaFile.RelativePath);
+        Uri? onlineAddress = null;
+        if (mediaFile.IsCloud)
+        {
+            if (MediaPlayer is null) throw new InvalidOperationException("O streaming exige o MPC-HC integrado. Ative-o nas configurações de reprodução.");
+            onlineAddress = await PrepareOnlineStreamAsync(mediaFile);
+        }
         activeEpisodeId = episodeId;
         activePlaybackSettings = playbackSettings;
         activePlaybackSegments = LoadPlaybackSegments(mediaPath);
@@ -842,18 +884,18 @@ public partial class App : Application
             resumeAt = TimeSpan.FromSeconds(segments.OpeningEndSeconds);
         }
         WritePlaybackLog($"[DB] Episódio {episodeId}: retomando de {resumeAt?.TotalSeconds.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? "0"}s.");
-        if (playbackSettings.PlaybackPlayerMode == global::AniT.Infrastructure.PlaybackPlayerMode.SystemDefault)
+        if (onlineAddress is null && playbackSettings.PlaybackPlayerMode == global::AniT.Infrastructure.PlaybackPlayerMode.SystemDefault)
         {
             Process.Start(new ProcessStartInfo(mediaPath) { UseShellExecute = true });
             await MarkEpisodeAsWatchingAsync(episodeId);
             return;
         }
 
-        await MediaPlayer!.PlayAsync(mediaFile, resumeAt, new global::AniT.Player.MpcHcPlaybackOptions(
-            playbackSettings.DefaultPlaybackSpeed,
-            playbackSettings.StartPlaybackFullscreen,
-            playbackSettings.PreferredAudioLanguage,
-            playbackSettings.PreferredSubtitleLanguage));
+        var options = new global::AniT.Player.MpcHcPlaybackOptions(
+            playbackSettings.DefaultPlaybackSpeed, playbackSettings.StartPlaybackFullscreen,
+            playbackSettings.PreferredAudioLanguage, playbackSettings.PreferredSubtitleLanguage);
+        if (onlineAddress is not null) await MediaPlayer!.PlayStreamAsync(onlineAddress, resumeAt, options);
+        else await MediaPlayer!.PlayAsync(mediaFile, resumeAt, options);
         activePlaybackStartPosition = resumeAt ?? TimeSpan.Zero;
         activePlaybackStartedAt = DateTimeOffset.UtcNow;
         lastProgressWrite = activePlaybackStartedAt;

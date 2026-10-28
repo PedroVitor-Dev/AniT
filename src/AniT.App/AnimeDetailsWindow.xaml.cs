@@ -167,7 +167,8 @@ public partial class AnimeDetailsWindow : Window
                 episode.Rating,
                 episode.ReviewNotes,
                 episode.MediaFiles.Count,
-                episode.MediaFiles.Count(file => file.Availability == global::AniT.Core.MediaFileAvailability.Available)));
+                episode.MediaFiles.Count(file => file.Availability == global::AniT.Core.MediaFileAvailability.Available),
+                episode.MediaFiles.Any(file => file.IsCloud)));
         }
         var normalizedRatings = allEpisodes
             .Where(episode => episode.Rating is > 0)
@@ -635,7 +636,8 @@ public sealed class EpisodeItem(
     double? rating,
     string? reviewNotes,
     int versionCount,
-    int availableVersionCount)
+    int availableVersionCount,
+    bool isCloud = false)
 {
     public Guid Id { get; } = id;
     public string Number { get; } = number;
@@ -646,7 +648,8 @@ public sealed class EpisodeItem(
     public string? ReviewNotes { get; set; } = reviewNotes;
     public int VersionCount { get; } = versionCount;
     public int AvailableVersionCount { get; } = availableVersionCount;
-    public string VersionSummary => VersionCount == 0
+    public Visibility CloudVisibility => isCloud ? Visibility.Visible : Visibility.Collapsed;
+    public string VersionSummary => isCloud ? "Cloud · download em andamento" : VersionCount == 0
         ? "Sem arquivo disponível"
         : VersionCount == 1 ? (AvailableVersionCount == 1 ? "1 versão local" : "1 versão indisponível")
         : $"{AvailableVersionCount} de {VersionCount} versões disponíveis";
