@@ -60,7 +60,7 @@ public sealed class LibraryScanner
         bool preferExistingCatalog = false)
     {
         var trackedRoot = await database.LibraryRoots.FirstOrDefaultAsync(item => item.Id == root.Id, cancellationToken) ?? root;
-        if (!trackedRoot.IsEnabled) return new LibraryScanResult(0, 0, 0, [], RootUnavailable: false);
+        if (!trackedRoot.IsEnabled || await database.MediaFiles.AnyAsync(f => f.LibraryRootId == trackedRoot.Id && f.OnlineTorrentId != null, cancellationToken)) return new LibraryScanResult(0, 0, 0, [], RootUnavailable: false);
 
         if (!Directory.Exists(trackedRoot.Path))
         {
@@ -72,6 +72,9 @@ public sealed class LibraryScanner
             return new LibraryScanResult(0, 0, 0, [], RootUnavailable: true);
         }
 
+        // Managed torrent roots (including completed videos) already have catalog identities.
+        var onlineRoots = await database.MediaFiles.Where(f => f.OnlineTorrentId != null)
+            .Select(f => f.LibraryRoot!.Path).Distinct().ToListAsync(cancellationToken);
         List<string> files;
         try
         {
@@ -87,6 +90,7 @@ public sealed class LibraryScanner
             files = await Task.Run(() => Directory
                 .EnumerateFiles(trackedRoot.Path, "*", enumerationOptions)
                 .Where(path => extensions.Contains(Path.GetExtension(path)))
+                .Where(path => !onlineRoots.Any(folder => path.StartsWith(folder.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)))
                 .Where(path => !ShouldIgnore(path, trackedRoot.Path, settings))
                 .ToList(), cancellationToken);
         }

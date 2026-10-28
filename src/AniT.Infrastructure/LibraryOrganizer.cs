@@ -16,7 +16,7 @@ public sealed class LibraryOrganizer(AniTDbContext database)
     {
         var ids = mediaFileIds.ToHashSet();
         var files = await database.MediaFiles
-            .Where(file => ids.Contains(file.Id))
+            .Where(file => ids.Contains(file.Id) && file.OnlineTorrentId == null)
             .Include(file => file.LibraryRoot)
             .Include(file => file.Episode)!.ThenInclude(episode => episode!.Season)!.ThenInclude(season => season!.Anime)
             .ThenInclude(anime => anime!.Aliases)

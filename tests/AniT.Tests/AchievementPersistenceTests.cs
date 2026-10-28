@@ -73,7 +73,7 @@ public sealed class AchievementPersistenceTests
             connection.Open();
             using var command = connection.CreateCommand();
             command.CommandText = "SELECT Version FROM AniTSchemaInfo WHERE Id = 1;";
-            Assert.Equal(4, Convert.ToInt32(command.ExecuteScalar()));
+            Assert.Equal(5, Convert.ToInt32(command.ExecuteScalar()));
         }
         finally
         {

@@ -64,12 +64,15 @@ public sealed class Episode
 }
 
 /// <summary>
-/// A physical representation of one logical episode. Playback state intentionally
+/// A local file or managed download of one logical episode. Playback state intentionally
 /// remains on <see cref="Episode"/> so a rename, move or version change is harmless.
 /// </summary>
 public sealed class MediaFile
 {
     public Guid Id { get; set; } = Guid.NewGuid();
+    public string? OnlineTorrentId { get; set; }
+    public int OnlineFileIndex { get; set; }
+    public bool IsCloud { get; set; }
     public Guid EpisodeId { get; set; }
     public Guid LibraryRootId { get; set; }
     public required string RelativePath { get; set; }

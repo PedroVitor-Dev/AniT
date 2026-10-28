@@ -25,6 +25,8 @@ internal static class AppNavigation
     private static bool isNavigating;
     private static bool loadingInUse;
     private static LibraryWindow? libraryWindow;
+    private static MovieTheaterWindow? theaterWindow;
+    private static OnlineAnimeWindow? onlineWindow;
     private static NavigationLoadingWindow? loadingWindow;
 
     public static void Home(Window current) => OpenRoot(current, static () => new DashboardWindow());
@@ -69,6 +71,35 @@ internal static class AppNavigation
             loadingWindow = null;
         }
     }
+
+    public static void OpenTheater(Window current)
+    {
+        if (theaterWindow is { IsLoaded: true } existing)
+        {
+            if (existing.WindowState == WindowState.Minimized) existing.WindowState = WindowState.Normal;
+            existing.Show(); existing.Activate(); return;
+        }
+        var theater = new MovieTheaterWindow { Owner = null, ShowInTaskbar = true };
+        theater.Closed += (_, _) => { if (ReferenceEquals(theaterWindow, theater)) theaterWindow = null; };
+        theaterWindow = theater;
+        theater.Show(); theater.Activate();
+    }
+
+    public static void OpenOnline(Window current)
+    {
+        if (onlineWindow is { IsLoaded: true } existing)
+        {
+            if (existing.WindowState == WindowState.Minimized) existing.WindowState = WindowState.Normal;
+            existing.Show(); existing.Activate(); return;
+        }
+        var window = new OnlineAnimeWindow();
+        onlineWindow = window;
+        window.Closed += (_, _) => { if (ReferenceEquals(onlineWindow, window)) onlineWindow = null; };
+        window.Show(); window.Activate();
+    }
+    public static void CloseOnline() => onlineWindow?.Close();
+
+    public static void CloseTheater() => theaterWindow?.Close();
 
     public static void OpenLibrary(Window current)
     {
@@ -385,7 +416,7 @@ internal static class AppNavigation
 
     private static Window ResolvePrimaryWindow(Window requested)
     {
-        if (requested is LibraryWindow
+        if (requested is LibraryWindow or MovieTheaterWindow
             && Application.Current.MainWindow is { IsLoaded: true } primary
             && !ReferenceEquals(primary, requested))
         {

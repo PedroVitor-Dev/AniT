@@ -76,6 +76,11 @@ internal static class AppearanceManager
 
     public static void ApplyToWindow(Window window)
     {
+        if (window is OnboardingWindow onboarding)
+        {
+            onboarding.ApplyFluentAppearance(current);
+            return;
+        }
         ApplyResources(window.Resources, current);
         var light = IsLight(current.ThemeMode);
         window.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(light ? "#D8E8F5" : "#020B1D"));
@@ -146,6 +151,7 @@ internal static class AppearanceManager
 
     private static void ApplyTextAppearance(TextBlock text, AniTSystemSettings settings)
     {
+        if (Window.GetWindow(text) is OnboardingWindow) return;
         var original = TextSizes.GetValue(text, item => new OriginalText(item.FontSize));
         text.FontSize = original.FontSize * settings.TextScalePercent / 100d;
         // Settings uses an intentionally dark workspace in both application themes.

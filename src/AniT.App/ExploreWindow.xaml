@@ -247,11 +247,13 @@
                 <Border Width="178" Height="92" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,2,0,0">
                     <Border.Background><ImageBrush ImageSource="{local:ComfortableImage Path=Assets/logo-fire.png, DecodePixelWidth=320}" Viewbox="0,0.28,1,0.46" ViewboxUnits="RelativeToBoundingBox" Stretch="Uniform"/></Border.Background>
                 </Border>
-                <StackPanel Grid.Row="1" Margin="0,12,0,0">
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel Grid.Row="1" Margin="0,12,0,0">
                     <TextBlock Text="NAVEGAÇÃO" Foreground="#587DA9" FontSize="10" FontWeight="SemiBold" Margin="24,0,0,9"/>
                     <Button Style="{StaticResource HomeNavButton}" Click="Home_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Home}" Label="Início"/></Button>
                     <Button Style="{StaticResource HomeActiveNavButton}"><local:NavItemContent IconData="{StaticResource AniT.Icon.Explore}" Label="Explorar"/></Button>
                     <Button Style="{StaticResource HomeNavButton}" Click="Library_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Library}" Label="Biblioteca"/></Button>
+                    <Button Command="{x:Static local:TheaterNavigation.OpenCommand}" Style="{StaticResource HomeNavButton}"><local:NavItemContent IconData="{StaticResource AniT.Icon.Play}" Label="Movie Theater"/></Button>
+                    <local:OnlineAnimeNavButton/>
                     <Button Style="{StaticResource HomeNavButton}" Click="Calendar_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Calendar}" Label="Calendário"/></Button>
                     <Button Style="{StaticResource HomeNavButton}" Click="History_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.History}" Label="Histórico"/></Button>
                     <Button Style="{StaticResource HomeNavButton}" Click="Achievements_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Achievements}" Label="Conquistas"/></Button>
@@ -259,7 +261,7 @@
                     <Border Height="1" Background="#214874" Margin="20,18,20,11"/>
                     <TextBlock Text="SISTEMA" Foreground="#587DA9" FontSize="10" FontWeight="SemiBold" Margin="24,0,0,7"/>
                     <local:SystemSettingsNavButton/>
-                </StackPanel>
+                </StackPanel></ScrollViewer>
                 <Image Grid.Row="2" Source="{local:PageMascot Page=Explorar, Fallback=Assets/ghost_menu.png}" Style="{StaticResource HomeSidebarMascot}"/>
             </Grid>
         </Border>

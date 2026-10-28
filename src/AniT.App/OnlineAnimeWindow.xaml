@@ -1,0 +1,47 @@
+<Window x:Class="AniT.App.OnlineAnimeWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:AniT.App" local:StableWindowRendering.Enabled="True" Title="Online Anime Player · Beta · AniT" Width="1040" Height="780" MinWidth="580" MinHeight="420" WindowStartupLocation="CenterScreen" Icon="/AniT;component/Assets/anit.ico" Background="{DynamicResource AniT.Brush.Background}" Foreground="{DynamicResource AniT.Brush.TextPrimary}">
+ <Window.Resources><ResourceDictionary><ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Styles/HomeTheme.xaml"/><ResourceDictionary Source="Styles/TheaterTheme.xaml"/></ResourceDictionary.MergedDictionaries>
+  <Style TargetType="ProgressBar" BasedOn="{StaticResource CinemaProgress}"/>
+  <Style TargetType="ScrollBar" BasedOn="{StaticResource CinemaScrollBar}"/>
+  <Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/><Setter Property="FontSize" Value="14"/></Style>
+  <Style x:Key="Panel" TargetType="Border"><Setter Property="CornerRadius" Value="16"/><Setter Property="Padding" Value="22"/><Setter Property="Margin" Value="0,0,0,16"/><Setter Property="Background" Value="{DynamicResource AniT.Brush.Surface}"/><Setter Property="BorderBrush" Value="{DynamicResource AniT.Brush.Border}"/><Setter Property="BorderThickness" Value="1"/></Style>
+  <Style TargetType="TextBox"><Setter Property="Background" Value="{DynamicResource AniT.Brush.Background}"/><Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/><Setter Property="BorderBrush" Value="{DynamicResource AniT.Brush.Border}"/><Setter Property="Padding" Value="12,9"/><Setter Property="MinHeight" Value="40"/></Style>
+  <Style TargetType="Button" BasedOn="{StaticResource CinemaAction}"><Setter Property="Padding" Value="15,10"/><Setter Property="MinHeight" Value="40"/><Setter Property="Margin" Value="0,4,8,4"/></Style>
+ </ResourceDictionary></Window.Resources>
+ <Grid Margin="24"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <Grid Margin="0,0,0,20"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel Margin="0,0,16,0"><TextBlock FontSize="27" FontWeight="Bold"><Run Text="Online Anime Player"/> <Run Text="BETA" FontSize="11"/></TextBlock><TextBlock Text="Sua biblioteca, com download e reprodução juntos." Foreground="{DynamicResource AniT.Brush.TextSecondary}" Margin="0,6,0,0"/></StackPanel><Button Grid.Column="1" Content="Voltar ao AniT" Click="Back_Click" VerticalAlignment="Top"/></Grid>
+  <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+   <StackPanel>
+    <Border x:Name="ConsentPanel" Style="{StaticResource Panel}"><StackPanel>
+     <TextBlock Text="Antes de começar" FontSize="24" FontWeight="SemiBold"/>
+     <TextBlock Text="Adicione somente obras em domínio público ou conteúdos para os quais você possui autorização para baixar, assistir e compartilhar. Você é responsável pelas fontes e arquivos que adiciona. O AniT não fornece conteúdo e não se responsabiliza pelo material inserido pelo usuário." Margin="0,14,0,12"/>
+     <TextBlock Text="Como funciona: o BitTorrent baixa e também pode enviar partes dos arquivos para outras pessoas na rede. Os arquivos ocupam espaço no seu PC. Cloud identifica um episódio que ainda está baixando; não significa armazenamento em nuvem. A reprodução depende da disponibilidade dos arquivos e da sua conexão." Foreground="{DynamicResource AniT.Brush.TextSecondary}"/>
+     <CheckBox x:Name="ConsentCheck" Margin="0,20,0,12" Foreground="{DynamicResource AniT.Brush.TextPrimary}" VerticalContentAlignment="Center"><TextBlock Text="Tenho autorização para baixar e compartilhar os conteúdos que vou adicionar e entendi como funciona."/></CheckBox>
+     <Button Content="Concordar e continuar" IsEnabled="{Binding IsChecked, ElementName=ConsentCheck}" HorizontalAlignment="Left" Click="Consent_Click"/>
+    </StackPanel></Border>
+    <StackPanel x:Name="Workspace" Visibility="Collapsed">
+     <Border Style="{StaticResource Panel}"><StackPanel x:Name="AddForm">
+      <TextBlock Text="Adicionar episódios" FontSize="21" FontWeight="SemiBold"/>
+      <TextBlock Text="Magnet link ou URL de um arquivo .torrent" Margin="0,16,0,6"/><TextBox x:Name="SourceBox" AutomationProperties.Name="URL ou magnet do torrent"/>
+      <Button Content="Escolher arquivo .torrent…" HorizontalAlignment="Left" Click="PickTorrent_Click"/>
+      <TextBlock Text="Nome do anime (opcional)" Margin="0,12,0,6"/><TextBox x:Name="TitleBox" AutomationProperties.Name="Nome do anime"/>
+      <TextBlock Text="Os vídeos entram na biblioteca. Nomes sem número de episódio usam a ordem dos arquivos; confira a lista antes de assistir." FontSize="12" Margin="0,8,0,0" Foreground="{DynamicResource AniT.Brush.TextSecondary}"/>
+      <TextBlock Text="Salvar os episódios em" Margin="0,14,0,6"/><DockPanel><Button DockPanel.Dock="Right" Content="Escolher pasta…" Click="PickFolder_Click"/><TextBox x:Name="FolderBox" IsReadOnly="True" VerticalAlignment="Center" AutomationProperties.Name="Pasta dos downloads"/></DockPanel>
+      <TextBlock Text="Somente conteúdo autorizado. O download também pode compartilhar partes dos arquivos via BitTorrent." FontSize="12" Margin="0,10,0,10" Foreground="{DynamicResource AniT.Brush.TextSecondary}"/>
+      <Button x:Name="AddButton" Content="Adicionar à biblioteca e baixar" HorizontalAlignment="Left" Click="Add_Click"/>
+     </StackPanel></Border>
+     <TextBlock Text="Seus downloads" FontSize="22" FontWeight="SemiBold" Margin="0,8,0,12"/>
+     <TextBlock x:Name="EmptyText" Text="Nenhum torrent adicionado. Escolha uma fonte autorizada para começar." Margin="0,0,0,16" Foreground="{DynamicResource AniT.Brush.TextSecondary}"/>
+     <ItemsControl x:Name="DownloadsList"><ItemsControl.ItemTemplate><DataTemplate><Border Style="{StaticResource Panel}"><StackPanel>
+      <DockPanel><Button DockPanel.Dock="Right" Content="{Binding PauseLabel}" Visibility="{Binding PauseVisibility}" ToolTip="Pausar o download pode interromper o streaming." Tag="{Binding Id}" Click="Pause_Click"/><StackPanel><TextBlock Text="{Binding Name}" FontSize="19" FontWeight="SemiBold"/><TextBlock Text="{Binding Status}" Foreground="{DynamicResource AniT.Brush.TextSecondary}" Margin="0,5,0,8"/></StackPanel></DockPanel>
+      <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="100" Height="6" Margin="0,8,0,16"/>
+      <ItemsControl ItemsSource="{Binding Episodes}"><ItemsControl.ItemTemplate><DataTemplate><Border BorderBrush="{DynamicResource AniT.Brush.Border}" BorderThickness="0,0,0,1" Padding="0,12"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+       <StackPanel><StackPanel Orientation="Horizontal"><TextBlock Text="{Binding Title}" FontWeight="SemiBold"/><Border Visibility="{Binding CloudVisibility}" CornerRadius="5" Padding="7,2" Margin="10,0,0,0" Background="{DynamicResource AniT.Brush.Background}"><TextBlock Text="Cloud" FontSize="11"/></Border></StackPanel><TextBlock Text="{Binding FileName}" FontSize="12" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Margin="0,5,10,4" Foreground="{DynamicResource AniT.Brush.TextSecondary}"/><TextBlock Text="{Binding Status}" FontSize="12" Foreground="{DynamicResource AniT.Brush.TextSecondary}"/><ProgressBar Value="{Binding Progress, Mode=OneWay}" Height="3" Margin="0,7,16,0"/></StackPanel>
+       <Button Grid.Column="1" Content="{Binding PlayLabel}" Tag="{Binding EpisodeId}" Click="Play_Click" VerticalAlignment="Center"/>
+      </Grid></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+     </StackPanel></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+    </StackPanel>
+   </StackPanel>
+  </ScrollViewer>
+  <StackPanel Grid.Row="2" Margin="0,12,0,0"><ProgressBar x:Name="BusyBar" Height="4" IsIndeterminate="True" Visibility="Collapsed"/><DockPanel><Button x:Name="CancelButton" Content="Cancelar preparação" DockPanel.Dock="Right" Visibility="Collapsed" Click="Cancel_Click"/><TextBlock x:Name="StatusText" AutomationProperties.LiveSetting="Polite" Margin="0,8,0,0" Foreground="{DynamicResource AniT.Brush.TextSecondary}"/></DockPanel></StackPanel>
+ </Grid>
+</Window>

@@ -46,6 +46,12 @@ Conforme as opções habilitadas, termos derivados do título podem ser enviados
 
 O provedor recebe o IP normal da conexão, o termo e dados técnicos usuais de HTTP. O AniT não controla suas políticas. Fontes personalizadas aceitam somente HTTPS público; loopback, redes locais e endereços reservados são bloqueados. O modo totalmente offline impede consultas integradas.
 
+## Movie Theater e voz opcionais
+
+Ao entrar em uma sala, os participantes compartilham endereço de rede, nome de exibição do perfil, identificador temporário, estados de preparação e reprodução. O arquivo selecionado só é enviado aos convidados quando o host autoriza o compartilhamento. No P2P, a cópia completa permanece no destino escolhido pelo convidado; no streaming, os trechos são mantidos em cache temporário.
+
+O chat de voz exige entrar na voz e ativar o microfone separadamente. Ao ativar, áudio do microfone é enviado ao PC do host, que o retransmite aos demais participantes conectados à voz, usando TLS. Não é criptografia ponta a ponta entre convidados: o host intermedeia o áudio. O AniT não grava a conversa nem envia áudio a servidores do projeto. Silenciar, desativar áudio, sair da voz ou sair da sala interrompe a transmissão; o host pode bloquear o microfone ou expulsar participantes. A captura utiliza o dispositivo padrão do Windows e não captura o som do episódio. Compartilhe convites apenas com pessoas de confiança.
+
 ## O que não é enviado ao AniT
 
 O projeto não possui backend e não recebe intencionalmente:

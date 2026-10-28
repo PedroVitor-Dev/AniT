@@ -15,7 +15,7 @@ public sealed record MpcHcPlaybackOptions(
 /// <summary>Controls the bundled MPC-HC instance through its documented /slave WM_COPYDATA API.</summary>
 public sealed class MpcHcPlayer : IMediaPlayer, IDisposable
 {
-    private readonly MpcHcBridge bridge = new();
+    private readonly MpcHcBridge bridge;
     private readonly string executablePath;
     private PlayerState state = PlayerState.Stopped;
 
@@ -24,8 +24,10 @@ public sealed class MpcHcPlayer : IMediaPlayer, IDisposable
     public event EventHandler<PlaybackPositionChangedEventArgs>? PlaybackClosed;
     public event EventHandler<string>? Diagnostic;
 
-    public MpcHcPlayer(string executablePath)
+    public MpcHcPlayer(string executablePath, bool independent = false, bool viewerOnly = false)
     {
+        if (viewerOnly && !independent) throw new ArgumentException("A tela de exibição exige uma instância independente.");
+        bridge = new MpcHcBridge(independent, viewerOnly);
         this.executablePath = executablePath;
         bridge.PositionReceived += (_, position) => PositionChanged?.Invoke(this, new PlaybackPositionChangedEventArgs(position, bridge.Duration));
         bridge.EndOfStream += (_, _) => PlaybackEnded?.Invoke(this, EventArgs.Empty);
@@ -46,6 +48,40 @@ public sealed class MpcHcPlayer : IMediaPlayer, IDisposable
         await bridge.StartAsync(executablePath, cancellationToken);
         bridge.OpenFile(path, position, options);
     }
+
+    public async Task PlayStreamAsync(Uri address, TimeSpan? position, MpcHcPlaybackOptions options, CancellationToken cancellationToken = default)
+    {
+        if (address.Scheme != "http" || address.Host != "127.0.0.1" || address.Port <= 0)
+            throw new ArgumentException("O player só aceita o streaming local do AniT.");
+        await bridge.StartAsync(executablePath, cancellationToken);
+        bridge.OpenFile(address.AbsoluteUri, position, options);
+    }
+
+    public async Task PrepareLocalFileAsync(string path, CancellationToken cancellationToken = default, Action<IntPtr>? onConnected = null)
+    {
+        if (!File.Exists(path)) throw new FileNotFoundException("O arquivo do episódio não foi encontrado.", path);
+        await bridge.StartAsync(executablePath, cancellationToken);
+        onConnected?.Invoke(bridge.WindowHandle);
+        await bridge.PrepareFileAsync(path, cancellationToken);
+    }
+
+    public async Task PrepareStreamAsync(Uri address, CancellationToken cancellationToken = default, Action<IntPtr>? onConnected = null)
+    {
+        if (address.Scheme != "http" || address.Host != "127.0.0.1" || address.Port <= 0) throw new ArgumentException("O player só aceita o endpoint local da sala.");
+        await bridge.StartAsync(executablePath, cancellationToken);
+        onConnected?.Invoke(bridge.WindowHandle);
+        await bridge.PrepareFileAsync(address.AbsoluteUri, cancellationToken, TimeSpan.FromSeconds(45));
+    }
+
+    public void SetPlaybackPermission(bool allowed) => bridge.SetPlaybackPermission(allowed);
+    public void Resume() => bridge.Play();
+    public void SetSpeed(double speed) => bridge.SetSpeed(speed);
+    public TimeSpan? Duration => bridge.Duration;
+    public int? AudioTrack => bridge.AudioTrack;
+    public int? SubtitleTrack => bridge.SubtitleTrack;
+    public string? CurrentFilePath => bridge.CurrentFilePath;
+    public void RefreshTracks() => bridge.RefreshTracks();
+    public void SetTracks(int? audio, int? subtitle) => bridge.SetTracks(audio, subtitle);
 
     public Task PauseAsync(CancellationToken cancellationToken = default) { bridge.Pause(); return Task.CompletedTask; }
     public Task SeekAsync(TimeSpan position, CancellationToken cancellationToken = default) { bridge.Seek(position); return Task.CompletedTask; }

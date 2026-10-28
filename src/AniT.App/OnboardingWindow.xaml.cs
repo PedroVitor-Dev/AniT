@@ -27,6 +27,7 @@ public partial class OnboardingWindow : Window
         RefreshAvatar();
         folderPath = configuredFolder;
         FolderText.Text = folderPath ?? "Nenhuma pasta selecionada";
+        AppearanceManager.ApplyToWindow(this);
         ShowStep();
     }
 
@@ -45,9 +46,16 @@ public partial class OnboardingWindow : Window
         ProfileStep.Visibility = step == 1 ? Visibility.Visible : Visibility.Collapsed;
         FolderStep.Visibility = step == 2 ? Visibility.Visible : Visibility.Collapsed;
         ReadyStep.Visibility = step == 3 ? Visibility.Visible : Visibility.Collapsed;
-        Heading.Text = new[] { "Seu próximo anime começa aqui.", "Um perfil com a sua cara.", "Onde estão seus animes?", "Tudo pronto para começar." }[step];
-        StepText.Text = $"PASSO {step + 1} DE 4 · {new[] { "BOAS-VINDAS", "SEU PERFIL", "SUA ESTANTE", "TUDO PRONTO" }[step]}";
+        Heading.Text = new[] { "Configurar o AniT", "Seu perfil", "Pasta de animes", "Revisar configuração" }[step];
+        StepText.Text = $"PASSO {step + 1} DE 4 · {new[] { "BOAS-VINDAS", "SEU PERFIL", "PASTA DE ANIMES", "REVISÃO" }[step]}";
         StepProgress.Value = step + 1;
+        var stepLabels = new[] { StepLabel0, StepLabel1, StepLabel2, StepLabel3 };
+        for (var index = 0; index < stepLabels.Length; index++)
+        {
+            stepLabels[index].SetResourceReference(System.Windows.Controls.TextBlock.ForegroundProperty,
+                index == step ? "AniT.Brush.AccentCyan" : "AniT.Brush.TextSecondary");
+            stepLabels[index].FontWeight = index == step ? FontWeights.SemiBold : FontWeights.Normal;
+        }
         BackButton.Visibility = step == 0 ? Visibility.Hidden : Visibility.Visible;
         NextButton.Content = step == 0 ? "_Começar" : step == 3 ? "_Entrar no AniT" : "_Continuar";
         NextButton.IsEnabled = step != 2 || folderPath is not null;
@@ -81,11 +89,11 @@ public partial class OnboardingWindow : Window
         if (folderPath is not null && !ValidateFolder()) return;
         saving = true;
         BackButton.IsEnabled = NextButton.IsEnabled = false;
-        StatusText.Text = "Preparando seu espaço…";
+        StatusText.Text = "Salvando configuração…";
         try
         {
             var savedAvatar = ProfileSettingsStore.PersistAvatar(avatarPath);
-            await using var context = App.OpenFreshDatabase();
+            await using var context = await Task.Run(App.OpenFreshDatabase);
             var roots = await context.LibraryRoots.ToListAsync();
             if (folderPath is not null)
             {
@@ -189,7 +197,7 @@ public partial class OnboardingWindow : Window
 
     protected override void OnClosing(CancelEventArgs e)
     {
-        // The tiny save must finish before the process is allowed to shut down.
+        // Let database preparation and the explicit save finish before closing.
         if (saving && DialogResult != true) e.Cancel = true;
         base.OnClosing(e);
     }

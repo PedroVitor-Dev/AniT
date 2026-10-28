@@ -29,8 +29,10 @@ Compare o valor exibido com a linha correspondente em `SHA256SUMS.txt`, publicad
 1. Execute o instalador.
 2. Escolha Português (Brasil) ou English.
 3. Confira o diretório e escolha se deseja um atalho na Área de Trabalho.
-4. Conclua e inicie o AniT.
-5. Escolha ou crie um perfil e configure as pastas da sua biblioteca.
+4. Na última tela, **Iniciar o AniT** vem marcado. Clique em **Concluir** para abrir o aplicativo; desmarque se preferir abrir depois. Instalações silenciosas não iniciam o app.
+5. Em uma instalação nova, o onboarding permite escolher nome, foto e pasta de animes. Instalações existentes mantêm a escolha de perfil.
+
+Para abrir depois, use o atalho **AniT** do menu Iniciar ou da Área de Trabalho. O arquivo `AniT-Setup-...exe` é o instalador.
 
 A instalação padrão fica em `%LOCALAPPDATA%\Programs\AniT` e não requer privilégios administrativos.
 

@@ -7,6 +7,35 @@ namespace AniT.Tests;
 public sealed class AniTDatabaseTests
 {
     [Fact]
+    public async Task ConcurrentInitializationCreatesOneCompleteSchemaAndPreservesData()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "anit-startup-" + Guid.NewGuid().ToString("N"));
+        var path = Path.Combine(folder, "name;with delimiter.db");
+        try
+        {
+            using var start = new ManualResetEventSlim(false);
+            var workers = Enumerable.Range(0, 12).Select(_ => Task.Run(() =>
+            {
+                start.Wait();
+                using var context = AniTDatabase.Create(path);
+                Assert.Empty(context.Anime.AsNoTracking());
+            })).ToArray();
+            start.Set(); await Task.WhenAll(workers).WaitAsync(TimeSpan.FromSeconds(30));
+            using (var context = AniTDatabase.Create(path))
+            {
+                context.Anime.Add(new AniT.Core.Anime { Title = "Preservado" }); context.SaveChanges();
+            }
+            using (var reopened = AniTDatabase.Create(path)) Assert.Equal("Preservado", reopened.Anime.Single().Title);
+            Assert.False(File.Exists(path + ".pre-smart-library.bak"));
+            using var connection = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = path }.ToString()); connection.Open();
+            using var check = connection.CreateCommand(); check.CommandText = "PRAGMA integrity_check;";
+            Assert.Equal("ok", check.ExecuteScalar());
+            check.CommandText = "SELECT Version FROM AniTSchemaInfo WHERE Id = 1;"; Assert.Equal(5L, check.ExecuteScalar());
+        }
+        finally { SqliteConnection.ClearAllPools(); if (Directory.Exists(folder)) Directory.Delete(folder, true); }
+    }
+
+    [Fact]
     public void Create_AddsMetadataAndReviewColumnsToExistingDatabase()
     {
         var directory = Path.Combine(Path.GetTempPath(), "AniT.Tests", Guid.NewGuid().ToString("N"));
