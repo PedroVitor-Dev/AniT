@@ -13,9 +13,11 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ### Corrigido
 
+- MPC-HC: buscas não bloqueiam mais a interface do AniT nem falham após apenas 1,5 segundo de buffering. O envio aguarda em segundo plano, com prazo limitado, preserva a ordem das buscas e respeita o cancelamento da espera sem reenviar comandos. Retomada inicial usa o mesmo caminho.
+
 - Online Anime Player: consultas simultâneas ao índice/trechos do MKV não cancelam mais a resposta de vídeo em andamento. Leituras aguardando peças verificadas cedem a vez às outras conexões; o tipo de mídia HTTP corresponde ao contêiner. Diagnósticos registram as faixas solicitadas e falhas de leitura.
 - Reprodução: abertura sem resposta e buffering deixam de gerar progresso pelo relógio. Fechar o player sem posição confirmada preserva a retomada; EOF de streaming longe do final não conclui o episódio nem avança automaticamente a fila. Cliques concorrentes não iniciam duas preparações do player.
-- Regressões cobertas por leitura paralela de vídeo/índice, preservação de progresso/conquistas e MPC-HC real com MKV HEVC/Opus sintético. Busca durante buffering ainda pode apresentar timeout no MPC-HC.
+- Regressões cobertas por leitura paralela de vídeo/índice, preservação de progresso/conquistas e MPC-HC real com MKV HEVC/Opus sintético. Busca durante buffering validada com rede limitada e atraso adicional.
 
 ## [2.0.0] - 2026-10-28
 

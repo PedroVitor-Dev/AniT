@@ -11,11 +11,11 @@ using MonoTorrent.Client;
 
 internal static class OnlinePlayerChecks
 {
-    static async Task WaitForPosition(MpcHcPlayer player,double minimum,CancellationToken token)
+    static async Task WaitForPosition(MpcHcPlayer player,double minimum,CancellationToken token,double maximum=double.PositiveInfinity)
     {
         while(true) {
             token.ThrowIfCancellationRequested();
-            try { if((await player.GetPositionAsync(token)).TotalSeconds>=minimum)return; }
+            try { var position=(await player.GetPositionAsync(token)).TotalSeconds; if(position>=minimum && position<=maximum)return; }
             catch(OperationCanceledException)when(!token.IsCancellationRequested) { }
             catch(TimeoutException)when(!token.IsCancellationRequested) { }
             await Task.Delay(150,token);
@@ -27,7 +27,7 @@ internal static class OnlinePlayerChecks
         var window = new Window { Width = 100, Height = 100, Opacity = 0, ShowInTaskbar = false, ShowActivated = false };
         window.Loaded += async (_, _) => {
             try {
-                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(75)); var token = timeout.Token;
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(150)); var token = timeout.Token;
                 var root = Path.Combine(Path.GetTempPath(), "AniT.Online.Native", Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
                 var original = Path.Combine(root, "Original"); Directory.CreateDirectory(original);
                 var path = Path.Combine(original,"Authorized - 01" + (fixture is null ? ".avi" : ".mkv"));
@@ -65,21 +65,38 @@ internal static class OnlinePlayerChecks
                 var progressAtFirstPlayback=manager.Files[file.OnlineFileIndex].BitField.PercentComplete;
                 if(progressAtFirstPlayback>=100)throw new Exception("Test must start before the selected episode finishes downloading");
                 if(manager.Files.Where((_,i)=>i!=file.OnlineFileIndex).Any(f=>f.Priority!=Priority.DoNotDownload)) throw new Exception("Another episode was selected while playing");
-                Volatile.Write(ref relay.BytesPerSecond,0);
-                await engine.UpdateSettingsAsync(new EngineSettingsBuilder(engine.Settings) { MaximumDownloadRate=0 }.ToSettings());
                 if (Environment.GetEnvironmentVariable("ANIT_TEST_STARTUP_ONLY") == "1") {
                     Console.WriteLine($"Online native partial startup passed: selected episode {progressAtFirstPlayback:0.0}% downloaded; other episodes unselected.");
                     await seed.StopAsync(); result=0; return;
                 }
                 await player.PauseAsync(token);await Task.Delay(300,token);
                 if(await player.GetStateAsync(token)!=PlayerState.Paused)throw new Exception("Native pause did not apply");
+                if (fixture is not null) {
+                    var target=Math.Min(150,(player.Duration?.TotalSeconds ?? 160)-10);
+                    Volatile.Write(ref relay.BytesPerSecond,4096);
+                    var restoreRate=Task.Run(async()=> { await Task.Delay(3000,token); Volatile.Write(ref relay.BytesPerSecond,1024*1024); });
+                    var seeking=System.Diagnostics.Stopwatch.StartNew();
+                    var pulses=0;
+                    var seek=player.SeekAsync(TimeSpan.FromSeconds(target),token);
+                    while(!seek.IsCompleted) { await Task.WhenAny(seek,Task.Delay(50,token)); pulses++; token.ThrowIfCancellationRequested(); }
+                    await seek;
+                    if(pulses==0)throw new Exception("Seek should yield the UI while remote data is fetched");
+                    player.Resume();
+                    await WaitForPosition(player,target+.2,token,target+6);
+                    await restoreRate;
+                    if(manager.Files[file.OnlineFileIndex].BitField.AllTrue)throw new Exception("Forward seek must complete while the episode is still incomplete");
+                    Console.WriteLine($"Forward seek to {target:0}s under throttle passed in {seeking.Elapsed.TotalSeconds:0.0}s; UI pulses={pulses}.");
+                }
                 await player.SeekAsync(TimeSpan.FromSeconds(12),token);player.Resume();
-                await WaitForPosition(player,12.2,token);
+                await WaitForPosition(player,12.2,token,18);
+                Console.WriteLine($"Seek under throttle passed: {manager.Files[file.OnlineFileIndex].BitField.PercentComplete:0.0}% of selected episode downloaded.");
+                Volatile.Write(ref relay.BytesPerSecond,0);
+                await engine.UpdateSettingsAsync(new EngineSettingsBuilder(engine.Settings) { MaximumDownloadRate=0 }.ToSettings());
                 OnlineTransfer snapshot;
                 do { await Task.Delay(100,token); snapshot=(await Task.Run(()=>service.SnapshotAsync(token))).Single(); } while(snapshot.Episodes.Single(e=>e.EpisodeId==file.EpisodeId).IsCloud);
                 if(fixture is not null && snapshot.Episodes.Where(e=>e.EpisodeId!=file.EpisodeId).Any(e=>!e.IsCloud)) throw new Exception("The other episodes should remain pending");
                 await player.SeekAsync(TimeSpan.FromSeconds(20),token);player.Resume();await WaitForPosition(player,20.3,token);
-                Console.WriteLine($"Online native MPC-HC passed: play while downloading ({progressAtFirstPlayback:0.0}% of selected episode at first playback), pause, seek to 12s, resume, finish download and keep playing at 20s. Synthetic media only.");
+                Console.WriteLine($"Online native MPC-HC passed: play while downloading ({progressAtFirstPlayback:0.0}% of selected episode at first playback), pause, forward seek (MKV), backward seek to 12s under throttle, resume, finish download and keep playing at 20s. Synthetic media only.");
                 await seed.StopAsync(); result=0;
             } catch(Exception ex) { Console.Error.WriteLine(ex); }
             finally { window.Close();app.Shutdown(); }

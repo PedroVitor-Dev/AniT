@@ -64,6 +64,14 @@ O MKV deve ter ao menos 90 segundos para o cenário de retomada em 69,435 s. O F
 
 336 testes automatizados passaram; a UI foi verificada em 28 cenários. Um diagnóstico do magnet informado consultou apenas metadados: 12 episódios, nenhum arquivo selecionado e zero bytes de vídeo recebidos. Isso não valida a reprodução daquela fonte.
 
-O ensaio nativo agora compara a porcentagem do arquivo selecionado, não a do torrent inteiro, e limita inclusive a primeira rajada por relay TCP. `ANIT_TEST_STARTUP_ONLY=1` limita o ensaio ao início/retomada parcial. Busca durante buffering apresentou timeout no MPC-HC e permanece uma limitação conhecida. Peças de fronteira podem incluir bytes de arquivos vizinhos sem selecioná-los para download.
+O ensaio nativo agora compara a porcentagem do arquivo selecionado, não a do torrent inteiro, e limita inclusive a primeira rajada por relay TCP. `ANIT_TEST_STARTUP_ONLY=1` limita o ensaio ao início/retomada parcial. Busca durante buffering passou após a correção assíncrona do envio ao MPC-HC. Peças de fronteira podem incluir bytes de arquivos vizinhos sem selecioná-los para download.
 
 Resultado do ensaio sob demanda: MPC-HC retomou em 69,435 segundos e avançou até 70,688 segundos com apenas 4,2% do episódio selecionado verificado; os demais arquivos permaneceram sem seleção. Mídia sintética HEVC/Opus, rede limitada no relay.
+
+## Busca durante buffering corrigida (28/10/2026)
+
+O comando de busca do MPC-HC pode aguardar leituras de rede dentro do processamento de `WM_COPYDATA`. O prazo antigo de 1,5 segundo gerava falha mesmo quando o player ainda estava buscando dados. O AniT agora envia buscas fora da thread da janela de notificações, serializa os envios e aguarda até 45 segundos. A interface continua processando mensagens e o cancelamento encerra a espera do chamador; um comando já enviado não é repetido. A memória de `COPYDATA` permanece pertencendo ao worker até o retorno nativo.
+
+Ensaio nativo com MKV HEVC/Opus sintético de 210 segundos: início com 5,0% do episódio verificado; pausa, avanço para 150 segundos com rede limitada e lentidão adicional, retorno a 12 segundos ainda com apenas 7,5% do arquivo, conclusão do download e nova busca para 20 segundos. O avanço demorou 4,6 segundos e a UI processou 71 intervalos de verificação enquanto o envio aguardava. Esse tempo é resultado local de teste, não previsão para fontes da internet.
+
+336 testes automatizados, compilação Release sem avisos/erros e ensaios nativos do Movie Theater (P2P e streaming, incluindo recuperação de mídia interrompida) passaram. O ensaio ampliado usa os mesmos comandos `--check-online-player --mkv --resume` com um MKV sintético de pelo menos 90 segundos; a posição de avanço se adapta à duração. Não defina `ANIT_TEST_STARTUP_ONLY` ao validar buscas.

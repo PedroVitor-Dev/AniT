@@ -42,6 +42,7 @@ internal sealed class MpcHcBridge : IDisposable
     private TaskCompletionSource<IntPtr>? connection;
     private TaskCompletionSource<TimeSpan>? positionRequest;
     private readonly SemaphoreSlim positionGate = new(1, 1);
+    private readonly SemaphoreSlim seekGate = new(1, 1);
     private IntPtr playerWindow;
     private TimeSpan? pendingStartPosition;
     private TimeSpan? resumePosition;
@@ -123,7 +124,7 @@ internal sealed class MpcHcBridge : IDisposable
             await filePrepared.Task.WaitAsync(preparationTimeout ?? TimeSpan.FromSeconds(15), cancellationToken);
             await Task.Delay(100, cancellationToken);
             Pause();
-            Seek(TimeSpan.Zero);
+            await SeekAsync(TimeSpan.Zero, cancellationToken);
             RefreshTracks();
         }
         finally { pauseOnLoad = false; filePrepared = null; }
@@ -154,10 +155,31 @@ internal sealed class MpcHcBridge : IDisposable
     }
 
     public void Play() { if (!playbackAllowed) return; Send(CmdPlay); ApplyPendingSpeed(); }
-    public void Seek(TimeSpan position)
+    public async Task SeekAsync(TimeSpan position, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        ObjectDisposedException.ThrowIf(disposed, this);
+        var target = playerWindow;
+        if (target == IntPtr.Zero) throw new InvalidOperationException("O MPC-HC ainda não está conectado ao AniT.");
+        var sender = hostWindow.Handle;
         Trace($"Enviando seek: {position.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture)}s.");
-        Send(CmdSetPosition, position.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture));
+        // Seeking can synchronously wait for the splitter to read a remote range. Keep the
+        // notification window pumping while MPC-HC processes it; never retry a sent seek.
+        await seekGate.WaitAsync(cancellationToken);
+        if (disposed || playerWindow != target) {
+            seekGate.Release();
+            throw new InvalidOperationException("O MPC-HC foi desconectado antes da busca.");
+        }
+        var sending = Task.Run(() => {
+            try { SendTo(target, sender, CmdSetPosition,
+                position.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture), 45000, waitForBuffering: true); }
+            finally { seekGate.Release(); }
+        });
+        // The worker owns the COPYDATA buffers until SendMessageTimeout actually returns,
+        // even if the caller stops waiting. Observe a later failure after cancellation.
+        _ = sending.ContinueWith(task => _ = task.Exception, CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+        await sending.WaitAsync(cancellationToken);
     }
 
     public async Task<TimeSpan> GetPositionAsync(CancellationToken cancellationToken)
@@ -307,8 +329,8 @@ internal sealed class MpcHcBridge : IDisposable
     private void ApplyPendingSeek()
     {
         if (pendingStartPosition is not { } position || position <= TimeSpan.Zero) return;
-        Seek(position);
         pendingStartPosition = null;
+        _ = SeekAfterNotificationAsync(position);
     }
 
     private void ScheduleResumeSeekAfterGraphInitialization()
@@ -329,7 +351,14 @@ internal sealed class MpcHcBridge : IDisposable
         await Task.Delay(TimeSpan.FromMilliseconds(50));
         if (playerWindow != expectedWindow || playerWindow == IntPtr.Zero) return;
         Trace($"Reaplicando seek após inicialização: {position.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture)}s.");
-        Seek(position);
+        await SeekAfterNotificationAsync(position);
+    }
+
+    private async Task SeekAfterNotificationAsync(TimeSpan position)
+    {
+        try { await SeekAsync(position); }
+        catch (Exception ex) when (ex is TimeoutException or InvalidOperationException or ObjectDisposedException)
+        { Trace($"Não foi possível aplicar a posição inicial: {ex.Message}"); }
     }
 
     private void Trace(string message) => Diagnostic?.Invoke(this, message);
@@ -337,6 +366,11 @@ internal sealed class MpcHcBridge : IDisposable
     private void Send(int command, string payload = "")
     {
         if (playerWindow == IntPtr.Zero) throw new InvalidOperationException("O MPC-HC ainda não está conectado ao AniT.");
+        SendTo(playerWindow, hostWindow.Handle, command, payload, independent ? 1500u : 0u);
+    }
+
+    private static void SendTo(IntPtr target, IntPtr sender, int command, string payload, uint timeout, bool waitForBuffering = false)
+    {
         var text = payload + '\0';
         var dataPointer = Marshal.StringToHGlobalUni(text);
         var structPointer = Marshal.AllocHGlobal(Marshal.SizeOf<CopyDataStruct>());
@@ -345,12 +379,12 @@ internal sealed class MpcHcBridge : IDisposable
             // dwData is an unsigned pointer-sized field. Commands such as CMD_OPENFILE have the high bit set;
             // zero-extension is required on x64 or MPC-HC will not recognize the command.
             Marshal.StructureToPtr(new CopyDataStruct { Data = new IntPtr(unchecked((long)(uint)command)), DataLength = text.Length * sizeof(char), DataPointer = dataPointer }, structPointer, false);
-            if (independent)
+            if (timeout > 0)
             {
-                if (SendMessageTimeout(playerWindow, WmCopyData, hostWindow.Handle, structPointer, 2, 1500, out _) == IntPtr.Zero)
-                    throw new TimeoutException("O player da sala não respondeu.");
+                if (SendMessageTimeout(target, WmCopyData, sender, structPointer, waitForBuffering ? 0u : 2u, timeout, out _) == IntPtr.Zero)
+                    throw new TimeoutException("O MPC-HC não respondeu ao comando dentro do prazo.");
             }
-            else SendMessage(playerWindow, WmCopyData, hostWindow.Handle, structPointer);
+            else SendMessage(target, WmCopyData, sender, structPointer);
         }
         finally
         {

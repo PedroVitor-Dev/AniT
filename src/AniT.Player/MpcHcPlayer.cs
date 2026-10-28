@@ -85,7 +85,7 @@ public sealed class MpcHcPlayer : IMediaPlayer, IDisposable
     public void SetTracks(int? audio, int? subtitle) => bridge.SetTracks(audio, subtitle);
 
     public Task PauseAsync(CancellationToken cancellationToken = default) { bridge.Pause(); return Task.CompletedTask; }
-    public Task SeekAsync(TimeSpan position, CancellationToken cancellationToken = default) { bridge.Seek(position); return Task.CompletedTask; }
+    public Task SeekAsync(TimeSpan position, CancellationToken cancellationToken = default) => bridge.SeekAsync(position, cancellationToken);
     public Task<TimeSpan> GetPositionAsync(CancellationToken cancellationToken = default) => bridge.GetPositionAsync(cancellationToken);
     public Task<PlayerState> GetStateAsync(CancellationToken cancellationToken = default) => Task.FromResult(state);
     public void Dispose() => bridge.Dispose();
