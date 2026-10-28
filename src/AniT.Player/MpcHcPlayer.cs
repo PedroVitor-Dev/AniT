@@ -31,7 +31,7 @@ public sealed class MpcHcPlayer : IMediaPlayer, IDisposable
         this.executablePath = executablePath;
         bridge.PositionReceived += (_, position) => PositionChanged?.Invoke(this, new PlaybackPositionChangedEventArgs(position, bridge.Duration));
         bridge.EndOfStream += (_, _) => PlaybackEnded?.Invoke(this, EventArgs.Empty);
-        bridge.Disconnected += (_, position) => PlaybackClosed?.Invoke(this, new PlaybackPositionChangedEventArgs(position ?? TimeSpan.Zero, bridge.Duration));
+        bridge.Disconnected += (_, position) => PlaybackClosed?.Invoke(this, new PlaybackPositionChangedEventArgs(position ?? TimeSpan.Zero, bridge.Duration, position.HasValue));
         bridge.StateChanged += (_, newState) => state = newState;
         bridge.Diagnostic += (_, message) => Diagnostic?.Invoke(this, message);
     }
@@ -77,6 +77,7 @@ public sealed class MpcHcPlayer : IMediaPlayer, IDisposable
     public void Resume() => bridge.Play();
     public void SetSpeed(double speed) => bridge.SetSpeed(speed);
     public TimeSpan? Duration => bridge.Duration;
+    public TimeSpan? LastReportedPosition => bridge.LastReportedPosition;
     public int? AudioTrack => bridge.AudioTrack;
     public int? SubtitleTrack => bridge.SubtitleTrack;
     public string? CurrentFilePath => bridge.CurrentFilePath;

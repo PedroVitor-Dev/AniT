@@ -52,6 +52,37 @@ public sealed class OnlineAnimeTests
         Assert.Equal(HttpStatusCode.RequestedRangeNotSatisfiable, (await client.SendAsync(invalid)).StatusCode);
     }
 
+    [Fact]
+    public async Task MetadataProbeDoesNotAbortPendingVideoResponse()
+    {
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var source = new DelayedVideoStream();
+        await using var server = new OnlineStreamServer(source, "test.mkv");
+        using var client = new HttpClient();
+        using var mainRequest = new HttpRequestMessage(HttpMethod.Get, server.Address);
+        mainRequest.Headers.Range = new RangeHeaderValue(0, 63);
+        using var main = await client.SendAsync(mainRequest, HttpCompletionOption.ResponseHeadersRead, deadline.Token);
+        await source.FirstRead.Task.WaitAsync(deadline.Token);
+        using var probeRequest = new HttpRequestMessage(HttpMethod.Get, server.Address);
+        probeRequest.Headers.Range = new RangeHeaderValue(100000, 100063);
+        using var probe = await client.SendAsync(probeRequest, deadline.Token);
+        Assert.Equal(64, (await probe.Content.ReadAsByteArrayAsync(deadline.Token)).Length);
+        source.Release.TrySetResult();
+        Assert.Equal(64, (await main.Content.ReadAsByteArrayAsync(deadline.Token)).Length);
+    }
+
+    sealed class DelayedVideoStream : MemoryStream
+    {
+        public TaskCompletionSource FirstRead { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public DelayedVideoStream() : base(new byte[200000]) { }
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default)
+        {
+            if (Position == 0) { FirstRead.TrySetResult(); await Release.Task.WaitAsync(token); }
+            return await base.ReadAsync(buffer, token);
+        }
+    }
+
     static EngineSettings OfflineSettings(string cache, int port = 0, int rate = 0) => new EngineSettingsBuilder {
         CacheDirectory = cache, DhtEndPoint = null, AllowLocalPeerDiscovery = false, AllowPortForwarding = false,
         ListenEndPoints = new Dictionary<string, IPEndPoint> { ["ipv4"] = new(IPAddress.Loopback, port) },

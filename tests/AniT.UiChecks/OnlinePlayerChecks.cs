@@ -20,7 +20,7 @@ internal static class OnlinePlayerChecks
             await Task.Delay(150,token);
         }
     }
-    public static int Run(Application app)
+    public static int Run(Application app, string? fixture = null, bool resume = false)
     {
         int result = 1;
         var window = new Window { Width = 100, Height = 100, Opacity = 0, ShowInTaskbar = false, ShowActivated = false };
@@ -29,7 +29,12 @@ internal static class OnlinePlayerChecks
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(75)); var token = timeout.Token;
                 var root = Path.Combine(Path.GetTempPath(), "AniT.Online.Native", Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
                 var original = Path.Combine(root, "Original"); Directory.CreateDirectory(original);
-                var path = Path.Combine(original,"Authorized - 01.avi"); SyntheticTheaterMedia.WriteAvi(path, 600);
+                var path = Path.Combine(original,"Authorized - 01" + (fixture is null ? ".avi" : ".mkv"));
+                if (fixture is null) SyntheticTheaterMedia.WriteAvi(path, 600); else {
+                    File.Copy(fixture, path);
+                    File.Copy(fixture, Path.Combine(original,"Authorized - 02.mkv"));
+                    File.Copy(fixture, Path.Combine(original,"Authorized - 03.mkv"));
+                }
                 var torrent = await new TorrentCreator { PieceLength = 64 * 1024 }.CreateAsync(new TorrentFileSource(original));
                 var metadata = Path.Combine(root,"test.torrent"); await File.WriteAllBytesAsync(metadata,torrent.Encode(),token);
                 var tcp = new System.Net.Sockets.TcpListener(IPAddress.Loopback,0); tcp.Start(); var port=((IPEndPoint)tcp.LocalEndpoint).Port;tcp.Stop();
@@ -38,12 +43,13 @@ internal static class OnlinePlayerChecks
                     ListenEndPoints=new Dictionary<string,IPEndPoint>{{"ipv4",new(IPAddress.Loopback,listen)}}, MaximumDownloadRate=rate,UsePartialFiles=true
                 }.ToSettings();
                 using var seedEngine=new ClientEngine(Settings("seed",port,0));
-                var seed=await seedEngine.AddAsync(await Torrent.LoadAsync(metadata),original);await seed.HashCheckAsync(false);await seed.StartAsync();
-                await using var service=new OnlineAnimeService(Path.Combine(root,"db.sqlite"),Path.Combine(root,"state"),Settings("client",0,4*1024*1024));
+                var seed=await seedEngine.AddAsync(await Torrent.LoadAsync(metadata),fixture is null ? original : root);await seed.HashCheckAsync(false);await seed.StartAsync();
+                await using var service=new OnlineAnimeService(Path.Combine(root,"db.sqlite"),Path.Combine(root,"state"),Settings("client",0,fixture is null ? 4*1024*1024 : 512*1024));
+                service.Diagnostic = message => Console.WriteLine(message);
                 await service.AddAsync(metadata,root,"Autorizado",true,token);
                 var engine=(ClientEngine)typeof(OnlineAnimeService).GetField("engine",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(service)!;
                 var manager=engine.Torrents.Single(); await manager.AddPeerAsync(new PeerInfo(new Uri($"ipv4://127.0.0.1:{port}")));
-                using var db=AniTDatabase.Create(Path.Combine(root,"db.sqlite"));var file=await db.MediaFiles.SingleAsync(token);
+                using var db=AniTDatabase.Create(Path.Combine(root,"db.sqlite"));var file=await db.MediaFiles.OrderBy(f=>f.OnlineFileIndex).LastAsync(token);
                 Console.WriteLine($"Seeder complete: {seed.Complete}, path: {seed.Files[0].FullPath}, downloader: {manager.State}");
                 if (!seed.Complete) throw new Exception("The synthetic seeder did not find its own generated file");
                 using var statsCancellation=CancellationTokenSource.CreateLinkedTokenSource(token);
@@ -52,8 +58,8 @@ internal static class OnlinePlayerChecks
                 statsCancellation.Cancel(); await stats;
                 using var player=new MpcHcPlayer(Path.Combine(AppContext.BaseDirectory,"Player","MPC-HC","mpc-hc64.exe"),true);
                 player.Diagnostic += (_, message) => Console.WriteLine(message);
-                await player.PlayStreamAsync(address, null, MpcHcPlaybackOptions.Default, token);
-                await WaitForPosition(player,1.2,token);
+                await player.PlayStreamAsync(address, resume ? TimeSpan.FromSeconds(69.435) : null, MpcHcPlaybackOptions.Default, token);
+                await WaitForPosition(player,resume ? 70.635 : 1.2,token);
                 if(manager.Progress>=100)throw new Exception("Test must exercise playback during download");
                 await player.PauseAsync(token);await Task.Delay(300,token);
                 if(await player.GetStateAsync(token)!=PlayerState.Paused)throw new Exception("Native pause did not apply");

@@ -19,4 +19,4 @@ public interface IMediaPlayer
     Task<PlayerState> GetStateAsync(CancellationToken cancellationToken = default);
 }
 
-public sealed record PlaybackPositionChangedEventArgs(TimeSpan Position, TimeSpan? Duration);
+public sealed record PlaybackPositionChangedEventArgs(TimeSpan Position, TimeSpan? Duration, bool IsPositionKnown = true);

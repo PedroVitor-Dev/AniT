@@ -48,6 +48,7 @@ internal sealed class MpcHcBridge : IDisposable
     private bool resumeSeekReapplied;
     private TimeSpan? duration;
     private TimeSpan? lastPosition;
+    public TimeSpan? LastReportedPosition => lastPosition;
     private MpcHcPlaybackOptions playbackOptions = MpcHcPlaybackOptions.Default;
     private bool playbackOptionsApplied;
     private bool fullscreenApplied;

@@ -25,6 +25,7 @@ public partial class App
     static OnlineAnimeService CreateOnlineService()
     {
         var service = new OnlineAnimeService(databasePath, Path.Combine(dataRootPath, "Online", ProfileSettingsStore.ActiveProfileId.ToString("N")));
+        service.Diagnostic = message => WritePlaybackLog("[ONLINE] " + message);
         onlineMonitor = new CancellationTokenSource();
         var token = onlineMonitor.Token;
         onlineMonitorTask = Task.Run(async () => {

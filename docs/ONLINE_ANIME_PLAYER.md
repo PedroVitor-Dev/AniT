@@ -20,7 +20,7 @@ O botão de pausar controla o download, e pode interromper o streaming quando os
 - Manifestos por perfil em `Online/<profile-id>/downloads.json`, gravados por substituição atômica. Metadados e fast resume ficam no cache do motor.
 - Cada torrent possui uma pasta exclusiva em `<destino>/AniT Online/<job-id>`. Caminhos são validados; executáveis e outros arquivos sem relação com vídeo/legendas não são selecionados.
 - O motor valida as peças do torrent. A fonte de reprodução é um stream seekable que prioriza a posição solicitada. O endpoint HTTP de vídeo escuta apenas em `127.0.0.1`, com porta dinâmica, rota aleatória e suporte a HEAD e ranges simples. Não depende de ACL de HttpListener, servidor central ou privilégios de administrador.
-- Até oito conexões HTTP locais; leitura em blocos de 64 KiB; solicitações antigas de reprodução são canceladas quando o player pede outra posição.
+- Até oito conexões HTTP locais; leitura em blocos de 64 KiB; as solicitações de vídeo e índice mantêm respostas independentes. Uma leitura ainda sem peças verificadas cede a vez após 300 ms; conexões abandonadas pelo player são encerradas sem cancelar as demais.
 - Raízes gerenciadas ficam fora da varredura e reorganização comuns, evitando duplicar ou mover arquivos vinculados ao motor. Os IDs de episódios continuam sendo os mesmos usados pelo restante do AniT.
 - O motor pode compartilhar peças enquanto baixa. A verificação periódica interrompe o torrent quando todos os vídeos e legendas selecionados foram concluídos; não há seeding contínuo automático.
 
@@ -41,3 +41,19 @@ Os downloads são locais e ocupam espaço no destino escolhido. Os arquivos e me
 Os testes não utilizam mídias pessoais nem torrents de terceiros.
 
 Validação de 28/10/2026: 326 testes passaram; 24 cenários de layout passaram. O MPC-HC reproduziu o AVI sintético com aproximadamente 24% baixado, pausou, buscou 12 segundos e continuou em 20 segundos após a conclusão do download. Isso verifica o fluxo local, não estima desempenho de torrents na internet.
+
+## Regressão de MKV e progresso (28/10/2026)
+
+A leitura do índice de um contêiner pode ocorrer enquanto a resposta principal aguarda dados. Um teste reproduz a falha antiga: a segunda solicitação cortava o corpo da primeira antes do `Content-Length` anunciado. A resposta principal agora permanece aberta e as leituras compartilham o stream verificado em turnos limitados.
+
+O AniT salva apenas posições confirmadas pelo MPC-HC, inclusive o zero real ao voltar ao início. Uma consulta sem resposta não vira tempo assistido. No streaming, EOF só conclui automaticamente o episódio se houver posição confirmada próxima do final; uma posição desconhecida ao fechar não apaga a retomada.
+
+Para repetir a validação ampliada, gere um MKV de teste com HEVC e Opus (por exemplo, com `testsrc2` e `sine` do FFmpeg). O arquivo é copiado para três episódios sintéticos; nenhum vídeo pessoal ou fonte externa é necessário:
+
+```powershell
+$env:ANIT_TEST_MKV = 'C:\testes\video-sintetico-hevc-opus.mkv'
+dotnet run --project tests/AniT.UiChecks -- --check-online-player --mkv --resume
+dotnet run --project tests/AniT.UiChecks -- --check-playback-evidence
+```
+
+O MKV deve ter ao menos 90 segundos para o cenário de retomada em 69,435 s. O FFmpeg e a mídia de teste não são distribuídos no AniT. O teste falha se `--mkv` for solicitado sem um arquivo de teste válido.

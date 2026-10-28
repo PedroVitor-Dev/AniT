@@ -25,6 +25,7 @@ public sealed class OnlineAnimeService : IAsyncDisposable
     readonly Dictionary<string, OnlineJob> savedJobs = new();
     readonly HashSet<string> prepared = new();
     public string? LastError { get; private set; }
+    public Action<string>? Diagnostic { get; set; }
 
     public OnlineAnimeService(string databasePath, string stateDirectory, EngineSettings? settings = null)
     {
@@ -241,7 +242,7 @@ public sealed class OnlineAnimeService : IAsyncDisposable
             if (stream is not null) { await stream.DisposeAsync(); stream = null; }
             var media = entry.Manager.Files[file.OnlineFileIndex];
             var input = await entry.Manager.StreamProvider!.CreateStreamAsync(media, true, token);
-            stream = new OnlineStreamServer(input, Path.GetFileName(media.Path));
+            stream = new OnlineStreamServer(input, Path.GetFileName(media.Path)) { Diagnostic = message => Diagnostic?.Invoke(message) };
             downloads[entry.Job.Id] = (entry.Job with { Paused = false }, entry.Manager);
             savedJobs[entry.Job.Id] = entry.Job with { Paused = false };
             await SaveAsync(token);
