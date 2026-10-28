@@ -44,7 +44,6 @@ internal sealed class MpcHcBridge : IDisposable
     private readonly SemaphoreSlim positionGate = new(1, 1);
     private readonly SemaphoreSlim seekGate = new(1, 1);
     private IntPtr playerWindow;
-    private TimeSpan? pendingStartPosition;
     private TimeSpan? resumePosition;
     private bool resumeSeekReapplied;
     private TimeSpan? duration;
@@ -100,7 +99,6 @@ internal sealed class MpcHcBridge : IDisposable
 
     public void OpenFile(string path, TimeSpan? startPosition, MpcHcPlaybackOptions? options = null)
     {
-        pendingStartPosition = startPosition;
         resumePosition = startPosition;
         resumeSeekReapplied = false;
         lastPosition = null;
@@ -224,7 +222,6 @@ internal sealed class MpcHcBridge : IDisposable
                 break;
             case CmdState:
                 Trace($"Estado de carregamento: {payload}.");
-                if (payload == "2") ApplyPendingSeek();
                 break;
             case CmdPlayMode:
                 playing = payload == "0";
@@ -326,20 +323,17 @@ internal sealed class MpcHcBridge : IDisposable
         _ => [language]
     };
 
-    private void ApplyPendingSeek()
-    {
-        if (pendingStartPosition is not { } position || position <= TimeSpan.Zero) return;
-        pendingStartPosition = null;
-        _ = SeekAfterNotificationAsync(position);
-    }
-
     private void ScheduleResumeSeekAfterGraphInitialization()
     {
-        // MPC-HC can report MLS_LOADED a moment before its playback graph has completed
-        // initialization. Reapply the saved position once after NOWPLAYING so the initial
-        // graph startup cannot reset the first seek back to zero.
+        // Wait for NOWPLAYING: MLS_LOADED does not include the duration yet and its
+        // graph may still reset an early seek. Validate legacy checkpoints before sending.
         if (resumeSeekReapplied || resumePosition is not { } position || position <= TimeSpan.Zero) return;
         resumeSeekReapplied = true;
+        var validated = global::AniT.Core.PlaybackEvidence.ResumePosition(position, duration);
+        if (validated is null) {
+            Trace("Ponto de retomada no final do episódio; iniciando do começo.");
+            position = TimeSpan.Zero;
+        } else position = validated.Value;
         var expectedWindow = playerWindow;
         _ = ReapplySeekAsync(expectedWindow, position);
     }

@@ -60,8 +60,12 @@ internal static class OnlinePlayerChecks
                 statsCancellation.Cancel(); await stats;
                 using var player=new MpcHcPlayer(Path.Combine(AppContext.BaseDirectory,"Player","MPC-HC","mpc-hc64.exe"),true);
                 player.Diagnostic += (_, message) => Console.WriteLine(message);
-                await player.PlayStreamAsync(address, resume ? TimeSpan.FromSeconds(69.435) : null, MpcHcPlaybackOptions.Default, token);
-                await WaitForPosition(player,resume ? 70.635 : 1.2,token);
+                var startup=System.Diagnostics.Stopwatch.StartNew();
+                var savedAtEnd=Environment.GetEnvironmentVariable("ANIT_TEST_RESUME_AT_END")=="1";
+                var savedPosition=savedAtEnd ? TimeSpan.FromSeconds(double.Parse(Environment.GetEnvironmentVariable("ANIT_TEST_END_POSITION_SECONDS") ?? "210",System.Globalization.CultureInfo.InvariantCulture)) : resume ? TimeSpan.FromSeconds(69.435) : (TimeSpan?)null;
+                await player.PlayStreamAsync(address,savedPosition,MpcHcPlaybackOptions.Default,token);
+                await WaitForPosition(player,resume && !savedAtEnd ? 70.635 : 1.2,token,savedAtEnd ? 8 : double.PositiveInfinity);
+                if(savedAtEnd)Console.WriteLine($"Legacy end checkpoint restarted and advanced from the beginning in {startup.Elapsed.TotalSeconds:0.0}s.");
                 var progressAtFirstPlayback=manager.Files[file.OnlineFileIndex].BitField.PercentComplete;
                 if(progressAtFirstPlayback>=100)throw new Exception("Test must start before the selected episode finishes downloading");
                 if(manager.Files.Where((_,i)=>i!=file.OnlineFileIndex).Any(f=>f.Priority!=Priority.DoNotDownload)) throw new Exception("Another episode was selected while playing");

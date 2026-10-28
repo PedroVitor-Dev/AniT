@@ -887,7 +887,8 @@ public partial class App : Application
         activePlaybackSettings = playbackSettings;
         activePlaybackSegments = LoadPlaybackSegments(mediaPath);
         TimeSpan? resumeAt = playbackSettings.ResumePlayback && episode.PlaybackProgress is { PositionSeconds: > 0 } progress
-            ? TimeSpan.FromSeconds(progress.PositionSeconds)
+            ? global::AniT.Core.PlaybackEvidence.ResumePosition(TimeSpan.FromSeconds(progress.PositionSeconds),
+                progress.DurationSeconds > 0 ? TimeSpan.FromSeconds(progress.DurationSeconds) : null)
             : null;
         if (playbackSettings.SkipOpening && activePlaybackSegments is { OpeningEndSeconds: > 0 } segments &&
             (resumeAt is null || resumeAt.Value.TotalSeconds < segments.OpeningEndSeconds))
