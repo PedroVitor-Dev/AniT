@@ -28,19 +28,19 @@
 
 O **AniT** é um aplicativo desktop open source para Windows que transforma pastas de vídeos em uma biblioteca pessoal de animes. Ele identifica episódios, organiza títulos, preserva histórico e avaliações, encontra capas e metadados e integra a reprodução ao MPC-HC.
 
-O projeto é **local-first**: perfis, biblioteca, conquistas, progresso e configurações ficam no seu computador. O acesso à internet é opcional e usado somente pelas fontes de metadados, tradução e artes habilitadas.
+O projeto é **local-first**: perfis, biblioteca, conquistas, progresso e configurações ficam no seu computador. O acesso à internet é opcional: além das fontes de metadados, tradução e artes habilitadas, pode ser usado no Movie Theater e no Online Anime Player.
 
 > [!NOTE]
-> A versão estável atual é a **1.0.2**. O instalador é autossuficiente para Windows x64, não exige .NET instalado e ainda não possui assinatura digital. Confira o hash publicado antes de executar.
+> A versão desta distribuição é a **2.0.0**. O instalador é autossuficiente para Windows x64, não exige .NET instalado e ainda não possui assinatura digital. Confira o hash publicado antes de executar.
 
 ## Baixar e instalar
 
 1. Abra a [release mais recente](https://github.com/PedroVitor-Dev/AniT/releases/latest).
-2. Baixe `AniT-Setup-1.0.2-win-x64.exe` e `SHA256SUMS.txt`.
+2. Baixe `AniT-Setup-2.0.0-win-x64.exe` e `SHA256SUMS.txt`.
 3. Compare o SHA-256 do instalador:
 
 ```powershell
-Get-FileHash .\AniT-Setup-1.0.2-win-x64.exe -Algorithm SHA256
+Get-FileHash .\AniT-Setup-2.0.0-win-x64.exe -Algorithm SHA256
 ```
 
 4. Execute o instalador, escolha o idioma e, se quiser, crie um atalho na Área de Trabalho.
@@ -49,10 +49,13 @@ O AniT é instalado somente para o usuário atual em `%LOCALAPPDATA%\Programs\An
 
 Consulte o [guia de instalação, atualização e remoção](docs/INSTALLATION.md) para requisitos, SmartScreen e instalação silenciosa.
 
-## Destaques da versão 1.0.2
+## Destaques do AniT 2.0
 
 | Recurso | Como ajuda |
 | --- | --- |
+| **Movie Theater** | Assista com até quatro convidados, em streaming direto ou com cópias locais sincronizadas. O host controla a reprodução e gerencia participantes e voz. |
+| **Online Anime Player · Beta** | Adicione fontes torrent autorizadas, acompanhe os downloads e assista durante o recebimento. A tag Cloud identifica episódios incompletos; progresso e conquistas continuam integrados. |
+| **Primeira configuração guiada** | Escolha nome, foto e pasta principal no onboarding; a opção de abrir o AniT vem marcada ao concluir a instalação. |
 | **Biblioteca sempre sincronizada** | Monitora pastas e subpastas, reconhece temporadas, episódios e especiais e retira da estante títulos cujos arquivos foram apagados sem perder a memória do usuário. |
 | **Busca e filtros completos** | Pesquisa títulos, aliases, episódios e gêneros e filtra por gênero, ano, status, estúdio e ordenação. |
 | **Perfis como na Netflix** | Escolha o perfil antes de entrar, mantenha jornadas separadas e proteja cada perfil com PIN numérico opcional. |

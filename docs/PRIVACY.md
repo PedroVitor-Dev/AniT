@@ -64,6 +64,12 @@ O projeto não possui backend e não recebe intencionalmente:
 
 Issues no GitHub são públicas. Revise anexos: screenshots, logs, banco, `profiles.json` e backups podem conter dados pessoais.
 
+## Online Anime Player · Beta
+
+Quando você adiciona uma fonte torrent autorizada, o AniT entra na rede BitTorrent. Seu endereço IP e identificadores do torrent podem ser vistos pelos participantes, trackers e serviços DHT usados pela fonte. Durante o download, partes do conteúdo podem ser enviadas a outros participantes. Não há anonimização automática nem servidor AniT intermediando o tráfego.
+
+Fontes, metadados e informações de retomada ficam em `%LOCALAPPDATA%\AniT\Online\<perfil>`. Os episódios ficam na pasta escolhida pelo usuário, em `AniT Online/<id>`. A tag Cloud significa download em andamento, não armazenamento em nuvem. Pausar ou encerrar o download interrompe esse tráfego; arquivos completos permanecem no computador.
+
 ## Backups e exportações
 
 O `.anitbackup` pode conter praticamente todos os dados pessoais acima e caches de perfil, mas não vídeos. Ele é criado localmente; salvar em pendrive ou nuvem é uma escolha do usuário. Trate-o como arquivo privado.

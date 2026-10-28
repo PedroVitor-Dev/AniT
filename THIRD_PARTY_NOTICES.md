@@ -10,6 +10,9 @@ O AniT é distribuído sob a GNU General Public License v3.0. As compilações d
 | WPF-UI e WPF-UI.Abstractions | 4.3.0 | MIT | Controles Fluent somente no onboarding; textos em `Licenses/WpfUi/` |
 | NAudio.WinMM e NAudio.Core | 2.2.1 | MIT | Captura e reprodução do chat de voz; texto em `Licenses/Voice/NAudio.txt` |
 | Concentus | 2.2.2 | BSD-3-Clause e avisos dos autores incorporados | Codec Opus do chat; texto completo em `Licenses/Voice/Concentus.txt` |
+| MonoTorrent | 3.0.2 | MIT | Download e streaming BitTorrent; texto em `Licenses/Online/monotorrent-LICENSE.txt` |
+| Mono.Nat | 3.0.0 | MIT | Dependência do motor BitTorrent; texto em `Licenses/Online/mono.nat-LICENSE.md.txt` |
+| ReusableTasks | 4.0.0 | MIT | Tarefas assíncronas do motor BitTorrent; texto em `Licenses/Online/reusabletasks-LICENSE.md.txt` |
 | SQLitePCLRaw | 2.1.12 | Apache-2.0 | Integração nativa com SQLite |
 | MPC-HC e componentes incluídos em sua distribuição portátil | 2.8.2 | GPL-3.0 e licenças indicadas pelo projeto upstream | Reprodução integrada |
 
