@@ -26,6 +26,7 @@ public partial class App : Application
     private static global::AniT.Infrastructure.AnimeCoverProvider animeCoverProvider = null!;
     private static Guid? activeEpisodeId;
     private static bool activePlaybackIsOnlineStream;
+    private static Uri? activeOnlineAddress;
     private static DateTimeOffset lastProgressWrite;
     private static CancellationTokenSource? playbackMonitorCancellation;
     private static readonly SemaphoreSlim playbackPersistenceLock = new(1, 1);
@@ -874,6 +875,7 @@ public partial class App : Application
 
         var mediaPath = global::System.IO.Path.Combine(mediaFile.LibraryRoot!.Path, mediaFile.RelativePath);
         Uri? onlineAddress = null;
+        if (!mediaFile.IsCloud) await PauseOnlinePlaybackAsync();
         if (mediaFile.IsCloud)
         {
             if (MediaPlayer is null) throw new InvalidOperationException("O streaming exige o MPC-HC integrado. Ative-o nas configurações de reprodução.");
@@ -881,6 +883,7 @@ public partial class App : Application
         }
         activeEpisodeId = episodeId;
         activePlaybackIsOnlineStream = onlineAddress is not null;
+        activeOnlineAddress = onlineAddress;
         activePlaybackSettings = playbackSettings;
         activePlaybackSegments = LoadPlaybackSegments(mediaPath);
         TimeSpan? resumeAt = playbackSettings.ResumePlayback && episode.PlaybackProgress is { PositionSeconds: > 0 } progress
@@ -1099,8 +1102,10 @@ public partial class App : Application
         MediaPlayer.PlaybackEnded += async (_, _) => await CompleteActiveEpisodeAsync();
         MediaPlayer.PlaybackClosed += async (_, progress) =>
         {
+            var closedAddress = activeOnlineAddress;
             playbackMonitorCancellation?.Cancel();
             await PersistProgressAsync(progress, force: true);
+            if (closedAddress is not null) await PauseOnlinePlaybackAsync(closedAddress);
         };
         MediaPlayer.Diagnostic += (_, message) => WritePlaybackLog($"[MPC] {message}");
     }

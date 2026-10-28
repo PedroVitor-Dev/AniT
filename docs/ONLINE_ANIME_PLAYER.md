@@ -6,13 +6,15 @@ O menu do AniT abre uma janela dedicada para magnet links, URLs HTTP/HTTPS de ar
 
 1. Leia o aviso e confirme que tem autorização para baixar e compartilhar o material. A tela explica que BitTorrent também envia partes do conteúdo para outros participantes.
 2. Informe a fonte, opcionalmente o nome do anime e a pasta de destino.
-3. Clique em **Adicionar à biblioteca e baixar**. Magnet links precisam obter metadados dos participantes; a preparação pode ser cancelada e tem limite de dois minutos.
+3. Clique em **Adicionar lista à biblioteca**. Magnet links precisam obter metadados dos participantes; a preparação pode ser cancelada e tem limite de dois minutos.
 4. Confira os episódios e clique em **Assistir em streaming**. Uma janela de preparação permite cancelar a espera pelos trechos iniciais e pelo índice do vídeo.
 5. A reprodução usa o MPC-HC integrado e o fluxo normal de histórico, progresso, Baki-Pi e conquistas. O aplicativo padrão do Windows continua disponível para arquivos completos; arquivos incompletos exigem o MPC-HC integrado.
 
 **Cloud** indica um arquivo ainda em download, não armazenamento remoto. A tag aparece nos cartões de início, na biblioteca, nos episódios e nos downloads. Ao concluir e verificar o arquivo, ele passa a ser reproduzido do disco, preservando o mesmo ID de episódio e seu progresso.
 
-O botão de pausar controla o download, e pode interromper o streaming quando os trechos em buffer acabarem. Voltar ao AniT fecha a janela de gerenciamento e mantém os downloads. Sair do aplicativo interrompe o motor; os downloads autorizados deste perfil são retomados ao abrir novamente. A troca de perfil e a restauração de backup encerram o motor anterior antes de substituir o banco.
+Adicionar a lista obtém apenas metadados, sem selecionar vídeos. Abrir um episódio inicia somente esse vídeo e suas legendas correspondentes; trocar de episódio pausa o anterior. A preparação mostra velocidade, fontes, dados recebidos e tempo decorrido. Fechar o player pausa o download sem apagar dados. Reabrir o AniT aguarda nova escolha, inclusive para listas antigas. Não há download automático do próximo episódio.
+
+Fechar apenas a janela de gerenciamento mantém o episódio ativo. O botão de pausa interrompe o download selecionado. A troca de perfil encerra o motor anterior.
 
 ## Implementação
 
@@ -28,7 +30,7 @@ O botão de pausar controla o download, e pode interromper o streaming quando os
 
 A velocidade depende da conexão e de participantes com os arquivos disponíveis. Sem fontes, o AniT informa que está aguardando participantes. Buscar uma região ainda não baixada pode exigir novo buffering. Não há promessa de início imediato.
 
-A importação considera todos os vídeos do torrent como parte da temporada informada. O parser existente identifica temporadas e números de episódio; arquivos sem numeração recebem a ordem dos nomes. Confira os nomes e evite adicionar coleções mistas de séries e extras sem revisar. Não há seleção individual de arquivos, transcodificação, navegador web ou integração com Movie Theater nesta versão.
+A importação considera todos os vídeos do torrent como parte da temporada informada. O parser existente identifica temporadas e números de episódio; arquivos sem numeração recebem a ordem dos nomes. Confira os nomes e evite adicionar coleções mistas de séries e extras sem revisar. A seleção acompanha o episódio aberto. Não há transcodificação, navegador web ou integração com Movie Theater nesta versão.
 
 Os downloads são locais e ocupam espaço no destino escolhido. Os arquivos e metadados do motor precisam permanecer nessas pastas para a retomada funcionar. O backup do catálogo não é um backup dos vídeos baixados.
 
@@ -57,3 +59,11 @@ dotnet run --project tests/AniT.UiChecks -- --check-playback-evidence
 ```
 
 O MKV deve ter ao menos 90 segundos para o cenário de retomada em 69,435 s. O FFmpeg e a mídia de teste não são distribuídos no AniT. O teste falha se `--mkv` for solicitado sem um arquivo de teste válido.
+
+## Validação do download sob demanda
+
+336 testes automatizados passaram; a UI foi verificada em 28 cenários. Um diagnóstico do magnet informado consultou apenas metadados: 12 episódios, nenhum arquivo selecionado e zero bytes de vídeo recebidos. Isso não valida a reprodução daquela fonte.
+
+O ensaio nativo agora compara a porcentagem do arquivo selecionado, não a do torrent inteiro, e limita inclusive a primeira rajada por relay TCP. `ANIT_TEST_STARTUP_ONLY=1` limita o ensaio ao início/retomada parcial. Busca durante buffering apresentou timeout no MPC-HC e permanece uma limitação conhecida. Peças de fronteira podem incluir bytes de arquivos vizinhos sem selecioná-los para download.
+
+Resultado do ensaio sob demanda: MPC-HC retomou em 69,435 segundos e avançou até 70,688 segundos com apenas 4,2% do episódio selecionado verificado; os demais arquivos permaneceram sem seleção. Mídia sintética HEVC/Opus, rede limitada no relay.

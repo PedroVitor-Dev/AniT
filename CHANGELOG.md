@@ -6,11 +6,16 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Não publicado]
 
+### Melhorado
+
+- Online Anime Player: cadastro obtém somente metadados; abrir um episódio baixa apenas o vídeo escolhido e legendas correspondentes. Trocar pausa o anterior; fechar o player pausa o download e reiniciar aguarda nova escolha, preservando os dados.
+- Preparação com velocidade, fontes, dados recebidos e tempo decorrido; normalização de magnet links com espaços e Unicode.
+
 ### Corrigido
 
 - Online Anime Player: consultas simultâneas ao índice/trechos do MKV não cancelam mais a resposta de vídeo em andamento. Leituras aguardando peças verificadas cedem a vez às outras conexões; o tipo de mídia HTTP corresponde ao contêiner. Diagnósticos registram as faixas solicitadas e falhas de leitura.
 - Reprodução: abertura sem resposta e buffering deixam de gerar progresso pelo relógio. Fechar o player sem posição confirmada preserva a retomada; EOF de streaming longe do final não conclui o episódio nem avança automaticamente a fila. Cliques concorrentes não iniciam duas preparações do player.
-- Regressões cobertas por leitura paralela de vídeo/índice, preservação de progresso/conquistas e MPC-HC real com lote de MKVs HEVC/Opus, retomada em 69 segundos, pausa e buscas durante o download.
+- Regressões cobertas por leitura paralela de vídeo/índice, preservação de progresso/conquistas e MPC-HC real com MKV HEVC/Opus sintético. Busca durante buffering ainda pode apresentar timeout no MPC-HC.
 
 ## [2.0.0] - 2026-10-28
 

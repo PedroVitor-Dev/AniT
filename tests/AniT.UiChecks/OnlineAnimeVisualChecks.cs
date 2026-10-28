@@ -24,7 +24,7 @@ internal static class OnlineAnimeVisualChecks
                 ((StackPanel)window.FindName("Workspace")).Visibility = Visibility.Visible;
                 ((TextBlock)window.FindName("EmptyText")).Visibility = Visibility.Collapsed;
                 ((TextBox)window.FindName("FolderBox")).Text = @"D:\Animes autorizados";
-                var episodes = Enumerable.Range(1,12).Select(i => new OnlineEpisode(Guid.NewGuid(), $"S01E{i:00}", $"Um anime autorizado com nome longo - {i:00}.mkv", i == 1 ? 100 : i == 2 ? 42 : 0, 350 * 1024 * 1024, i != 1)).ToArray();
+                var episodes = Enumerable.Range(1,12).Select(i => new OnlineEpisode(Guid.NewGuid(), $"S01E{i:00}", $"Um anime autorizado com nome longo - {i:00}.mkv", i == 1 ? 100 : i == 2 ? 42 : 0, 350 * 1024 * 1024, i != 1, i == 2)).ToArray();
                 ((ItemsControl)window.FindName("DownloadsList")).ItemsSource = new[] { new OnlineDownloadRow(new OnlineTransfer("test", "Minha temporada autorizada", "Baixando", 22, 2048 * 1024, 4, false, episodes)) };
             }
             window.Show(); Flush(); window.UpdateLayout();
@@ -40,6 +40,26 @@ internal static class OnlineAnimeVisualChecks
                 using var file = File.Create(Path.Combine(output,$"online-{theme}-{state}.png")); encoder.Save(file);
             }
             window.Close(); Flush(); count++;
+        }
+        foreach (var theme in new[] { AppearanceThemeMode.Dark, AppearanceThemeMode.Light })
+        foreach (var textScale in new[] { 100, 140 }) {
+            AppearanceManager.Apply(AniTSystemSettings.Default with { ThemeMode = theme, TextScalePercent = textScale });
+            using var cancellation = new CancellationTokenSource();
+            var buffer = new OnlineBufferWindow(cancellation) { Left = -20000, Top = -20000, ShowInTaskbar = false };
+            buffer.Show(); Flush();
+            var previous = SynchronizationContext.Current;
+            SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
+            IProgress<OnlinePreparationProgress> progress = new Progress<OnlinePreparationProgress>(buffer.Report);
+            SynchronizationContext.SetSynchronizationContext(previous);
+            Task.Run(() => progress.Report(new OnlinePreparationProgress(0, 0, 0, 0, null))).GetAwaiter().GetResult(); Flush();
+            if (!Descendants(buffer).OfType<TextBlock>().Any(t => t.Text.Contains("Procurando fontes"))) throw new Exception("Preparation must explain missing peers");
+            Task.Run(() => progress.Report(new OnlinePreparationProgress(1000000, 500000, 3, 1.2, null))).GetAwaiter().GetResult(); Flush();
+            var cancel = Descendants(buffer).OfType<Button>().Single(b => Equals(b.Content, "Cancelar"));
+            var bounds = cancel.TransformToAncestor(buffer).TransformBounds(new Rect(cancel.RenderSize));
+            if (bounds.Bottom > buffer.ActualHeight || bounds.Left < 0 || bounds.Right > buffer.ActualWidth) throw new Exception("Preparation cancel is clipped");
+            cancel.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            if (!cancellation.IsCancellationRequested) throw new Exception("Preparation cancel does not cancel");
+            buffer.Close(); Flush(); count++;
         }
         Console.WriteLine($"Online Anime Player: {count} layouts passed. Screenshots: {output}");
     }

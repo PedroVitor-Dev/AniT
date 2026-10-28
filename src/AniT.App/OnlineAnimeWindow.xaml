@@ -24,12 +24,12 @@
       <TextBlock Text="Magnet link ou URL de um arquivo .torrent" Margin="0,16,0,6"/><TextBox x:Name="SourceBox" AutomationProperties.Name="URL ou magnet do torrent"/>
       <Button Content="Escolher arquivo .torrent…" HorizontalAlignment="Left" Click="PickTorrent_Click"/>
       <TextBlock Text="Nome do anime (opcional)" Margin="0,12,0,6"/><TextBox x:Name="TitleBox" AutomationProperties.Name="Nome do anime"/>
-      <TextBlock Text="Os vídeos entram na biblioteca. Nomes sem número de episódio usam a ordem dos arquivos; confira a lista antes de assistir." FontSize="12" Margin="0,8,0,0" Foreground="{DynamicResource AniT.Brush.TextSecondary}"/>
+      <TextBlock Text="Os episódios entram na biblioteca sem baixar a temporada. Ao abrir um, apenas ele começa a baixar. Nomes sem número usam a ordem dos arquivos; confira a lista." FontSize="12" Margin="0,8,0,0" Foreground="{DynamicResource AniT.Brush.TextSecondary}"/>
       <TextBlock Text="Salvar os episódios em" Margin="0,14,0,6"/><DockPanel><Button DockPanel.Dock="Right" Content="Escolher pasta…" Click="PickFolder_Click"/><TextBox x:Name="FolderBox" IsReadOnly="True" VerticalAlignment="Center" AutomationProperties.Name="Pasta dos downloads"/></DockPanel>
       <TextBlock Text="Somente conteúdo autorizado. O download também pode compartilhar partes dos arquivos via BitTorrent." FontSize="12" Margin="0,10,0,10" Foreground="{DynamicResource AniT.Brush.TextSecondary}"/>
-      <Button x:Name="AddButton" Content="Adicionar à biblioteca e baixar" HorizontalAlignment="Left" Click="Add_Click"/>
+      <Button x:Name="AddButton" Content="Adicionar lista à biblioteca" HorizontalAlignment="Left" Click="Add_Click"/>
      </StackPanel></Border>
-     <TextBlock Text="Seus downloads" FontSize="22" FontWeight="SemiBold" Margin="0,8,0,12"/>
+     <TextBlock Text="Seus episódios" FontSize="22" FontWeight="SemiBold" Margin="0,8,0,12"/>
      <TextBlock x:Name="EmptyText" Text="Nenhum torrent adicionado. Escolha uma fonte autorizada para começar." Margin="0,0,0,16" Foreground="{DynamicResource AniT.Brush.TextSecondary}"/>
      <ItemsControl x:Name="DownloadsList"><ItemsControl.ItemTemplate><DataTemplate><Border Style="{StaticResource Panel}"><StackPanel>
       <DockPanel><Button DockPanel.Dock="Right" Content="{Binding PauseLabel}" Visibility="{Binding PauseVisibility}" ToolTip="Pausar o download pode interromper o streaming." Tag="{Binding Id}" Click="Pause_Click"/><StackPanel><TextBlock Text="{Binding Name}" FontSize="19" FontWeight="SemiBold"/><TextBlock Text="{Binding Status}" Foreground="{DynamicResource AniT.Brush.TextSecondary}" Margin="0,5,0,8"/></StackPanel></DockPanel>

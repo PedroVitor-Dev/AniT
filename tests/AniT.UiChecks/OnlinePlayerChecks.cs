@@ -17,6 +17,7 @@ internal static class OnlinePlayerChecks
             token.ThrowIfCancellationRequested();
             try { if((await player.GetPositionAsync(token)).TotalSeconds>=minimum)return; }
             catch(OperationCanceledException)when(!token.IsCancellationRequested) { }
+            catch(TimeoutException)when(!token.IsCancellationRequested) { }
             await Task.Delay(150,token);
         }
     }
@@ -48,7 +49,8 @@ internal static class OnlinePlayerChecks
                 service.Diagnostic = message => Console.WriteLine(message);
                 await service.AddAsync(metadata,root,"Autorizado",true,token);
                 var engine=(ClientEngine)typeof(OnlineAnimeService).GetField("engine",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(service)!;
-                var manager=engine.Torrents.Single(); await manager.AddPeerAsync(new PeerInfo(new Uri($"ipv4://127.0.0.1:{port}")));
+                await using var relay=new TorrentPeerRelay(port,fixture is null ? 4*1024*1024 : 1024*1024);
+                var manager=engine.Torrents.Single(); await manager.AddPeerAsync(new PeerInfo(new Uri($"ipv4://127.0.0.1:{relay.Port}")));
                 using var db=AniTDatabase.Create(Path.Combine(root,"db.sqlite"));var file=await db.MediaFiles.OrderBy(f=>f.OnlineFileIndex).LastAsync(token);
                 Console.WriteLine($"Seeder complete: {seed.Complete}, path: {seed.Files[0].FullPath}, downloader: {manager.State}");
                 if (!seed.Complete) throw new Exception("The synthetic seeder did not find its own generated file");
@@ -60,17 +62,24 @@ internal static class OnlinePlayerChecks
                 player.Diagnostic += (_, message) => Console.WriteLine(message);
                 await player.PlayStreamAsync(address, resume ? TimeSpan.FromSeconds(69.435) : null, MpcHcPlaybackOptions.Default, token);
                 await WaitForPosition(player,resume ? 70.635 : 1.2,token);
-                if(manager.Progress>=100)throw new Exception("Test must exercise playback during download");
+                var progressAtFirstPlayback=manager.Files[file.OnlineFileIndex].BitField.PercentComplete;
+                if(progressAtFirstPlayback>=100)throw new Exception("Test must start before the selected episode finishes downloading");
+                if(manager.Files.Where((_,i)=>i!=file.OnlineFileIndex).Any(f=>f.Priority!=Priority.DoNotDownload)) throw new Exception("Another episode was selected while playing");
+                Volatile.Write(ref relay.BytesPerSecond,0);
+                await engine.UpdateSettingsAsync(new EngineSettingsBuilder(engine.Settings) { MaximumDownloadRate=0 }.ToSettings());
+                if (Environment.GetEnvironmentVariable("ANIT_TEST_STARTUP_ONLY") == "1") {
+                    Console.WriteLine($"Online native partial startup passed: selected episode {progressAtFirstPlayback:0.0}% downloaded; other episodes unselected.");
+                    await seed.StopAsync(); result=0; return;
+                }
                 await player.PauseAsync(token);await Task.Delay(300,token);
                 if(await player.GetStateAsync(token)!=PlayerState.Paused)throw new Exception("Native pause did not apply");
                 await player.SeekAsync(TimeSpan.FromSeconds(12),token);player.Resume();
                 await WaitForPosition(player,12.2,token);
-                var startedAtProgress=manager.Progress;
-                await engine.UpdateSettingsAsync(new EngineSettingsBuilder(engine.Settings) { MaximumDownloadRate=0 }.ToSettings());
                 OnlineTransfer snapshot;
-                do { await Task.Delay(100,token); snapshot=(await Task.Run(()=>service.SnapshotAsync(token))).Single(); } while(snapshot.Episodes.Any(e=>e.IsCloud));
+                do { await Task.Delay(100,token); snapshot=(await Task.Run(()=>service.SnapshotAsync(token))).Single(); } while(snapshot.Episodes.Single(e=>e.EpisodeId==file.EpisodeId).IsCloud);
+                if(fixture is not null && snapshot.Episodes.Where(e=>e.EpisodeId!=file.EpisodeId).Any(e=>!e.IsCloud)) throw new Exception("The other episodes should remain pending");
                 await player.SeekAsync(TimeSpan.FromSeconds(20),token);player.Resume();await WaitForPosition(player,20.3,token);
-                Console.WriteLine($"Online native MPC-HC passed: play while downloading ({startedAtProgress:0.0}%), pause, seek to 12s, resume, finish download and keep playing at 20s. Synthetic media only.");
+                Console.WriteLine($"Online native MPC-HC passed: play while downloading ({progressAtFirstPlayback:0.0}% of selected episode at first playback), pause, seek to 12s, resume, finish download and keep playing at 20s. Synthetic media only.");
                 await seed.StopAsync(); result=0;
             } catch(Exception ex) { Console.Error.WriteLine(ex); }
             finally { window.Close();app.Shutdown(); }

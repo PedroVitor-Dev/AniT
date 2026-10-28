@@ -64,7 +64,7 @@ public partial class OnlineAnimeWindow : Window
         StatusText.Text = "Lendo o torrent e buscando a lista de episódios… Isso pode levar até 2 minutos para magnet links.";
         try {
             await Task.Run(() => service.AddAsync(source, folder, title, true, adding.Token));
-            SourceBox.Clear(); TitleBox.Clear(); StatusText.Text = "Adicionado à biblioteca. Escolha um episódio para assistir durante o download.";
+            SourceBox.Clear(); TitleBox.Clear(); StatusText.Text = "Lista adicionada à biblioteca. O download começa somente ao abrir um episódio.";
             await RefreshAsync();
         } catch (OperationCanceledException) { StatusText.Text = "Preparação cancelada ou sem resposta dos participantes. Nenhum episódio foi adicionado."; }
         catch (Exception ex) { StatusText.Text = "Não foi possível adicionar: " + ex.Message; }
@@ -110,7 +110,7 @@ public sealed class OnlineDownloadRow(OnlineTransfer transfer)
     public string Id => transfer.Id;
     public string Name => transfer.Name;
     public bool Paused => transfer.Paused;
-    public Visibility PauseVisibility => transfer.Episodes.Count > 0 && transfer.Episodes.All(e => !e.IsCloud) ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility PauseVisibility => transfer.WaitingForSelection || transfer.Episodes.Count > 0 && transfer.Episodes.All(e => !e.IsCloud) ? Visibility.Collapsed : Visibility.Visible;
     public string PauseLabel => Paused ? "Retomar download" : "Pausar download";
     public double Progress => transfer.Progress;
     public string Status => $"{transfer.State} · {transfer.Progress:0.0}% · {transfer.DownloadSpeed / 1024d:0} KB/s · {transfer.Peers} conexões";
@@ -123,7 +123,7 @@ public sealed class OnlineEpisodeRow(OnlineEpisode episode)
     public string Title => episode.Title;
     public string FileName => episode.FileName;
     public double Progress => episode.Progress;
-    public string Status => episode.IsCloud ? $"{episode.Progress:0.0}% baixado · {episode.Size / (1024d * 1024):0} MB" : "Download concluído · disponível no seu PC";
+    public string Status => !episode.IsCloud ? "Download concluído · disponível no seu PC" : episode.IsSelected ? $"Baixando para assistir · {episode.Progress:0.0}% · {episode.Size / (1024d * 1024):0} MB" : $"Aguardando você abrir · {episode.Progress:0.0}% já salvo";
     public string PlayLabel => episode.IsCloud ? "Assistir em streaming" : "Assistir";
     public Visibility CloudVisibility => episode.IsCloud ? Visibility.Visible : Visibility.Collapsed;
 }
