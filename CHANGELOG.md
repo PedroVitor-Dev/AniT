@@ -6,7 +6,11 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Não publicado]
 
+## [2.0.2] - 2026-10-29
+
 ### Adicionado
+
+- Empacotamento MSIX x64 reproduzível para Microsoft Store, com identidade do Partner Center recebida por parâmetros e manifesto validado pelo MakeAppx.
 
 - Início: cartão de apoio opcional na barra lateral com arte personalizada do Baki-Pi, texto “Mantenha o projeto vivo” e link direto à seção de doações do site.
 
