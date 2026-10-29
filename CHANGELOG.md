@@ -6,6 +6,11 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Não publicado]
 
+### Corrigido
+
+- Movie Theater: contraste dos avisos de autorização e cabeçalhos de opções acompanha os temas claro/escuro, sem recoloração automática indevida. Recurso identificado como BETA no menu e na janela.
+
+
 ### Melhorado
 
 - Online Anime Player: troca de episódios preserva o motor e as conexões do torrent selecionado; os outros downloads são pausados sem desligar a descoberta de fontes.

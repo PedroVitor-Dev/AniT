@@ -147,7 +147,7 @@
                 <StackPanel x:Name="HeaderActions" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Content="⚙  Configurações" Style="{StaticResource HomeOutlineButton}" Click="Settings_Click" Margin="0,0,10,0"/>
                     <Button Content="⌂  Início" Style="{StaticResource HomePrimaryButton}" Click="Home_Click"/>
-                    <Button Content="Movie Theater" Style="{StaticResource HomeOutlineButton}" Command="{x:Static local:TheaterNavigation.OpenCommand}"/>
+                    <Button Content="Movie Theater · Beta" Style="{StaticResource HomeOutlineButton}" Command="{x:Static local:TheaterNavigation.OpenCommand}"/>
                     <local:OnlineAnimeNavButton/>
                 </StackPanel>
             </Grid>
