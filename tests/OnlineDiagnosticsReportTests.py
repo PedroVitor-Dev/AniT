@@ -37,5 +37,17 @@ class ReportTests(unittest.TestCase):
         self.assertIn("sem resumo terminal", text)
         self.assertIn("ignoradas: 3", text)
 
+    def test_adaptive_targets_are_reported_separately_from_measured_reserve(self):
+        session = str(uuid.uuid4())
+        rows = [dict(SessionId=session, Sequence=i+1, ElapsedMs=i*1000, Kind="sample", Name="buffer_policy", Values=values)
+                for i, values in enumerate([dict(reserve_seconds=2, resume_seconds=4, ahead_seconds=17, max_bytes=33554432),
+                                            dict(reserve_seconds=8, resume_seconds=6, ahead_seconds=23, max_bytes=67108864, supply_ratio=1.5)])]
+        text = self.render(rows)
+        self.assertIn("Reserva contínua (s): mínimo 2.00, máximo 8.00", text)
+        self.assertIn("Reserva para retomar (s): mínimo 4.00, máximo 6.00", text)
+        self.assertIn("cache à frente (MiB): mínimo 32.00, máximo 64.00", text)
+        self.assertIn("indisponíveis: 0", text)
+        self.assertIn("primeiro sinal de frame | n/d", text)
+
 if __name__ == "__main__":
     unittest.main()

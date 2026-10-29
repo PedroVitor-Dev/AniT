@@ -93,3 +93,34 @@ A fixture usa dois arquivos sintéticos de 8 MiB, peças de 2 MiB e relay TCP li
 No ensaio local de 29/10/2026, a nova busca recebeu 64 KiB corretos em aproximadamente 2,48 s, com 50% do arquivo verificado, uma preempção e zero peças verificadas do outro episódio. É uma fixture com fonte conhecida, sem player/decodificação: não mede primeiro quadro nem comprova ganho no magnet real.
 
 As regressões também cobrem leitura longa sem reinícios, desconexão durante espera, vídeo pedido durante preparo do índice, fechamento com índice travado, anexos que não podem ser lidos e limites exatos de peças. O teste IPC verifica que a busca explícita cancela o índice em segundo plano sem esperar seus dados.
+
+
+## Etapa 6 — buffer adaptativo em segundos
+
+O Online Anime Player agora estima a reserva contínua na posição atual do player. Usa `demuxer-cache-state`, os intervalos conectados de `seekable-ranges`, os bytes de pacotes à frente e a taxa de entrada do demuxer. Trechos separados já baixados não contam como reserva imediatamente reproduzível. A duração estimada limita o intervalo quando ambos estão disponíveis; dados inválidos ou antigos são descartados. A duração escalar recente serve de alternativa quando o estado detalhado não existe.
+
+A política compara a entrada do player ao consumo estimado e suaviza as oscilações. Falta de dados e engasgos aumentam a proteção; recuperação sustentada a reduz aos poucos. Um cache cheio/ocioso com taxa zero não é tratado como falha de conexão. Contadores de transições registram também engasgos menores que o intervalo de medição, sem contar uma espera longa repetidamente.
+
+- Abertura: preserva `cache-pause-initial=no`, com parâmetros iniciais pequenos; não exige baixar uma quantidade nova fixa antes do primeiro quadro.
+- Retomada: reserva baseada em 1–8 segundos de reprodução, ajustada à velocidade, limitada a 0,25–16 segundos de mídia.
+- Antecipação: 10–30 segundos de reprodução, ajustados à velocidade e limitados a 8–60 segundos de mídia. Define `cache-secs` e `demuxer-readahead-secs` juntos.
+- Memória: cache à frente entre 32 e 96 MiB, em passos de 8 MiB, conforme bitrate estimado. Cache passado limitado a 8 MiB. São limites do cache de pacotes; decodificador e outras estruturas têm consumo próprio.
+- Busca/troca de arquivo: limpa observações anteriores e reinicia a proteção; o processo reutilizado recebe novamente os valores iniciais. Fim do arquivo não precisa atingir uma reserva maior do que o restante disponível.
+- Pausa e velocidade: o controlador adapta somente opções de cache; não envia comandos de pausa, retomada ou mudança de velocidade. O buffering automático permanece sob responsabilidade do mpv.
+- Índice automático: só começa com reserva suficiente. Se essa reserva cai ou há buffering, cancela a leitura especulativa antes de uma recarga do vídeo; uma nova tentativa pode ocorrer após estabilizar. A busca explícita continua tendo prioridade.
+
+As observações essenciais são ativadas mesmo sem sessão de diagnóstico. O controlador roda fora do leitor de respostas IPC, com mudanças limitadas por diferenças mínimas; uma opção recusada deixa de ser tentada naquele arquivo. Ausência de métricas mantém uma configuração conservadora, sem apresentar valores desconhecidos como zero medido.
+
+O [manual do mpv](https://mpv.io/manual/stable/) descreve as estimativas de cache, os limites de memória e a relação entre `cache-secs` e `demuxer-readahead-secs`: ativar cache pode fazer o primeiro prevalecer. As opções foram conferidas no binário distribuído e verificadas por leitura após alteração via IPC.
+
+### Métricas e testes
+
+O relatório local inclui as amostras `buffer_policy`: reserva contínua observada, reserva para retomar, antecipação desejada, limite de memória, relação entrada/consumo, contagem de engasgos e permissão para índice. `buffer_option_applied` registra opção numérica/valor; `buffer_option_unavailable` informa falha opcional, sem dados da mídia ou da conexão.
+
+A política possui testes com relógio controlado para entrada lenta, oscilações, recuperação gradual, pausa manual, buffering prolongado, pulsos curtos, busca, fim do arquivo, velocidade, dados ausentes e limites de memória. Os testes IPC verificam as opções enviadas ao player sem diagnósticos, fallback de métricas, cancelamento de índice especulativo, isolamento após busca e interrupção das tarefas.
+
+A ferramenta [OnlineBufferProbe](../tools/OnlineBufferProbe/README.md) reproduz uma fixture audiovisual própria no mpv headless e no servidor HTTP real. Aplica lentidão/interrupção/recuperação na fonte, coleta 50 amostras e verifica que o controlador não desfaz uma pausa manual. Não usa a biblioteca nem um torrent público. `vo=null`/`ao=null` evitam abrir janela ou tocar áudio; o sinal de primeiro frame continua sendo a aproximação IPC, não medição da tela.
+
+Esse ensaio não compara versões nem garante fluidez no magnet real. Validação de rede pública e da interface final permanece parte das próximas etapas.
+
+Na rodada controlada de 29/10/2026 foram coletadas 50 amostras: a reserva de retomada variou entre 1 e 8 s, houve uma espera por dados de aproximadamente 3,39 s seguida de recuperação e a pausa manual foi preservada. O [resumo numérico](benchmarks/online-buffer-step-6/native-result.json) e a [verificação das opções nativas](benchmarks/online-buffer-step-6/runtime-options.json) estão registrados no repositório. A fixture e a saída nula não substituem um teste com torrent público e renderização normal.

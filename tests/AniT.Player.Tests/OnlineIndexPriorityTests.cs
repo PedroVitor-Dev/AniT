@@ -47,6 +47,7 @@ public sealed class OnlineIndexPriorityTests
                 }
             } catch (Exception error) when (error is IOException or OperationCanceledException or ObjectDisposedException) { }
         }, timeout.Token);
+        typeof(MpvOnlinePlayer).GetField("bufferPlan", Private)!.SetValue(player, AniT.Core.OnlineBufferPlan.Initial with { CanPrepareIndex = true });
         var warmup = (Task)typeof(MpvOnlinePlayer).GetMethod("WarmIndexAsync", Private)!.Invoke(player, [address, timeout.Token])!;
         try {
             await backgroundStarted.Task.WaitAsync(timeout.Token);

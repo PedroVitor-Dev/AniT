@@ -9,7 +9,7 @@ using AniT.Core;
 namespace AniT.Player;
 
 /// <summary>Owned streaming-only mpv process, controlled through its documented JSON IPC.</summary>
-public sealed class MpvOnlinePlayer : IDisposable
+public sealed partial class MpvOnlinePlayer : IDisposable
 {
     readonly string executable;
     OnlinePlaybackTrace? telemetry;
@@ -28,7 +28,7 @@ public sealed class MpvOnlinePlayer : IDisposable
     {
         var expectedTrace = telemetry;
         var index = 100;
-        foreach (var property in new[] { "video-frame-info", "demuxer-cache-duration", "frame-drop-count", "decoder-frame-drop-count", "avsync" }) {
+        foreach (var property in new[] { "video-frame-info", "frame-drop-count", "decoder-frame-drop-count", "avsync" }) {
             if (token.IsCancellationRequested || generation != expectedGeneration) return;
             try { await CommandAsync(["observe_property", ++index, property], token); }
             catch { if (generation == expectedGeneration) expectedTrace?.Event("player_metric_unavailable", ("property_index", index)); }
@@ -42,6 +42,7 @@ public sealed class MpvOnlinePlayer : IDisposable
     readonly SemaphoreSlim indexing = new(1, 1);
     readonly object warmingSync = new();
     CancellationTokenSource? warmingIndex;
+    bool indexFetching;
     readonly SynchronizationContext? context = SynchronizationContext.Current
         ?? (System.Windows.Application.Current is { } application ? new System.Windows.Threading.DispatcherSynchronizationContext(application.Dispatcher) : null);
     readonly ConcurrentDictionary<int, TaskCompletionSource<JsonElement>> pending = new();
@@ -82,7 +83,8 @@ public sealed class MpvOnlinePlayer : IDisposable
         else telemetry = trace;
         fileLifetime?.Cancel(); fileLifetime?.Dispose(); fileLifetime = CancellationTokenSource.CreateLinkedTokenSource(lifetime!.Token);
         using var operation = CancellationTokenSource.CreateLinkedTokenSource(token, fileLifetime.Token); token = operation.Token;
-        generation++;
+        var fileGeneration = ++generation;
+        ResetBufferObservation(); playbackSpeed = options.Speed;
         seeking = frameInfoReady = playbackRestarted = false; cacheSeconds = outputDrops = decoderDrops = avSync = null;
         usingIndex = false; position = duration = null; videoReady = false; paused = true; buffering = false; CurrentFilePath = address.AbsoluteUri;
         telemetry?.Mark("loadfile_requested");
@@ -93,6 +95,7 @@ public sealed class MpvOnlinePlayer : IDisposable
         await CommandAsync(["set_property", "alang", options.PreferredAudioLanguage == "auto" ? "" : Language(options.PreferredAudioLanguage)], token);
         await CommandAsync(["set_property", "sid", options.PreferredSubtitleLanguage == "off" ? "no" : "auto"], token);
         await CommandAsync(["set_property", "slang", options.PreferredSubtitleLanguage is "auto" or "off" ? "" : Language(options.PreferredSubtitleLanguage)], token);
+        await ResetBufferOptionsAsync(token);
         await CommandAsync(["loadfile", address.AbsoluteUri, "replace", -1, new Dictionary<string, string> { { "index", Path.GetExtension(address.AbsolutePath).ToLowerInvariant() is ".mkv" or ".webm" ? "recreate" : "default" }, { "pause", "yes" } }], token);
         await loaded.Task.WaitAsync(TimeSpan.FromSeconds(120), token);
         var length = await CommandAsync(["get_property", "duration"], token);
@@ -100,6 +103,8 @@ public sealed class MpvOnlinePlayer : IDisposable
         var target = PlaybackEvidence.ResumePosition(resume, duration);
         if (target is not null) await SeekAsync(target.Value, token);
         await CommandAsync(["set_property", "pause", false], token);
+        token.ThrowIfCancellationRequested();
+        _ = ControlBufferAsync(fileGeneration, fileLifetime.Token);
         if (!usingIndex && prepareSeek is not null) _ = WarmIndexAsync(address, fileLifetime.Token);
     }
     static string Language(string value) => value switch { "pt-br" => "pt-br,por,pt", "ja" => "ja,jpn", "en" => "en,eng", "es" => "es,spa", _ => value };
@@ -107,7 +112,7 @@ public sealed class MpvOnlinePlayer : IDisposable
     {
         closing = false; generation++; lifetime = new(); var name = "AniT.Online." + Guid.NewGuid().ToString("N");
         var start = new ProcessStartInfo(executable) { UseShellExecute = false, CreateNoWindow = true };
-        foreach (var arg in new[] { "--no-config", "--no-terminal", "--idle=yes", "--force-window=immediate", "--title=Online Anime Player · AniT", "--pause=yes", "--cache=yes", "--cache-pause-initial=no", "--cache-pause-wait=1", "--demuxer-max-bytes=33554432", "--demuxer-readahead-secs=10", "--network-timeout=120", "--demuxer-mkv-probe-video-duration=no", "--input-ipc-server=\\\\.\\pipe\\" + name }) start.ArgumentList.Add(arg);
+        foreach (var arg in new[] { "--no-config", "--no-terminal", "--idle=yes", "--force-window=immediate", "--title=Online Anime Player · AniT", "--pause=yes", "--cache=yes", "--cache-pause-initial=no", "--cache-pause-wait=1", "--demuxer-max-bytes=33554432", "--demuxer-max-back-bytes=8388608", "--cache-secs=10", "--demuxer-readahead-secs=10", "--network-timeout=120", "--demuxer-mkv-probe-video-duration=no", "--input-ipc-server=\\\\.\\pipe\\" + name }) start.ArgumentList.Add(arg);
         process = Process.Start(start) ?? throw new IOException("Não foi possível iniciar o motor de streaming.");
         Trace($"mpv iniciado (PID {process.Id}).");
         telemetry?.Mark("process_started");
@@ -116,7 +121,7 @@ public sealed class MpvOnlinePlayer : IDisposable
         writer = new StreamWriter(pipe, new UTF8Encoding(false), 1024, leaveOpen: true) { AutoFlush = true };
         _ = ReadLoopAsync(pipe, lifetime.Token);
         _ = WatchExitAsync(process, lifetime);
-        var index = 0; foreach (var property in new[] { "time-pos", "duration", "pause", "paused-for-cache", "video-out-params" }) await CommandAsync(["observe_property", ++index, property], token);
+        var index = 0; foreach (var property in new[] { "time-pos", "duration", "pause", "paused-for-cache", "video-out-params", "demuxer-cache-state", "demuxer-cache-duration", "speed" }) await CommandAsync(["observe_property", ++index, property], token);
     }
     async Task ReadLoopAsync(NamedPipeClientStream connection, CancellationToken token)
     {
@@ -137,7 +142,7 @@ public sealed class MpvOnlinePlayer : IDisposable
                 {
                     case "start-file": awaitingFileStart = false; break;
                     case "file-loaded": loaded?.TrySetResult(); if (!awaitingFileStart) { telemetry?.Mark("container_loaded"); if (telemetry is not null) _ = ObserveDiagnosticsAsync(generation, fileLifetime?.Token ?? token); } Trace("Contêiner carregado pelo mpv."); break;
-                    case "seek": if (!awaitingFileStart) { seeking = true; telemetry?.Event("seek_requested"); ObservePlayback(); } break;
+                    case "seek": if (!awaitingFileStart) { ResetBufferObservation(); seeking = true; telemetry?.Event("seek_requested"); ObservePlayback(); } break;
                     case "playback-restart": if (!awaitingFileStart) { seeking = false; playbackRestarted = true; telemetry?.Event("playback_restarted"); ObservePlayback(); } break;
                     case "property-change":
                         if (awaitingFileStart || !root.TryGetProperty("data", out var value)) break;
@@ -149,9 +154,15 @@ public sealed class MpvOnlinePlayer : IDisposable
                                 break;
                             case "duration" when value.ValueKind == JsonValueKind.Number: duration = TimeSpan.FromSeconds(value.GetDouble()); break;
                             case "pause" when value.ValueKind is JsonValueKind.True or JsonValueKind.False: paused = value.GetBoolean(); break;
-                            case "paused-for-cache" when value.ValueKind is JsonValueKind.True or JsonValueKind.False: buffering = value.GetBoolean(); break;
+                            case "paused-for-cache" when value.ValueKind is JsonValueKind.True or JsonValueKind.False:
+                                var waiting = value.GetBoolean();
+                                if (waiting && !buffering && !paused && !seeking && videoReady && playbackRestarted && !cacheState.Eof)
+                                    Interlocked.Increment(ref cacheUnderruns);
+                                buffering = waiting; break;
                             case "video-frame-info" when value.ValueKind == JsonValueKind.Object && value.TryGetProperty("picture-type", out var pictureType) && pictureType.ValueKind == JsonValueKind.String: frameInfoReady = !string.IsNullOrEmpty(pictureType.GetString()); break;
-                            case "demuxer-cache-duration" when value.ValueKind == JsonValueKind.Number: cacheSeconds = value.GetDouble(); break;
+                            case "demuxer-cache-duration": cacheSeconds = BufferNumber(value); cacheSecondsTimestamp = Stopwatch.GetTimestamp(); break;
+                            case "demuxer-cache-state": cacheState = MpvCacheState.Parse(value); break;
+                            case "speed": if (BufferNumber(value) is > 0 and var speed) playbackSpeed = speed; break;
                             case "frame-drop-count" when value.ValueKind == JsonValueKind.Number: outputDrops = value.GetDouble(); break;
                             case "decoder-frame-drop-count" when value.ValueKind == JsonValueKind.Number: decoderDrops = value.GetDouble(); break;
                             case "avsync" when value.ValueKind == JsonValueKind.Number: avSync = value.GetDouble(); break;
@@ -196,13 +207,18 @@ public sealed class MpvOnlinePlayer : IDisposable
             while (true)
             {
                 await Task.Delay(500, token);
-                var cache = await CommandAsync(["get_property", "demuxer-cache-duration"], token);
-                if (cache.ValueKind == JsonValueKind.Number && cache.GetDouble() >= 5) break;
+                if (bufferPlan.CanPrepareIndex) break;
             }
             await indexing.WaitAsync(token);
             try
             {
-                if (usingIndex || prepareSeek is null || !await prepareSeek(address, token)) return;
+                if (usingIndex || prepareSeek is null) return;
+                bool ready;
+                lock (warmingSync) indexFetching = true;
+                try { ready = await prepareSeek(address, token); }
+                finally { lock (warmingSync) indexFetching = false; }
+                token.ThrowIfCancellationRequested();
+                if (!ready) return;
                 // Reopen only after there is a playback cushion; native OSC/keyboard seeks
                 // then use the real cues too, without having to go through AniT's wrapper.
                 var current = await GetPositionAsync(token);
@@ -212,7 +228,7 @@ public sealed class MpvOnlinePlayer : IDisposable
                 var options = new Dictionary<string, string> { { "index", "default" }, { "start", current.TotalSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture) }, { "pause", "yes" } };
                 if (audio.ValueKind is JsonValueKind.Number or JsonValueKind.String) options["aid"] = audio.ValueKind == JsonValueKind.String ? audio.GetString()! : audio.GetRawText();
                 if (subtitle.ValueKind is JsonValueKind.Number or JsonValueKind.String) options["sid"] = subtitle.ValueKind == JsonValueKind.String ? subtitle.GetString()! : subtitle.GetRawText();
-                telemetry?.Event("index_reload_begin"); seeking = true;
+                telemetry?.Event("index_reload_begin"); ResetBufferObservation(); seeking = true;
                 loaded = new(TaskCreationOptions.RunContinuationsAsynchronously); awaitingFileStart = true;
                 await CommandAsync(["loadfile", address.AbsoluteUri, "replace", -1, options], token);
                 await loaded.Task.WaitAsync(TimeSpan.FromSeconds(120), token);
@@ -242,7 +258,8 @@ public sealed class MpvOnlinePlayer : IDisposable
         using var operation = CancellationTokenSource.CreateLinkedTokenSource(token, fileLifetime?.Token ?? lifetime?.Token ?? CancellationToken.None); token = operation.Token;
         if (!usingIndex && prepareSeek is not null && CurrentFilePath is { } path && await prepareSeek(new Uri(path), token))
         {
-            var keepPaused = paused; loaded = new(TaskCreationOptions.RunContinuationsAsynchronously); awaitingFileStart = true;
+            var keepPaused = paused; ResetBufferObservation(); seeking = true;
+            loaded = new(TaskCreationOptions.RunContinuationsAsynchronously); awaitingFileStart = true;
             await CommandAsync(["loadfile", path, "replace", -1, new Dictionary<string, string> { { "index", "default" }, { "start", target.TotalSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture) }, { "pause", "yes" } }], token);
             await loaded.Task.WaitAsync(TimeSpan.FromSeconds(120), token); usingIndex = true;
             await CommandAsync(["set_property", "pause", keepPaused], token);

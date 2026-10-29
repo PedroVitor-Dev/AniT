@@ -60,6 +60,19 @@ def report(paths):
             numbers = [v[key] for v in samples if key in v]
             if numbers:
                 lines.append(f"- {label}: mínimo {min(numbers):.3f}, máximo {max(numbers):.3f}.")
+        policies = [e["Values"] for e in events if e["Kind"] == "sample" and e["Name"] == "buffer_policy"]
+        if policies:
+            lines += ["", "Buffer adaptativo (medidas do player):"]
+            for key, label, scale in [("reserve_seconds", "Reserva contínua (s)", 1),
+                                      ("resume_seconds", "Reserva para retomar (s)", 1),
+                                      ("ahead_seconds", "Antecipação desejada (s)", 1),
+                                      ("max_bytes", "Limite de cache à frente (MiB)", 1024 * 1024),
+                                      ("supply_ratio", "Taxa recebida / consumo estimado", 1)]:
+                numbers = [row[key] / scale for row in policies if key in row]
+                if numbers:
+                    lines.append(f"- {label}: mínimo {min(numbers):.2f}, máximo {max(numbers):.2f}.")
+            unavailable = sum(e["Name"] == "buffer_option_unavailable" for e in events)
+            lines.append(f"Opções adaptativas indisponíveis: {unavailable}.")
         lines += ["", "Marcos observados: " + ", ".join(points), ""]
     lines += [f"Sessões: {len(sessions)}. Linhas inválidas/inesperadas ignoradas: {malformed}.",
               "Compare apenas ensaios do mesmo arquivo, posição e condições registradas. Estes sinais não provam isoladamente a causa de um engasgo."]

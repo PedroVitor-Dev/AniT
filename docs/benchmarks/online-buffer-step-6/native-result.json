@@ -1,0 +1,40 @@
+{
+  "samples": 50,
+  "first_frame_signal": true,
+  "option_updates": 12,
+  "rebuffer_starts": 1,
+  "manual_pause_preserved": true,
+  "date": "2026-10-29",
+  "fixture": "generated 75s 320x180 H264/AAC MP4, 800/64 kbit/s",
+  "headless": true,
+  "source_rates": [
+    {
+      "from_seconds": 0,
+      "until_seconds": 15,
+      "bytes_per_second": 400000
+    },
+    {
+      "from_seconds": 15,
+      "until_seconds": 27,
+      "bytes_per_second": 35000
+    },
+    {
+      "from_seconds": 27,
+      "until_seconds": 40,
+      "bytes_per_second": 0
+    },
+    {
+      "from_seconds": 40,
+      "bytes_per_second": 600000
+    }
+  ],
+  "resume_min_seconds": 1,
+  "resume_max_seconds": 8,
+  "cache_ahead_min_seconds": 10,
+  "cache_ahead_max_seconds": 29,
+  "rebuffer_ended": 1,
+  "rebuffer_total_ms": 3385.975599999998,
+  "public_torrent": false,
+  "comparison_with_previous_version": false,
+  "screen_capture": false
+}
