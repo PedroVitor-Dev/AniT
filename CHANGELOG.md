@@ -6,6 +6,13 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Não publicado]
 
+### Melhorado
+
+- Online Anime Player: troca de episódios preserva o motor e as conexões do torrent selecionado; os outros downloads são pausados sem desligar a descoberta de fontes.
+- Descoberta consulta até oito trackers declarados em paralelo, com prazo individual de quatro segundos e novas tentativas limitadas quando não há conexões. Anúncios DHT/trackers mantêm os intervalos do MonoTorrent, sem acrescentar trackers externos ou alterar torrents privados.
+- Preparação informa quando está buscando fontes, separadamente do preparo dos trechos de vídeo.
+
+
 ## [2.0.1] - 2026-10-28
 
 ### Melhorado
