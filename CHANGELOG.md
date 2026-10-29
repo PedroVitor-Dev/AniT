@@ -6,6 +6,13 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Não publicado]
 
+### Melhorado
+
+- Online Anime Player: restauração inicial lê somente o catálogo salvo; listagem e monitor não criam motores nem buscam metadados de torrents inativos. Apenas o torrent escolhido é carregado para reproduzir.
+- Preparação informa as etapas iniciais com tempo decorrido, cria o serviço fora da interface e aceita cancelamento antes de iniciar a conexão. Cancelar a ativação remove prioridades e interrompe o torrent, preservando arquivos para tentar novamente.
+- Prioridades já corretas e torrents inativos deixam de ser reconfigurados a cada abertura. A detecção de duplicados considera também o catálogo ainda não carregado.
+
+
 ### Adicionado
 
 - Diagnóstico local do streaming: marcos desde o clique, descoberta de fontes, preparo do arquivo e sinais do mpv; amostras de cache, frames descartados e desvio A/V. Relatório separa startup, busca, pausa manual e rebuffer, com escrita assíncrona limitada e procedimento de comparação fria/quente.

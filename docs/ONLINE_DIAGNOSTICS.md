@@ -42,3 +42,15 @@ O teste `ActualTorrentStreamReadsVerifiedBytesBeforeDownloadCompletes` usa arqui
 Os testes de relógio controlado verificam a separação de startup/busca/pausa/rebuffer, tempo antes da coleta, concorrência, cancelamento e falha do logger. Resultados sintéticos não demonstram a velocidade do magnet real na conexão do usuário.
 
 Validação do gerador de relatório: `python tests/OnlineDiagnosticsReportTests.py` (biblioteca padrão, sem dependências externas).
+
+## Etapa 2 — abertura sob demanda
+
+A restauração agora lê somente `downloads.json` e normaliza os itens para aguardarem seleção. `SnapshotAsync` mostra o catálogo do banco sem criar managers para esses itens. Um magnet antigo indisponível não dispara busca de metadados no monitor nem bloqueia o play de outro torrent.
+
+Somente `OpenStreamAsync` carrega o manager escolhido. Metadados locais previamente salvos são reutilizados. Os marcos `selected_manager_load_begin`/`selected_manager_loaded` separam essa etapa da leitura do catálogo no relatório. A verificação e recuperação do cache de vídeo continuam sob responsabilidade do motor ao abrir o episódio; a listagem inativa não revalida os arquivos parciais.
+
+Serviço é obtido fora da thread da interface durante o preparo. O popup começa com uma etapa e relógio antes de haver conexões, sem apresentar ausência de peers como diagnóstico enquanto ainda está carregando o catálogo. As prioridades são alteradas apenas quando necessário e itens inativos não passam novamente por seleção de arquivos.
+
+Cancelamento durante ativação limpa as prioridades, interrompe o manager (inclusive em inicialização) e volta ao estado de espera sem apagar arquivos. Falha/cancelamento de leitura do catálogo não deixa a restauração marcada como concluída. A listagem aguarda a operação de metadados apenas se ela pertencer ao torrent efetivamente escolhido; seu cancelamento segue o token da preparação.
+
+Regressões: catálogo com 80 magnets sem peers não cria nenhum manager; abrir um arquivo de teste já em cache cria apenas o manager escolhido, ignorando outro magnet indisponível; cancelar na seleção e repetir preserva o arquivo e mantém um único manager; importar novamente um torrent listado é rejeitado sem iniciar download.

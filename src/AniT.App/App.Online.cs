@@ -15,16 +15,19 @@ public partial class App
     static OnlinePlaybackTrace? activeOnlineTrace;
     static OnlinePlaybackTrace BeginOnlineTrace(long clickedAt)
     {
-        activeOnlineTrace?.Finish("replaced");
-        onlineJournal ??= new OnlineTraceJournal(Path.Combine(dataRootPath, "Diagnostics", "Online"));
-        var journal = onlineJournal;
-        activeOnlineTrace = new OnlinePlaybackTrace(journal.Write, startTimestamp: clickedAt);
-        activeOnlineTrace.Mark("episode_resolved");
-        return activeOnlineTrace;
+        lock (onlineServiceSync) {
+            activeOnlineTrace?.Finish("replaced");
+            onlineJournal ??= new OnlineTraceJournal(Path.Combine(dataRootPath, "Diagnostics", "Online"));
+            var journal = onlineJournal;
+            activeOnlineTrace = new OnlinePlaybackTrace(journal.Write, startTimestamp: clickedAt);
+            activeOnlineTrace.Mark("episode_resolved");
+            return activeOnlineTrace;
+        }
     }
     static CancellationTokenSource? onlineMonitor;
     static Task? onlineMonitorTask;
-    public static OnlineAnimeService Online => online ??= CreateOnlineService();
+    static readonly object onlineServiceSync = new();
+    public static OnlineAnimeService Online { get { lock (onlineServiceSync) return online ??= CreateOnlineService(); } }
 
     static void ResumeOnlineDownloads()
     {
@@ -52,12 +55,21 @@ public partial class App
 
     public static async Task StopOnlineAsync()
     {
-        onlineMonitor?.Cancel();
-        if (onlineMonitorTask is not null) await onlineMonitorTask.ConfigureAwait(false);
-        if (online is { } service) { online = null; await service.DisposeAsync().ConfigureAwait(false); }
-        activeOnlineTrace?.Finish("service_stopped"); activeOnlineTrace = null;
-        if (onlineJournal is { } journal) { onlineJournal = null; await journal.DisposeAsync().ConfigureAwait(false); }
-        onlineMonitor?.Dispose(); onlineMonitor = null; onlineMonitorTask = null;
+        OnlineAnimeService? service; CancellationTokenSource? monitor; Task? monitoring;
+        OnlinePlaybackTrace? trace; OnlineTraceJournal? journal;
+        lock (onlineServiceSync) {
+            service = online; online = null;
+            monitor = onlineMonitor; onlineMonitor = null;
+            monitoring = onlineMonitorTask; onlineMonitorTask = null;
+            trace = activeOnlineTrace; activeOnlineTrace = null;
+            journal = onlineJournal; onlineJournal = null;
+        }
+        monitor?.Cancel();
+        if (monitoring is not null) await monitoring.ConfigureAwait(false);
+        if (service is not null) await service.DisposeAsync().ConfigureAwait(false);
+        trace?.Finish("service_stopped");
+        if (journal is not null) await journal.DisposeAsync().ConfigureAwait(false);
+        monitor?.Dispose();
     }
 
     static async Task PauseOnlinePlaybackAsync(Uri? expectedAddress = null)
@@ -75,7 +87,14 @@ public partial class App
         window.Show();
         var progress = new Progress<OnlinePreparationProgress>(window.Report);
         trace.Mark("preparation_window_shown");
-        try { var service = Online; trace.Mark("online_service_ready"); return await Task.Run(() => service.OpenStreamAsync(file, timeout.Token, progress, trace)); }
+        try {
+            return await Task.Run(async () => {
+                timeout.Token.ThrowIfCancellationRequested();
+                var service = Online; trace.Mark("online_service_ready");
+                timeout.Token.ThrowIfCancellationRequested();
+                return await service.OpenStreamAsync(file, timeout.Token, progress, trace);
+            });
+        }
         catch (OperationCanceledException) { trace.Finish("preparation_cancelled"); throw new InvalidOperationException("Preparação interrompida. Verifique a disponibilidade do torrent em Online Anime Player e tente novamente."); }
         catch { trace.Finish("preparation_failed"); throw; }
         finally { window.Close(); }
@@ -86,11 +105,23 @@ internal sealed class OnlineBufferWindow : Window
 {
     readonly System.Diagnostics.Stopwatch elapsed = System.Diagnostics.Stopwatch.StartNew();
     readonly System.Windows.Controls.TextBlock transferStatus = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 0) };
+    readonly System.Windows.Threading.DispatcherTimer clock = new() { Interval = TimeSpan.FromMilliseconds(500) };
+    OnlinePreparationProgress? latest;
     readonly System.Windows.Controls.ProgressBar transferBar = new() { IsIndeterminate = true, Height = 5 };
 
     public void Report(OnlinePreparationProgress progress)
     {
+        latest = progress;
         if (!IsLoaded) return;
+        RefreshStatus();
+    }
+    void RefreshStatus()
+    {
+        var progress = latest ?? new OnlinePreparationProgress(0, 0, 0, 0, null, Stage: "Organizando a abertura do seu episódio…", TransferStarted: false);
+        if (!progress.TransferStarted) {
+            transferStatus.Text = (progress.Stage ?? "Preparando seu episódio…") + $"\n{elapsed.Elapsed.Minutes:00}:{elapsed.Elapsed.Seconds:00} de espera";
+            return;
+        }
         transferStatus.Text = progress.Error is { } error ? "Falha na conexão: " + error
             : $"{progress.Peers} conexões · {progress.BytesPerSecond / 1024d:0} KB/s · {elapsed.Elapsed.Minutes:00}:{elapsed.Elapsed.Seconds:00} de espera\n"
               + (progress.Peers == 0 ? "Procurando fontes para este episódio…" : $"{progress.ReceivedBytes / (1024d * 1024):0.0} MB recebidos · {progress.Percent:0.0}% do episódio verificado");
@@ -122,6 +153,9 @@ internal sealed class OnlineBufferWindow : Window
         var cancel = new System.Windows.Controls.Button { Content = "Cancelar", Style = (Style)FindResource("CinemaAction"), Margin = new Thickness(0, 18, 0, 0), Padding = new Thickness(12, 7, 12, 7), MinHeight = 40 };
         cancel.Click += (_, _) => cancellation.Cancel();
         System.Windows.Controls.Grid.SetRow(cancel, 2); panel.Children.Add(cancel); Content = panel;
+        clock.Tick += (_, _) => RefreshStatus();
+        Loaded += (_, _) => { RefreshStatus(); clock.Start(); };
+        Closed += (_, _) => clock.Stop();
         Closing += (_, _) => cancellation.Cancel();
     }
 }

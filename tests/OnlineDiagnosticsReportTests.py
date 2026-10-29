@@ -28,7 +28,7 @@ class ReportTests(unittest.TestCase):
                 for i, (name, elapsed) in enumerate([("click",0),("restore_begin",100),("restore_complete",350),("player_requested",500),("first_video_frame_signal",900)])]
         rows.append(dict(SessionId=session, Sequence=6, ElapsedMs=2000, Kind="summary", Name="closed", Values={"rebuffer_count":1,"rebuffer_ms":600}))
         text = self.render(rows)
-        self.assertIn("Restauração | 250.0", text)
+        self.assertIn("Restauração do catálogo | 250.0", text)
         self.assertIn("primeiro sinal de frame | 900.0", text)
         self.assertIn("frame: 1; duração total: 600", text)
     def test_incomplete_and_malformed_logs_are_explicit(self):

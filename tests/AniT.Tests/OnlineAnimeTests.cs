@@ -292,6 +292,113 @@ public sealed class OnlineAnimeTests
     static Task QueryTrackers(IReadOnlyList<Func<CancellationToken, Task>> queries, CancellationToken token, Action<string>? diagnostic = null)
         => (Task)typeof(OnlineAnimeService).GetMethod("QueryTrackersAsync", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, [queries, diagnostic ?? (_ => { }), token])!;
 
+    sealed class InlinePreparationProgress(Action<OnlinePreparationProgress> observe) : IProgress<OnlinePreparationProgress>
+    {
+        public void Report(OnlinePreparationProgress value) => observe(value);
+    }
+
+    [Fact]
+    public async Task ListingRestoredCatalogDoesNotCreateManagersOrWaitForLegacyMagnets()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "AniT.Lazy.Tests", Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
+        var state = Path.Combine(root, "state"); Directory.CreateDirectory(state);
+        var jobs = Enumerable.Range(0, 80).Select(i => new OnlineJob("legacy-" + i,
+            "magnet:?xt=urn:btih:" + new string('C', 40), Path.Combine(root, "job-" + i), "Legacy", false, DateTimeOffset.UtcNow, 0)).ToArray();
+        await File.WriteAllTextAsync(Path.Combine(state, "downloads.json"), System.Text.Json.JsonSerializer.Serialize(jobs));
+        await using var service = new OnlineAnimeService(Path.Combine(root, "db"), state, OfflineSettings(Path.Combine(root, "cache")));
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var rows = await service.SnapshotAsync(deadline.Token);
+        Assert.Equal(80, rows.Count); Assert.All(rows, row => { Assert.True(row.Paused); Assert.True(row.WaitingForSelection); });
+        var engine = (ClientEngine)typeof(OnlineAnimeService).GetField("engine", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(service)!;
+        Assert.Empty(engine.Torrents); Assert.Null(service.LastError);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.SetPausedAsync("legacy-0", false, deadline.Token));
+        await service.SetPausedAsync("legacy-0", true, deadline.Token); Assert.Empty(engine.Torrents);
+    }
+
+    [Fact]
+    public async Task SelectedCachedEpisodeOpensWithoutRestoringUnrelatedJobsAndCancellationCanRetry()
+    {
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var root = Path.Combine(Path.GetTempPath(), "AniT.Lazy.Tests", Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
+        var state = Path.Combine(root, "state"); var database = Path.Combine(root, "db");
+        var source = await CreateTorrentAsync(root, 1, 65536);
+        string id; MediaFile file;
+        await using (var initial = new OnlineAnimeService(database, state, OfflineSettings(Path.Combine(root, "cache")))) {
+            id = await initial.AddAsync(source, root, "Autorizado", true, deadline.Token);
+            using var db = AniTDatabase.Create(database); file = await db.MediaFiles.SingleAsync(deadline.Token);
+            var engine = (ClientEngine)typeof(OnlineAnimeService).GetField("engine", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(initial)!;
+            var path = engine.Torrents.Single().Files[file.OnlineFileIndex].DownloadCompleteFullPath;
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.Copy(Path.Combine(root, "Original", file.FileName), path);
+        }
+        var jobs = System.Text.Json.JsonSerializer.Deserialize<List<OnlineJob>>(await File.ReadAllTextAsync(Path.Combine(state, "downloads.json")))!;
+        jobs.Insert(0, new OnlineJob("unrelated", "magnet:?xt=urn:btih:" + new string('D', 40), Path.Combine(root, "unrelated"), "Legacy", false, DateTimeOffset.UtcNow, 0));
+        await File.WriteAllTextAsync(Path.Combine(state, "downloads.json"), System.Text.Json.JsonSerializer.Serialize(jobs));
+        await using var service = new OnlineAnimeService(database, state, OfflineSettings(Path.Combine(root, "cache")));
+        var coldEngine = (ClientEngine)typeof(OnlineAnimeService).GetField("engine", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(service)!;
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.AddAsync(source, root, "Duplicado inativo", true, deadline.Token));
+        Assert.Empty(coldEngine.Torrents);
+        var stages = new List<OnlinePreparationProgress>();
+        using (var cancelled = new CancellationTokenSource()) {
+            var progress = new InlinePreparationProgress(value => { stages.Add(value); if (value.Stage == "Selecionando somente este episódio…") cancelled.Cancel(); });
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.OpenStreamAsync(file, cancelled.Token, progress));
+        }
+        var restoredEngine = (ClientEngine)typeof(OnlineAnimeService).GetField("engine", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(service)!;
+        var manager = Assert.Single(restoredEngine.Torrents);
+        Assert.Equal(TorrentState.Stopped, manager.State); Assert.All(manager.Files, item => Assert.Equal(Priority.DoNotDownload, item.Priority));
+        var afterCancel = System.Text.Json.JsonSerializer.Deserialize<List<OnlineJob>>(await File.ReadAllTextAsync(Path.Combine(state, "downloads.json")))!.Single(job => job.Id == id);
+        Assert.True(afterCancel.Paused); Assert.Null(afterCancel.SelectedFileIndex);
+        Assert.Contains(stages, stage => !stage.TransferStarted && stage.Stage == "Lendo sua lista de episódios…");
+        var uri = await service.OpenStreamAsync(file, deadline.Token, new InlinePreparationProgress(stages.Add));
+        Assert.Equal("127.0.0.1", uri.Host); Assert.Single(restoredEngine.Torrents);
+        Assert.Equal(100, manager.Files[file.OnlineFileIndex].BitField.PercentComplete);
+        Assert.Equal(2, (await service.SnapshotAsync(deadline.Token)).Count);
+        Assert.True(File.Exists(manager.Files[file.OnlineFileIndex].DownloadCompleteFullPath));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.AddAsync(source, root, "Duplicado", true, deadline.Token));
+    }
+
+    [Fact]
+    public async Task ChosenMetadataFailureKeepsCatalogAndCanRetryAfterSourceIsRestored()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "AniT.Lazy.Tests", Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
+        var state = Path.Combine(root, "state"); var database = Path.Combine(root, "db");
+        var source = await CreateTorrentAsync(root, 1, 65536); MediaFile file;
+        await using (var initial = new OnlineAnimeService(database, state, OfflineSettings(Path.Combine(root, "cache")))) {
+            await initial.AddAsync(source, root, "Autorizado", true);
+            using var db = AniTDatabase.Create(database); file = await db.MediaFiles.SingleAsync();
+        }
+        var manifest = Path.Combine(state, "downloads.json");
+        var jobs = System.Text.Json.JsonSerializer.Deserialize<List<OnlineJob>>(await File.ReadAllTextAsync(manifest))!;
+        var missing = Path.Combine(root, "temporarily-missing.torrent"); jobs[0] = jobs[0] with { Source = missing };
+        await File.WriteAllTextAsync(manifest, System.Text.Json.JsonSerializer.Serialize(jobs));
+        await using var service = new OnlineAnimeService(database, state, OfflineSettings(Path.Combine(root, "cache")));
+        await Assert.ThrowsAnyAsync<IOException>(() => service.OpenStreamAsync(file));
+        Assert.NotNull(service.LastError); Assert.Single(await service.SnapshotAsync());
+        var engine = (ClientEngine)typeof(OnlineAnimeService).GetField("engine", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(service)!;
+        Assert.Empty(engine.Torrents);
+        File.Copy(source, missing);
+        using var cancelled = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var progress = new InlinePreparationProgress(value => { if (value.Stage == "Selecionando somente este episódio…") cancelled.Cancel(); });
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.OpenStreamAsync(file, cancelled.Token, progress));
+        Assert.Null(service.LastError); Assert.Single(engine.Torrents);
+        Assert.Equal(TorrentState.Stopped, engine.Torrents.Single().State);
+        Assert.Single((await service.SnapshotAsync()).Single().Episodes);
+    }
+
+    [Fact]
+    public async Task FailedOrCancelledManifestReadDoesNotPoisonNextRestore()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "AniT.Lazy.Tests", Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
+        var state = Path.Combine(root, "state"); Directory.CreateDirectory(state);
+        var path = Path.Combine(state, "downloads.json"); await File.WriteAllTextAsync(path, "not json");
+        await using var service = new OnlineAnimeService(Path.Combine(root, "db"), state, OfflineSettings(Path.Combine(root, "cache")));
+        await Assert.ThrowsAsync<System.Text.Json.JsonException>(() => service.RestoreAsync());
+        await File.WriteAllTextAsync(path, "[]");
+        using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.RestoreAsync(cancelled.Token));
+        Assert.Empty(await service.SnapshotAsync());
+    }
+
     [Fact]
     public async Task ImportIntoExistingAnimeKeepsItsEpisodesAndRatings()
     {
@@ -389,8 +496,7 @@ public sealed class OnlineAnimeTests
         await using (var restored = new OnlineAnimeService(dbPath,state,OfflineSettings(Path.Combine(root,"cache")))) {
             var row = Assert.Single(await restored.SnapshotAsync()); Assert.True(row.WaitingForSelection); Assert.True(row.Paused);
             var engine=(ClientEngine)typeof(OnlineAnimeService).GetField("engine",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(restored)!;
-            Assert.Equal(TorrentState.Stopped,engine.Torrents.Single().State);
-            Assert.All(engine.Torrents.Single().Files,f=>Assert.Equal(Priority.DoNotDownload,f.Priority));
+            Assert.Empty(engine.Torrents); // Restoring the catalog no longer constructs an inactive manager.
             Assert.Contains(row.Episodes,e=>e.EpisodeId==firstId);
         }
         await seed.StopAsync();
