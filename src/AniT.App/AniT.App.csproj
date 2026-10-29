@@ -16,6 +16,8 @@
     <Content Include="Licenses/WpfUi/*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup><Resource Include="..\..\assets\baki-support.png" Link="Assets\baki-support.png" /></ItemGroup>
+
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>

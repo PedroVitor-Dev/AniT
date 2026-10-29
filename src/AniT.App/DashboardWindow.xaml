@@ -30,7 +30,7 @@
 
         <Border Background="{DynamicResource HomeSidebarBrush}" BorderBrush="#174576" BorderThickness="0,0,1,0">
             <Grid ClipToBounds="True">
-                <Grid.RowDefinitions><RowDefinition Height="118"/><RowDefinition Height="*"/><RowDefinition Height="205"/></Grid.RowDefinitions>
+                <Grid.RowDefinitions><RowDefinition Height="118"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                 <Border Width="178"
                         Height="92"
                         HorizontalAlignment="Center"
@@ -58,7 +58,29 @@
                     <TextBlock Text="SISTEMA" Foreground="#587DA9" FontSize="10" FontWeight="SemiBold" Margin="24,0,0,7"/>
                     <local:SystemSettingsNavButton/>
                 </StackPanel></ScrollViewer>
-                <Image Grid.Row="2" Source="{local:PageMascot Page=Inicio, Fallback=Assets/ghost_menu.png}" Style="{StaticResource HomeSidebarMascot}"/>
+                <Button x:Name="SupportProjectButton" Grid.Row="2" Margin="14,10,14,16" Padding="12" Click="SupportProject_Click"
+                        Cursor="Hand" HorizontalContentAlignment="Stretch" ToolTip="Abrir a página de doação do AniT no navegador"
+                        AutomationProperties.Name="Mantenha o projeto vivo. Apoiar o AniT no site">
+                    <Button.Style><Style TargetType="Button">
+                        <Setter Property="Background" Value="{DynamicResource HomePanelBrush}"/>
+                        <Setter Property="BorderBrush" Value="{DynamicResource HomeBorderBrush}"/>
+                        <Setter Property="BorderThickness" Value="1"/>
+                        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+                            <Border x:Name="SupportCard" CornerRadius="16" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Stretch"/></Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="SupportCard" Property="BorderBrush" Value="{DynamicResource HomeAccentBrush}"/><Setter TargetName="SupportCard" Property="Background" Value="{DynamicResource HomeHoverBrush}"/></Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="SupportCard" Property="BorderBrush" Value="{DynamicResource HomeAccentBrush}"/><Setter TargetName="SupportCard" Property="BorderThickness" Value="2"/></Trigger>
+                                <Trigger Property="IsPressed" Value="True"><Setter TargetName="SupportCard" Property="Opacity" Value="0.8"/></Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate></Setter.Value></Setter>
+                    </Style></Button.Style>
+                    <StackPanel>
+                        <Image Source="Assets/baki-support.png" Height="86" Stretch="Uniform" Margin="0,0,0,6" local:ComfortableImageSource.AutoOptimize="False"/>
+                        <TextBlock Text="Mantenha o projeto vivo" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" TextAlignment="Center" Foreground="{DynamicResource HomeTextBrush}" Tag="ThemeManaged"/>
+                        <TextBlock Text="Apoiar o AniT ↗" TextDecorations="Underline" FontSize="12" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,8,0,0" Foreground="{DynamicResource HomeTextBrush}" Tag="ThemeManaged"/>
+                        <TextBlock Text="Apoio opcional" FontSize="10" TextAlignment="Center" TextWrapping="Wrap" Margin="0,3,0,0" Foreground="{DynamicResource HomeMutedBrush}" Tag="ThemeManaged"/>
+                    </StackPanel>
+                </Button>
             </Grid>
         </Border>
 

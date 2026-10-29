@@ -6,6 +6,11 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Não publicado]
 
+### Adicionado
+
+- Início: cartão de apoio opcional na barra lateral com arte personalizada do Baki-Pi, texto “Mantenha o projeto vivo” e link direto à seção de doações do site.
+
+
 ### Corrigido
 
 - Movie Theater: contraste dos avisos de autorização e cabeçalhos de opções acompanha os temas claro/escuro, sem recoloração automática indevida. Recurso identificado como BETA no menu e na janela.

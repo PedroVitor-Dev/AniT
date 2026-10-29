@@ -55,6 +55,24 @@ internal static class HomeVisualChecks
         var hero = (Border)preview.FindName("HeroArtwork");
         Require(hero.BorderThickness == new Thickness(0) && hero.Background is SolidColorBrush brush && brush.Color.A == 0,
             "The built-in mascot must not have an anime cover frame.");
+        foreach (var theme in new[] { AppearanceThemeMode.Dark, AppearanceThemeMode.Light })
+        foreach (var text in new[] { 100, 140 })
+        {
+            preview.Width = 1366; preview.Height = 720;
+            AppearanceManager.Apply(AniTSystemSettings.Default with { ThemeMode = theme, TextScalePercent = text });
+            preview.UpdateLayout(); Pump();
+            var support = (Button)preview.FindName("SupportProjectButton");
+            var layout = (FrameworkElement)preview.Content;
+            var bounds = support.TransformToAncestor(layout).TransformBounds(new Rect(support.RenderSize));
+            Require(bounds.Top >= 0 && bounds.Bottom <= layout.ActualHeight + 1, "Support card stays inside sidebar with enlarged text");
+            if (text == 100)
+            {
+                var capture = new RenderTargetBitmap((int)layout.ActualWidth, (int)layout.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+                preview.Opacity = 1; capture.Render(layout); preview.Opacity = 0; var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(capture));
+                var folder = Path.Combine(Path.GetTempPath(), "AniT.Support.Preview"); Directory.CreateDirectory(folder);
+                using var output = File.Create(Path.Combine(folder, theme + ".png")); encoder.Save(output);
+            }
+        }
         preview.Close();
         Console.WriteLine("PASS: Home panels preserve their strokes after resizing and corner/scale changes; mascot retains transparent rendering.");
     }
