@@ -5,7 +5,7 @@ motionQuery.addEventListener?.('change', event => { reduceMotion = event.matches
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
-const releaseFallback = 'https://github.com/PedroVitor-Dev/AniT/releases/tag/v2.0.0';
+const releaseFallback = 'https://github.com/PedroVitor-Dev/AniT/releases/tag/v2.0.1';
 const canvas = $('#starfield');
 const starContext = canvas?.getContext('2d', { alpha: true });
 let stars = [];
@@ -30,7 +30,7 @@ async function resolveLatestRelease() {
     if (navVersion) navVersion.textContent = `v${version}`;
   } catch {
     links.forEach(link => { link.href = releaseFallback; });
-    metadata.forEach(item => { item.textContent = 'Versão 2.0.0 · Windows x64'; });
+    metadata.forEach(item => { item.textContent = 'Versão 2.0.1 · Windows x64'; });
   }
 }
 

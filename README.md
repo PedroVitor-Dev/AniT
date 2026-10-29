@@ -31,16 +31,16 @@ O **AniT** é um aplicativo desktop open source para Windows que transforma past
 O projeto é **local-first**: perfis, biblioteca, conquistas, progresso e configurações ficam no seu computador. O acesso à internet é opcional: além das fontes de metadados, tradução e artes habilitadas, pode ser usado no Movie Theater e no Online Anime Player.
 
 > [!NOTE]
-> A versão desta distribuição é a **2.0.0**. O instalador é autossuficiente para Windows x64, não exige .NET instalado e ainda não possui assinatura digital. Confira o hash publicado antes de executar.
+> A versão desta distribuição é a **2.0.1**. O instalador é autossuficiente para Windows x64, não exige .NET instalado e ainda não possui assinatura digital. Confira o hash publicado antes de executar.
 
 ## Baixar e instalar
 
 1. Abra a [release mais recente](https://github.com/PedroVitor-Dev/AniT/releases/latest).
-2. Baixe `AniT-Setup-2.0.0-win-x64.exe` e `SHA256SUMS.txt`.
+2. Baixe `AniT-Setup-2.0.1-win-x64.exe` e `SHA256SUMS.txt`.
 3. Compare o SHA-256 do instalador:
 
 ```powershell
-Get-FileHash .\AniT-Setup-2.0.0-win-x64.exe -Algorithm SHA256
+Get-FileHash .\AniT-Setup-2.0.1-win-x64.exe -Algorithm SHA256
 ```
 
 4. Execute o instalador, escolha o idioma e, se quiser, crie um atalho na Área de Trabalho.
@@ -105,7 +105,8 @@ O [manual de utilização](docs/USER_GUIDE.md) detalha as telas e o fluxo comple
 - Windows 10 build 17763 ou posterior, ou Windows 11, x64;
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0);
 - Git;
-- MPC-HC 2.8.2 portátil em `Player/MPC-HC/mpc-hc64.exe` para reprodução integrada.
+- MPC-HC 2.8.2 portátil em `Player/MPC-HC/mpc-hc64.exe` para arquivos locais e Movie Theater.
+- mpv portátil em `Player/MPV/mpv.exe` para o Online Anime Player Beta: `./scripts/Get-Mpv.ps1 -Destination Player/MPV`. O download tem versão e SHA-256 fixados; licenças em `src/AniT.App/Licenses/Mpv`.
 
 ```powershell
 git clone https://github.com/PedroVitor-Dev/AniT.git

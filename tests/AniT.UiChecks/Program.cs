@@ -19,7 +19,23 @@ internal static class Program
             application.Resources.MergedDictionaries.Add(new ResourceDictionary
             { Source = new Uri($"pack://application:,,,/AniT;component/Themes/{theme}.xaml") });
         AppearanceManager.Initialize(application);
-        if (args.Contains("--check-online-player")) return OnlinePlayerChecks.Run(application);
+        if (args.Contains("--check-playback-evidence"))
+        {
+            try { PlaybackEvidenceChecks.Run(); return 0; }
+            catch (Exception error) { Console.Error.WriteLine(error); return 1; }
+            finally { application.Shutdown(); }
+        }
+        if (args.Contains("--check-online-import")) return OnlineImportFlowChecks.Run(application);
+        if (args.Contains("--check-online-player"))
+        {
+            var fixture = args.Contains("--mkv") ? Environment.GetEnvironmentVariable("ANIT_TEST_MKV") : null;
+            if (args.Contains("--mkv") && (string.IsNullOrWhiteSpace(fixture) || !System.IO.File.Exists(fixture)))
+            {
+                Console.Error.WriteLine("--mkv exige ANIT_TEST_MKV apontando para um MKV de teste autorizado.");
+                return 1;
+            }
+            return OnlinePlayerChecks.Run(application, fixture, args.Contains("--resume"));
+        }
         if (args.Contains("--check-online"))
         {
             try { OnlineAnimeVisualChecks.Run(); return 0; }

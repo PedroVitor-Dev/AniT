@@ -25,6 +25,7 @@ public partial class App
     static OnlineAnimeService CreateOnlineService()
     {
         var service = new OnlineAnimeService(databasePath, Path.Combine(dataRootPath, "Online", ProfileSettingsStore.ActiveProfileId.ToString("N")));
+        service.Diagnostic = message => WritePlaybackLog("[ONLINE] " + message);
         onlineMonitor = new CancellationTokenSource();
         var token = onlineMonitor.Token;
         onlineMonitorTask = Task.Run(async () => {
@@ -46,13 +47,21 @@ public partial class App
         onlineMonitor?.Dispose(); onlineMonitor = null; onlineMonitorTask = null;
     }
 
+    static async Task PauseOnlinePlaybackAsync(Uri? expectedAddress = null)
+    {
+        if (online is not { } service) return;
+        try { await Task.Run(() => service.PausePlaybackAsync(expectedAddress)); }
+        catch (Exception ex) { WritePlaybackLog("[ONLINE] Ao pausar episódio: " + ex.Message); }
+    }
+
     static async Task<Uri> PrepareOnlineStreamAsync(MediaFile file)
     {
         // A modeless preparation surface leaves cancellation accessible while peers supply the first pieces.
-        using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+        using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(5));
         var window = new OnlineBufferWindow(timeout);
         window.Show();
-        try { var service = Online; return await Task.Run(() => service.OpenStreamAsync(file, timeout.Token)); }
+        var progress = new Progress<OnlinePreparationProgress>(window.Report);
+        try { var service = Online; return await Task.Run(() => service.OpenStreamAsync(file, timeout.Token, progress)); }
         catch (OperationCanceledException) { throw new InvalidOperationException("Preparação interrompida. Verifique a disponibilidade do torrent em Online Anime Player e tente novamente."); }
         finally { window.Close(); }
     }
@@ -60,18 +69,44 @@ public partial class App
 
 internal sealed class OnlineBufferWindow : Window
 {
+    readonly System.Diagnostics.Stopwatch elapsed = System.Diagnostics.Stopwatch.StartNew();
+    readonly System.Windows.Controls.TextBlock transferStatus = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 0) };
+    readonly System.Windows.Controls.ProgressBar transferBar = new() { IsIndeterminate = true, Height = 5 };
+
+    public void Report(OnlinePreparationProgress progress)
+    {
+        if (!IsLoaded) return;
+        transferStatus.Text = progress.Error is { } error ? "Falha na conexão: " + error
+            : $"{progress.Peers} conexões · {progress.BytesPerSecond / 1024d:0} KB/s · {elapsed.Elapsed.Minutes:00}:{elapsed.Elapsed.Seconds:00} de espera\n"
+              + (progress.Peers == 0 ? "Procurando fontes para este episódio…" : $"{progress.ReceivedBytes / (1024d * 1024):0.0} MB recebidos · {progress.Percent:0.0}% do episódio verificado");
+        if (progress.InitialPieceBytes > 0)
+            transferStatus.Text += $"\nBloco inicial: {progress.InitialPieceBytes / (1024d * 1024):0.##} MB · "
+                + (progress.InitialPieceReady ? "verificado" : "aguardando uma peça completa para verificar");
+        if (progress.Stage is { } stage) transferStatus.Text = stage + "\n" + transferStatus.Text;
+        transferBar.IsIndeterminate = true;
+    }
+
     public OnlineBufferWindow(CancellationTokenSource cancellation)
     {
-        Title = "Preparando streaming · AniT"; Width = 440; Height = 240; MinWidth = 340; MinHeight = 220;
+        Title = "Preparando streaming · AniT"; Width = 480; Height = 380; MinWidth = 360; MinHeight = 330;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        StableWindowRendering.SetEnabled(this, true);
+        Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/AniT;component/Styles/TheaterTheme.xaml", UriKind.Relative) });
         SetResourceReference(BackgroundProperty, "AniT.Brush.Background");
         SetResourceReference(ForegroundProperty, "AniT.Brush.TextPrimary");
-        var panel = new System.Windows.Controls.StackPanel { Margin = new Thickness(24) };
-        panel.Children.Add(new System.Windows.Controls.TextBlock { Text = "Preparando seu episódio", FontSize = 22, FontWeight = FontWeights.SemiBold });
-        panel.Children.Add(new System.Windows.Controls.TextBlock { Text = "Cloud · Baixando os trechos iniciais e o índice do vídeo. A disponibilidade depende dos participantes do torrent.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 12) });
-        panel.Children.Add(new System.Windows.Controls.ProgressBar { IsIndeterminate = true, Height = 5 });
-        var cancel = new System.Windows.Controls.Button { Content = "Cancelar", Margin = new Thickness(0, 18, 0, 0), Padding = new Thickness(12, 7, 12, 7) };
-        cancel.Click += (_, _) => cancellation.Cancel(); panel.Children.Add(cancel); Content = panel;
+        var panel = new System.Windows.Controls.Grid { Margin = new Thickness(24) };
+        panel.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = GridLength.Auto });
+        panel.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        panel.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = GridLength.Auto });
+        panel.Children.Add(new System.Windows.Controls.TextBlock { Text = "Preparando seu episódio", FontSize = 22, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap });
+        var body = new System.Windows.Controls.StackPanel();
+        body.Children.Add(new System.Windows.Controls.TextBlock { Text = "Cloud · Baixando somente o episódio que você abriu. Priorizando o começo do vídeo; os outros episódios ficam aguardando.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 12) });
+        body.Children.Add(transferBar); body.Children.Add(transferStatus);
+        var scroll = new System.Windows.Controls.ScrollViewer { Content = body, VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Disabled };
+        System.Windows.Controls.Grid.SetRow(scroll, 1); panel.Children.Add(scroll);
+        var cancel = new System.Windows.Controls.Button { Content = "Cancelar", Style = (Style)FindResource("CinemaAction"), Margin = new Thickness(0, 18, 0, 0), Padding = new Thickness(12, 7, 12, 7), MinHeight = 40 };
+        cancel.Click += (_, _) => cancellation.Cancel();
+        System.Windows.Controls.Grid.SetRow(cancel, 2); panel.Children.Add(cancel); Content = panel;
         Closing += (_, _) => cancellation.Cancel();
     }
 }

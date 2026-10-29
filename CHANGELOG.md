@@ -6,6 +6,39 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Não publicado]
 
+## [2.0.1] - 2026-10-28
+
+### Melhorado
+
+- Online Anime Player: importação por arquivo/URL `.torrent` ou magnet, sem pedir nome ou destino quando já existe pasta padrão. Popup com etapas reais, efeitos discretos e confirmação “Carregado!”, seguido do retorno ao Início.
+- Nome limpo pelo parser, metadados e capa consultados durante a importação, episódios em ordem numérica e reconhecimento por aliases para reaproveitar a entrada existente. Concluir sem arte preserva o catálogo já importado.
+- Aviso de autorização com contraste corrigido no tema escuro e controles verificados também no modo claro e com fonte ampliada.
+
+
+- Online Anime Player Beta: motor mpv dedicado para streaming progressivo, com IPC assíncrono, pausa por buffering, retomada, controles nativos e checkpoint confirmado ao fechar. MPC-HC permanece nos arquivos locais e no Movie Theater.
+- MKVs com anexos grandes abrem por uma vista HTTP que pula fontes incorporadas e metadados opcionais, preservando offsets e os arquivos originais. O primeiro trecho de imagem é preparado; o índice verificado é carregado quando necessário para retomada e buscas. Legendas usam fontes do sistema durante o streaming.
+- Respostas HTTP antigas não desviam a prioridade das novas solicitações; a espera por peças deixa de cortar o vídeo após 90 segundos. Busca de fontes consulta trackers declarados de torrents públicos, com concorrência limitada.
+
+
+- Online Anime Player: cadastro obtém somente metadados; abrir um episódio baixa apenas o vídeo escolhido e legendas correspondentes. Trocar pausa o anterior; fechar o player pausa o download e reiniciar aguarda nova escolha, preservando os dados.
+- Preparação com velocidade, fontes, dados recebidos e tempo decorrido; normalização de magnet links com espaços e Unicode.
+
+### Corrigido
+
+- Importação: seleção da pasta padrão ordena datas em memória, evitando a consulta `DateTimeOffset ORDER BY` não suportada pelo SQLite.
+
+- Metadados: aliases recebidos das integrações são inseridos explicitamente como novas linhas, evitando uma falha de concorrência que podia impedir a gravação do nome e da capa.
+
+- Reprodução: checkpoints no último instante ou além da duração reiniciam do começo. O MPC-HC recebe a retomada somente após informar a duração, evitando mandar um streaming incompleto diretamente para EOF. Pontos intermediários continuam preservados.
+
+- Online Anime Player: a preparação prioriza e verifica o começo do episódio, sem exigir antecipadamente peças do final. O player solicita o índice conforme o contêiner exigir. A janela informa o tamanho da peça inicial e usa progresso indeterminado durante sua verificação, com botão de cancelamento no tema do app.
+
+- MPC-HC: buscas não bloqueiam mais a interface do AniT nem falham após apenas 1,5 segundo de buffering. O envio aguarda em segundo plano, com prazo limitado, preserva a ordem das buscas e respeita o cancelamento da espera sem reenviar comandos. Retomada inicial usa o mesmo caminho.
+
+- Online Anime Player: consultas simultâneas ao índice/trechos do MKV não cancelam mais a resposta de vídeo em andamento. Leituras aguardando peças verificadas cedem a vez às outras conexões; o tipo de mídia HTTP corresponde ao contêiner. Diagnósticos registram as faixas solicitadas e falhas de leitura.
+- Reprodução: abertura sem resposta e buffering deixam de gerar progresso pelo relógio. Fechar o player sem posição confirmada preserva a retomada; EOF de streaming longe do final não conclui o episódio nem avança automaticamente a fila. Cliques concorrentes não iniciam duas preparações do player.
+- Regressões cobertas por leitura paralela de vídeo/índice, preservação de progresso/conquistas e MPC-HC real com MKV HEVC/Opus sintético. Busca durante buffering validada com rede limitada e atraso adicional.
+
 ## [2.0.0] - 2026-10-28
 
 ### Adicionado

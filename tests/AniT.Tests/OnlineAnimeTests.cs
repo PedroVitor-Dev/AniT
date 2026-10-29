@@ -52,6 +52,73 @@ public sealed class OnlineAnimeTests
         Assert.Equal(HttpStatusCode.RequestedRangeNotSatisfiable, (await client.SendAsync(invalid)).StatusCode);
     }
 
+    [Fact]
+    public async Task MetadataProbeDoesNotAbortPendingVideoResponse()
+    {
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var source = new DelayedVideoStream();
+        await using var server = new OnlineStreamServer(source, "test.mkv");
+        using var client = new HttpClient();
+        using var mainRequest = new HttpRequestMessage(HttpMethod.Get, server.Address);
+        mainRequest.Headers.Range = new RangeHeaderValue(0, 63);
+        using var main = await client.SendAsync(mainRequest, HttpCompletionOption.ResponseHeadersRead, deadline.Token);
+        await source.FirstRead.Task.WaitAsync(deadline.Token);
+        using var probeRequest = new HttpRequestMessage(HttpMethod.Get, server.Address);
+        probeRequest.Headers.Range = new RangeHeaderValue(100000, 100063);
+        using var probe = await client.SendAsync(probeRequest, deadline.Token);
+        Assert.Equal(64, (await probe.Content.ReadAsByteArrayAsync(deadline.Token)).Length);
+        source.Release.TrySetResult();
+        Assert.Equal(64, (await main.Content.ReadAsByteArrayAsync(deadline.Token)).Length);
+    }
+
+    [Fact]
+    public async Task PendingReadAheadDoesNotStealPriorityFromNewContainerRequest()
+    {
+        using var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(6));
+        var source=new CompetingReads();
+        await using var server=new OnlineStreamServer(source,"test.mkv",(offset,count)=>offset==0 ? source.MainAvailable.Task.IsCompleted : source.ProbeAvailable.Task.IsCompleted);
+        using var client=new HttpClient();using var mainRequest=new HttpRequestMessage(HttpMethod.Get,server.Address);
+        mainRequest.Headers.Range=new RangeHeaderValue(0,63);
+        using var main=await client.SendAsync(mainRequest,HttpCompletionOption.ResponseHeadersRead,timeout.Token);
+        await source.MainStarted.Task.WaitAsync(timeout.Token);
+        using var probeRequest=new HttpRequestMessage(HttpMethod.Get,server.Address);probeRequest.Headers.Range=new RangeHeaderValue(100000,100063);
+        var probeResponse=client.SendAsync(probeRequest,timeout.Token);
+        await source.ProbeStarted.Task.WaitAsync(timeout.Token);
+        var previous=source.MainReads;await Task.Delay(750,timeout.Token);
+        Assert.Equal(previous,source.MainReads);
+        source.ProbeAvailable.TrySetResult();using var probe=await probeResponse;
+        Assert.Equal(64,(await probe.Content.ReadAsByteArrayAsync(timeout.Token)).Length);
+        source.MainAvailable.TrySetResult();Assert.Equal(64,(await main.Content.ReadAsByteArrayAsync(timeout.Token)).Length);
+    }
+
+    sealed class CompetingReads : MemoryStream
+    {
+        public TaskCompletionSource MainStarted {get;}=new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ProbeStarted {get;}=new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource MainAvailable {get;}=new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ProbeAvailable {get;}=new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public int MainReads;
+        public CompetingReads():base(new byte[100064]){}
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer,CancellationToken token=default)
+        {
+            if(Position==0) {Interlocked.Increment(ref MainReads);MainStarted.TrySetResult();await MainAvailable.Task.WaitAsync(token);}
+            else {ProbeStarted.TrySetResult();await ProbeAvailable.Task.WaitAsync(token);}
+            return await base.ReadAsync(buffer,token);
+        }
+    }
+
+    sealed class DelayedVideoStream : MemoryStream
+    {
+        public TaskCompletionSource FirstRead { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public DelayedVideoStream() : base(new byte[200000]) { }
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default)
+        {
+            if (Position == 0) { FirstRead.TrySetResult(); await Release.Task.WaitAsync(token); }
+            return await base.ReadAsync(buffer, token);
+        }
+    }
+
     static EngineSettings OfflineSettings(string cache, int port = 0, int rate = 0) => new EngineSettingsBuilder {
         CacheDirectory = cache, DhtEndPoint = null, AllowLocalPeerDiscovery = false, AllowPortForwarding = false,
         ListenEndPoints = new Dictionary<string, IPEndPoint> { ["ipv4"] = new(IPAddress.Loopback, port) },
@@ -182,6 +249,122 @@ public sealed class OnlineAnimeTests
         var preserved = await check.Episodes.SingleAsync(e => e.Id == id);
         Assert.Equal(4, preserved.Rating); Assert.Equal(WatchStatus.Completed, preserved.Status);
         Assert.Empty(await check.MediaFiles.Where(f => f.IsCloud).ToListAsync());
+    }
+
+    [Fact]
+    public void MagnetWithSpacesUnicodeAndEncodedParametersKeepsHashAndTrackers()
+    {
+        const string hash = "0123456789abcdef0123456789abcdef01234567";
+        var raw = $"magnet:?xt=urn%3Abtih%3A{hash}&dn=[Group] Season 2 | TEST×SERIES&tr=http://localhost:7777/announce&tr=udp://localhost:80/announce";
+        var normalized = OnlineAnimeService.NormalizeMagnet(raw);
+        var magnet = MagnetLink.Parse(normalized);
+        Assert.Equal(hash, magnet.InfoHashes.V1!.ToHex().ToLowerInvariant());
+        Assert.Equal("[Group] Season 2 | TEST×SERIES", magnet.Name);
+        Assert.Equal(2, magnet.AnnounceUrls.Count);
+        Assert.Equal(normalized, OnlineAnimeService.NormalizeMagnet(normalized));
+    }
+
+    [Fact]
+    public async Task EpisodesWaitUntilOpenedAndOnlySelectedVideoDownloads()
+    {
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+        var root = Path.Combine(Path.GetTempPath(), "AniT.OnDemand.Tests", Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
+        var source = await CreateTorrentAsync(root, 3, 2 * 1024 * 1024);
+        var seedPort = FreePort();
+        using var seedEngine = new ClientEngine(OfflineSettings(Path.Combine(root,"seed-cache"), seedPort));
+        var seed = await seedEngine.AddAsync(await Torrent.LoadAsync(source), root);
+        await seed.HashCheckAsync(false); await seed.StartAsync();
+        var dbPath = Path.Combine(root,"db.sqlite"); var state = Path.Combine(root,"state");
+        Guid firstId;
+        await using (var service = new OnlineAnimeService(dbPath, state, OfflineSettings(Path.Combine(root,"cache"), rate: 256 * 1024))) {
+            var id = await service.AddAsync(source, root, "Autorizado", true, deadline.Token);
+            var engine = (ClientEngine)typeof(OnlineAnimeService).GetField("engine",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(service)!;
+            var manager = engine.Torrents.Single();
+            Assert.Equal(TorrentState.Stopped, manager.State);
+            Assert.All(manager.Files, f => Assert.Equal(Priority.DoNotDownload, f.Priority));
+            Assert.Equal(0, manager.Monitor.DataBytesReceived);
+            Assert.True(Assert.Single(await service.SnapshotAsync()).WaitingForSelection);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => service.SetPausedAsync(id,false));
+            using var db = AniTDatabase.Create(dbPath);
+            var files = await db.MediaFiles.OrderBy(f=>f.OnlineFileIndex).ToListAsync(); firstId=files[0].EpisodeId;
+            await manager.AddPeerAsync(new PeerInfo(new Uri($"ipv4://127.0.0.1:{seedPort}")));
+            var firstAddress = await service.OpenStreamAsync(files[0],deadline.Token);
+            Assert.Equal(Priority.Normal,manager.Files[files[0].OnlineFileIndex].Priority);
+            Assert.All(manager.Files.Where((_,i)=>i!=files[0].OnlineFileIndex),f=>Assert.Equal(Priority.DoNotDownload,f.Priority));
+            var active=Assert.Single(await service.SnapshotAsync()); Assert.True(active.Episodes.Single(e=>e.EpisodeId==firstId).IsSelected);
+            Assert.All(active.Episodes.Where(e=>e.EpisodeId!=firstId), e=>Assert.False(e.IsSelected));
+            _ = await service.OpenStreamAsync(files[2],deadline.Token);
+            await service.PausePlaybackAsync(firstAddress);
+            Assert.False(Assert.Single(await service.SnapshotAsync()).Paused);
+            Assert.Equal(Priority.Normal,manager.Files[files[2].OnlineFileIndex].Priority);
+            Assert.All(manager.Files.Where((_,i)=>i!=files[2].OnlineFileIndex),f=>Assert.Equal(Priority.DoNotDownload,f.Priority));
+            await service.PausePlaybackAsync();
+            Assert.True(Assert.Single(await service.SnapshotAsync()).Paused);
+        }
+        // Legacy manifests can say "not paused" without having a selected episode.
+        var manifests = System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(state,"downloads.json")))!.AsArray();
+        manifests[0]!["Paused"]=false; manifests[0]!.AsObject().Remove("SelectedFileIndex");
+        await File.WriteAllTextAsync(Path.Combine(state,"downloads.json"),manifests.ToJsonString());
+        await using (var restored = new OnlineAnimeService(dbPath,state,OfflineSettings(Path.Combine(root,"cache")))) {
+            var row = Assert.Single(await restored.SnapshotAsync()); Assert.True(row.WaitingForSelection); Assert.True(row.Paused);
+            var engine=(ClientEngine)typeof(OnlineAnimeService).GetField("engine",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(restored)!;
+            Assert.Equal(TorrentState.Stopped,engine.Torrents.Single().State);
+            Assert.All(engine.Torrents.Single().Files,f=>Assert.Equal(Priority.DoNotDownload,f.Priority));
+            Assert.Contains(row.Episodes,e=>e.EpisodeId==firstId);
+        }
+        await seed.StopAsync();
+    }
+
+
+    [Fact]
+    public async Task StartupDoesNotWaitForUnavailableTailWithFourMiBPieces()
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var root=Path.Combine(Path.GetTempPath(),"AniT.Online.Startup",Guid.NewGuid().ToString("N"));
+        var original=Path.Combine(root,"Original"); Directory.CreateDirectory(original);
+        var path=Path.Combine(original,"Authorized - 01.mkv");
+        var data=new byte[16*1024*1024];new Random(17).NextBytes(data);await File.WriteAllBytesAsync(path,data,timeout.Token);
+        var torrent=await new TorrentCreator { PieceLength=4*1024*1024 }.CreateAsync(new TorrentFileSource(original));
+        var metadata=Path.Combine(root,"test.torrent");await File.WriteAllBytesAsync(metadata,torrent.Encode(),timeout.Token);
+        // This peer has the beginning but neither of the final two pieces. Old tail-first
+        // prebuffer cannot finish; the new path must serve a verified prefix regardless.
+        Array.Clear(data,8*1024*1024,8*1024*1024);await File.WriteAllBytesAsync(path,data,timeout.Token);
+        var port=FreePort();using var seedEngine=new ClientEngine(OfflineSettings(Path.Combine(root,"seed"),port));
+        var seed=await seedEngine.AddAsync(await Torrent.LoadAsync(metadata),original);await seed.HashCheckAsync(false);await seed.StartAsync();
+        Assert.True(seed.Bitfield[0]);Assert.False(seed.Bitfield[2]);Assert.False(seed.Bitfield[3]);
+        await using var service=new OnlineAnimeService(Path.Combine(root,"db.sqlite"),Path.Combine(root,"state"),OfflineSettings(Path.Combine(root,"client")));
+        await service.AddAsync(metadata,root,"Autorizado",true,timeout.Token);
+        var engine=(ClientEngine)typeof(OnlineAnimeService).GetField("engine",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(service)!;
+        await engine.Torrents.Single().AddPeerAsync(new PeerInfo(new Uri($"ipv4://127.0.0.1:{port}")));
+        using var db=AniTDatabase.Create(Path.Combine(root,"db.sqlite"));var file=await db.MediaFiles.SingleAsync(timeout.Token);
+        var address=await service.OpenStreamAsync(file,timeout.Token);
+        using var client=new HttpClient();using var request=new HttpRequestMessage(HttpMethod.Get,address);
+        request.Headers.Range=new RangeHeaderValue(0,1023);
+        var response=await client.SendAsync(request,timeout.Token);
+        Assert.Equal(data[..1024],await response.Content.ReadAsByteArrayAsync(timeout.Token));
+        Assert.False(engine.Torrents.Single().Bitfield[3]);
+        await seed.StopAsync();
+    }
+
+    [Fact]
+    public async Task AutomaticImportCleansTitleOrdersEpisodesAndKeepsExistingLibraryIdentity()
+    {
+        var root=Path.Combine(Path.GetTempPath(),"AniT.Online.Automatic",Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
+        var original=Path.Combine(root,"SPY.x.FAMILY.S02.1080p.WEBRip.MULTi.x265-group");Directory.CreateDirectory(original);
+        foreach(var number in new[]{12,3,1})await File.WriteAllBytesAsync(Path.Combine(original,$"[Group] SPY.x.FAMILY.S02E{number:00}.1080p.WEBRip.x265-releasegroup.mkv"),new byte[4096]);
+        var torrent=await new TorrentCreator{PieceLength=32768}.CreateAsync(new TorrentFileSource(original));var metadata=Path.Combine(root,"test.torrent");await File.WriteAllBytesAsync(metadata,torrent.Encode());
+        var database=Path.Combine(root,"db.sqlite");
+        Guid animeId;
+        using(var db=AniTDatabase.Create(database)) {var anime=new Anime {Title="Spy x Family"};animeId=anime.Id;db.Anime.Add(anime);await db.SaveChangesAsync();}
+        await using var service=new OnlineAnimeService(database,Path.Combine(root,"state"),OfflineSettings(Path.Combine(root,"cache")));
+        await service.AddAsync(metadata,root,"",true);
+        using(var db=AniTDatabase.Create(database)) {
+            var anime=Assert.Single(await db.Anime.ToListAsync());Assert.Equal(animeId,anime.Id);
+            Assert.All(await db.Episodes.ToListAsync(),episode=>Assert.StartsWith("Episódio ",episode.Title));
+            Assert.All(await db.Seasons.ToListAsync(),season=>Assert.Equal(2,season.Number));
+        }
+        var snapshot=Assert.Single(await service.SnapshotAsync());Assert.Equal(new[]{"S02E01","S02E03","S02E12"},snapshot.Episodes.Select(episode=>episode.Title));
+        Assert.True(snapshot.WaitingForSelection);
     }
 
     static int FreePort() { var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0); listener.Start(); var port = ((IPEndPoint)listener.LocalEndpoint).Port; listener.Stop(); return port; }

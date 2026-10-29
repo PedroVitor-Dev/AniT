@@ -14,6 +14,7 @@ O AniT é distribuído sob a GNU General Public License v3.0. As compilações d
 | Mono.Nat | 3.0.0 | MIT | Dependência do motor BitTorrent; texto em `Licenses/Online/mono.nat-LICENSE.md.txt` |
 | ReusableTasks | 4.0.0 | MIT | Tarefas assíncronas do motor BitTorrent; texto em `Licenses/Online/reusabletasks-LICENSE.md.txt` |
 | SQLitePCLRaw | 2.1.12 | Apache-2.0 | Integração nativa com SQLite |
+| mpv (Windows build shinchiro) | 20261021 / e471496c56 | GPL-3.0-or-later e licenças das dependências upstream | Reprodução progressiva do Online Anime Player Beta; licença e origem em `Licenses/Mpv/` |
 | MPC-HC e componentes incluídos em sua distribuição portátil | 2.8.2 | GPL-3.0 e licenças indicadas pelo projeto upstream | Reprodução integrada |
 
 O texto de licença fornecido com o MPC-HC deve permanecer no diretório `Player/MPC-HC/COPYING.txt` de todo pacote do AniT. Consulte também o [repositório oficial do MPC-HC](https://github.com/clsid2/mpc-hc).

@@ -25,16 +25,17 @@ public partial class App : Application
     public static global::AniT.Core.Achievements.IAchievementService Achievements { get; private set; } = null!;
     private static global::AniT.Infrastructure.AnimeCoverProvider animeCoverProvider = null!;
     private static Guid? activeEpisodeId;
+    private static bool activePlaybackIsOnlineStream;
+    private static Uri? activeOnlineAddress;
     private static DateTimeOffset lastProgressWrite;
     private static CancellationTokenSource? playbackMonitorCancellation;
     private static readonly SemaphoreSlim playbackPersistenceLock = new(1, 1);
+    private static readonly SemaphoreSlim playbackStartLock = new(1, 1);
     private static string databasePath = string.Empty;
     private static string dataRootPath = string.Empty;
     private static readonly global::AniT.Infrastructure.AniTBackupService backupService = new();
     private static readonly global::AniT.Infrastructure.AutomaticBackupService automaticBackupService = new(backupService);
     private static string PendingRelinkMarkerPath => Path.Combine(dataRootPath, "Data", "pending-library-relink");
-    private static DateTimeOffset activePlaybackStartedAt;
-    private static TimeSpan activePlaybackStartPosition;
     private static PlaybackSegments? activePlaybackSegments;
     private static global::AniT.Infrastructure.AniTSystemSettings activePlaybackSettings = global::AniT.Infrastructure.AniTSystemSettings.Default;
     private static long playbackSession;
@@ -846,6 +847,13 @@ public partial class App : Application
 
     public static async Task PlayEpisodeAsync(Guid episodeId)
     {
+        if (!await playbackStartLock.WaitAsync(0)) return;
+        try { await StartEpisodeCoreAsync(episodeId); }
+        finally { playbackStartLock.Release(); }
+    }
+
+    private static async Task StartEpisodeCoreAsync(Guid episodeId)
+    {
         var playbackSettings = global::AniT.Infrastructure.AniTSystemSettingsStore.Load();
         if (playbackSettings.PlaybackPlayerMode == global::AniT.Infrastructure.PlaybackPlayerMode.IntegratedMpcHc && MediaPlayer is null)
             throw new InvalidOperationException("O MPC-HC integrado não foi encontrado. Reinstale o AniT ou escolha o aplicativo padrão do Windows nas configurações.");
@@ -865,18 +873,23 @@ public partial class App : Application
             .FirstOrDefault(file => file.IsCloud || global::System.IO.File.Exists(global::System.IO.Path.Combine(file.LibraryRoot!.Path, file.RelativePath)));
         if (mediaFile is null) throw new InvalidOperationException("Nenhuma versão disponível deste episódio foi encontrada. Atualize a Biblioteca ou conecte o disco onde o arquivo está salvo.");
 
+        MediaPlayer?.CancelOnlinePreparation();
         var mediaPath = global::System.IO.Path.Combine(mediaFile.LibraryRoot!.Path, mediaFile.RelativePath);
         Uri? onlineAddress = null;
+        if (!mediaFile.IsCloud) await PauseOnlinePlaybackAsync();
         if (mediaFile.IsCloud)
         {
             if (MediaPlayer is null) throw new InvalidOperationException("O streaming exige o MPC-HC integrado. Ative-o nas configurações de reprodução.");
             onlineAddress = await PrepareOnlineStreamAsync(mediaFile);
         }
         activeEpisodeId = episodeId;
+        activePlaybackIsOnlineStream = onlineAddress is not null;
+        activeOnlineAddress = onlineAddress;
         activePlaybackSettings = playbackSettings;
         activePlaybackSegments = LoadPlaybackSegments(mediaPath);
         TimeSpan? resumeAt = playbackSettings.ResumePlayback && episode.PlaybackProgress is { PositionSeconds: > 0 } progress
-            ? TimeSpan.FromSeconds(progress.PositionSeconds)
+            ? global::AniT.Core.PlaybackEvidence.ResumePosition(TimeSpan.FromSeconds(progress.PositionSeconds),
+                progress.DurationSeconds > 0 ? TimeSpan.FromSeconds(progress.DurationSeconds) : null)
             : null;
         if (playbackSettings.SkipOpening && activePlaybackSegments is { OpeningEndSeconds: > 0 } segments &&
             (resumeAt is null || resumeAt.Value.TotalSeconds < segments.OpeningEndSeconds))
@@ -894,11 +907,12 @@ public partial class App : Application
         var options = new global::AniT.Player.MpcHcPlaybackOptions(
             playbackSettings.DefaultPlaybackSpeed, playbackSettings.StartPlaybackFullscreen,
             playbackSettings.PreferredAudioLanguage, playbackSettings.PreferredSubtitleLanguage);
-        if (onlineAddress is not null) await MediaPlayer!.PlayStreamAsync(onlineAddress, resumeAt, options);
+        if (onlineAddress is not null) {
+            try { await MediaPlayer!.PlayStreamAsync(onlineAddress, resumeAt, options); }
+            catch { await PauseOnlinePlaybackAsync(onlineAddress); throw; }
+        }
         else await MediaPlayer!.PlayAsync(mediaFile, resumeAt, options);
-        activePlaybackStartPosition = resumeAt ?? TimeSpan.Zero;
-        activePlaybackStartedAt = DateTimeOffset.UtcNow;
-        lastProgressWrite = activePlaybackStartedAt;
+        lastProgressWrite = DateTimeOffset.UtcNow;
         await MarkEpisodeAsWatchingAsync(episodeId);
         await Achievements.RecordAsync(new global::AniT.Core.Achievements.AchievementEvent(
             global::AniT.Core.Achievements.AchievementEventType.EpisodeStarted,
@@ -983,13 +997,15 @@ public partial class App : Application
         {
             var normalizedAlias = global::AniT.Core.AnimeTitleNormalizer.Normalize(alias);
             if (normalizedAlias.Length == 0 || !knownAliases.Add(normalizedAlias)) continue;
-            anime.Aliases.Add(new global::AniT.Core.AnimeAlias
+            var importedAlias = new global::AniT.Core.AnimeAlias
             {
                 AnimeId = anime.Id,
                 Alias = alias,
                 NormalizedAlias = normalizedAlias,
                 Source = global::AniT.Core.AnimeAliasSource.Imported
-            });
+            };
+            context.Add(importedAlias);
+            anime.Aliases.Add(importedAlias);
         }
         await context.SaveChangesAsync(cancellationToken);
         return metadata;
@@ -1088,19 +1104,22 @@ public partial class App : Application
         if (MediaPlayer is not null) return;
         var playerPath = ResolveBundledPlayerPath();
         if (!global::System.IO.File.Exists(playerPath)) return;
-        MediaPlayer = new global::AniT.Player.MpcHcPlayer(playerPath);
+        MediaPlayer = new global::AniT.Player.MpcHcPlayer(playerPath, onlineStreaming: true, prepareOnlineSeek: (address, token) => online is { } service ? service.PrepareSeekIndexAsync(address, token) : Task.FromResult(false));
         MediaPlayer.PositionChanged += async (_, progress) => await PersistProgressAsync(progress);
         MediaPlayer.PlaybackEnded += async (_, _) => await CompleteActiveEpisodeAsync();
         MediaPlayer.PlaybackClosed += async (_, progress) =>
         {
+            var closedAddress = activeOnlineAddress;
             playbackMonitorCancellation?.Cancel();
             await PersistProgressAsync(progress, force: true);
+            if (closedAddress is not null) await PauseOnlinePlaybackAsync(closedAddress);
         };
         MediaPlayer.Diagnostic += (_, message) => WritePlaybackLog($"[MPC] {message}");
     }
 
     private static async Task PersistProgressAsync(global::AniT.Core.PlaybackPositionChangedEventArgs progress, bool force = false)
     {
+        if (!progress.IsPositionKnown) return;
         await playbackPersistenceLock.WaitAsync();
         try
         {
@@ -1113,15 +1132,6 @@ public partial class App : Application
             var episode = await context.Episodes.FirstOrDefaultAsync(item => item.Id == episodeId);
             if (episode is null) return;
             var position = progress.Position;
-            if (position == TimeSpan.Zero && activePlaybackStartedAt != default)
-            {
-                position = activePlaybackStartPosition + (DateTimeOffset.UtcNow - activePlaybackStartedAt);
-            }
-            else if (progress.Position > TimeSpan.Zero)
-            {
-                activePlaybackStartPosition = progress.Position;
-                activePlaybackStartedAt = DateTimeOffset.UtcNow;
-            }
             var savedProgress = await context.PlaybackProgresses.SingleOrDefaultAsync(item => item.EpisodeId == episodeId);
             if (savedProgress is null)
             {
@@ -1180,17 +1190,17 @@ public partial class App : Application
                 {
                     position = await MediaPlayer.GetPositionAsync(cancellationToken);
                 }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { return; }
                 catch
                 {
-                    position = activePlaybackStartPosition + (DateTimeOffset.UtcNow - activePlaybackStartedAt);
+                    // Loading, buffering and an unresponsive player are not watched time.
+                    continue;
                 }
                 if (activePlaybackSettings.SkipEnding && activePlaybackSegments is { EndingStartSeconds: > 0, EndingEndSeconds: > 0 } segments &&
                     position.TotalSeconds >= segments.EndingStartSeconds && position.TotalSeconds < segments.EndingEndSeconds)
                 {
                     position = TimeSpan.FromSeconds(segments.EndingEndSeconds);
                     await MediaPlayer.SeekAsync(position, cancellationToken);
-                    activePlaybackStartPosition = position;
-                    activePlaybackStartedAt = DateTimeOffset.UtcNow;
                 }
                 await PersistProgressAsync(new global::AniT.Core.PlaybackPositionChangedEventArgs(position, null));
             }
@@ -1200,10 +1210,7 @@ public partial class App : Application
             }
             catch
             {
-                // The player can close before its disconnect notification reaches the host window.
-                // Persist the elapsed fallback once more instead of silently losing the session.
-                await PersistProgressAsync(new global::AniT.Core.PlaybackPositionChangedEventArgs(
-                    activePlaybackStartPosition + (DateTimeOffset.UtcNow - activePlaybackStartedAt), null), force: true);
+                // PlaybackClosed persists the last confirmed position. Never substitute wall-clock time.
                 return;
             }
         }
@@ -1244,6 +1251,24 @@ public partial class App : Application
 
     private static async Task CompleteActiveEpisodeAsync()
     {
+        var endingEpisode = activeEpisodeId;
+        if (activePlaybackIsOnlineStream && !global::AniT.Core.PlaybackEvidence.IsNearEnd(
+                MediaPlayer?.LastReportedPosition, MediaPlayer?.Duration, activePlaybackSettings.ProgressSaveIntervalSeconds))
+        {
+            TimeSpan? finalPosition = null;
+            if (MediaPlayer is { } player)
+            {
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                try { finalPosition = await player.GetPositionAsync(timeout.Token); }
+                catch { }
+            }
+            if (activeEpisodeId != endingEpisode || !global::AniT.Core.PlaybackEvidence.IsNearEnd(
+                    finalPosition, MediaPlayer?.Duration, activePlaybackSettings.ProgressSaveIntervalSeconds))
+            {
+                WritePlaybackLog("[MPC] Fim de stream sem posição próxima do final; preservando progresso e estado do episódio.");
+                return;
+            }
+        }
         Guid? nextEpisodeId = null;
         await playbackPersistenceLock.WaitAsync();
         try
