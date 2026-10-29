@@ -55,7 +55,7 @@ public partial class OnlineAnimeWindow : Window
         try
         {
             string? folder;
-            using (var db = App.OpenFreshDatabase()) folder = db.LibraryRoots.AsNoTracking().Where(root => root.IsEnabled).OrderBy(root => root.AddedAt).Select(root => root.Path).AsEnumerable().FirstOrDefault(Directory.Exists);
+            using (var db = App.OpenFreshDatabase()) folder = App.FindOnlineImportFolder(db);
             if (folder is null)
             {
                 var picker = new OpenFolderDialog { Title = "Escolha a pasta padrão dos seus animes" };

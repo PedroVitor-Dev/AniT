@@ -33,6 +33,18 @@ internal static class OnlineImportFlowChecks
                 typeof(App).GetField("databasePath", flags)!.SetValue(null, database);
                 typeof(App).GetField("online", flags)!.SetValue(null, service);
                 typeof(App).GetField("animeCoverProvider", flags)!.SetValue(null, new AnimeCoverProvider(Path.Combine(root, "covers"), client));
+                using (var roots = AniTDatabase.Create(database))
+                {
+                    if (App.FindOnlineImportFolder(roots) is not null) throw new Exception("Empty library must ask for a folder");
+                    var disabledFolder = Path.Combine(root, "disabled"); Directory.CreateDirectory(disabledFolder);
+                    roots.LibraryRoots.AddRange(
+                        new AniT.Core.LibraryRoot { Path = disabledFolder, IsEnabled = false, AddedAt = DateTimeOffset.UtcNow.AddDays(-4) },
+                        new AniT.Core.LibraryRoot { Path = Path.Combine(root, "missing"), AddedAt = DateTimeOffset.UtcNow.AddDays(-3) },
+                        new AniT.Core.LibraryRoot { Path = root, AddedAt = DateTimeOffset.UtcNow.AddDays(-2) },
+                        new AniT.Core.LibraryRoot { Path = original, AddedAt = DateTimeOffset.UtcNow.AddDays(-1) });
+                    await roots.SaveChangesAsync();
+                    if (App.FindOnlineImportFolder(roots) != root) throw new Exception("Default folder must ignore disabled/missing roots and order dates on the client");
+                }
                 var imported = await App.ImportOnlineAnimeAsync(source, root, new NoopProgress(), CancellationToken.None);
                 using var db = AniTDatabase.Create(database); var anime = await db.Anime.SingleAsync();
                 if (imported.Title != "Clear Sky" || imported.Episodes != 3 || imported.ArtworkPending) throw new Exception("Import did not resolve canonical title, episodes and artwork: " + imported);

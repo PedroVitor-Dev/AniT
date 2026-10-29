@@ -10,6 +10,13 @@ namespace AniT.App;
 internal sealed record OnlineImportResult(string Title, int Episodes, bool ArtworkPending);
 public partial class App
 {
+    internal static string? FindOnlineImportFolder(AniTDbContext db)
+        // SQLite cannot order DateTimeOffset values; sort the small root list in memory.
+        => db.LibraryRoots.AsNoTracking().Where(root => root.IsEnabled)
+            .Select(root => new { root.Path, root.AddedAt }).AsEnumerable()
+            .OrderBy(root => root.AddedAt).Select(root => root.Path)
+            .FirstOrDefault(System.IO.Directory.Exists);
+
     internal static async Task<OnlineImportResult> ImportOnlineAnimeAsync(string source, string destination, IProgress<OnlineImportProgress> progress, CancellationToken token)
     {
         Guid[] existing;
