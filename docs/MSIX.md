@@ -10,6 +10,8 @@ Copie literalmente do Partner Center → AniT → Gerenciamento do produto → I
 - `Package/Identity/Publisher` (valor completo com `CN=`)
 - `Package/Properties/PublisherDisplayName`
 
+A identidade oficial fornecida pelo publicador está registrada em `installer/msix/StoreIdentity.json`. São identificadores públicos do pacote, não credenciais. O PublisherId calculado foi conferido com o Package Family Name exibido no Partner Center.
+
 O nome reservado mostrado ao usuário deve ser AniT. Uma identidade de desenvolvimento não deve ser enviada ao cadastro público. O script recebe esses campos como parâmetros e não inventa a identidade da Store.
 
 ## Gerar
