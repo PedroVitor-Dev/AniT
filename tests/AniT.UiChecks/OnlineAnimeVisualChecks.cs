@@ -68,7 +68,8 @@ internal static class OnlineAnimeVisualChecks
             SynchronizationContext.SetSynchronizationContext(previous);
             if (!Descendants(buffer).OfType<TextBlock>().Any(t => t.Text.Contains("Organizando a abertura"))) throw new Exception("Preparation must describe work before peers are queried");
             progress.Report(new OnlinePreparationProgress(0, 0, 0, 0, null, Stage: "Lendo sua lista de episódios…", TransferStarted: false)); Flush();
-            if (!Descendants(buffer).OfType<TextBlock>().Any(t => t.Text.Contains("Lendo sua lista") && t.Text.Contains("de espera"))) throw new Exception("Preparation must show initial phase and elapsed time");
+            if (!Descendants(buffer).OfType<TextBlock>().Any(t => t.Text.Contains("Lendo sua lista"))) throw new Exception("Preparation must show initial phase");
+            if (!Descendants(buffer).OfType<TextBlock>().Any(t => t.Text.Contains("de espera"))) throw new Exception("Preparation must show elapsed time");
             Task.Run(() => progress.Report(new OnlinePreparationProgress(0, 0, 0, 0, null))).GetAwaiter().GetResult(); Flush();
             if (!Descendants(buffer).OfType<TextBlock>().Any(t => t.Text.Contains("Procurando fontes"))) throw new Exception("Preparation must explain missing peers");
             Task.Run(() => progress.Report(new OnlinePreparationProgress(1000000, 500000, 3, 1.2, null))).GetAwaiter().GetResult(); Flush();

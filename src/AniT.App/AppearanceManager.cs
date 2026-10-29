@@ -26,6 +26,8 @@ internal static class AppearanceManager
     private static AniTSystemSettings current = AniTSystemSettings.Default;
     private static bool initialized;
 
+    internal static bool MotionReduced => current.ReduceMotion || current.AnimationIntensity == 0 || !SystemParameters.ClientAreaAnimation;
+
     public static void Initialize(Application application)
     {
         if (!initialized)

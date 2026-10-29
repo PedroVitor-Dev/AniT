@@ -1,0 +1,49 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Local to the online player. All text and surfaces follow AppearanceManager. -->
+    <Style x:Key="PlayerText" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Segoe UI"/><Setter Property="FontSize" Value="14"/>
+        <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/><Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <Style x:Key="PlayerCaption" TargetType="TextBlock" BasedOn="{StaticResource PlayerText}">
+        <Setter Property="FontSize" Value="12"/><Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextSecondary}"/>
+    </Style>
+    <Style x:Key="PlayerAction" TargetType="Button">
+        <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/>
+        <Setter Property="Background" Value="{DynamicResource AniT.Brush.SurfaceAlt}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AniT.Brush.Border}"/>
+        <Setter Property="Padding" Value="16,10"/><Setter Property="MinHeight" Value="44"/>
+        <Setter Property="FontSize" Value="14"/><Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+            <Border x:Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="{TemplateBinding Padding}">
+                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource AniT.Brush.SurfaceHover}"/></Trigger>
+                <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource AniT.Brush.TextPrimary}"/><Setter TargetName="Surface" Property="BorderThickness" Value="2"/></Trigger>
+                <Trigger Property="IsPressed" Value="True"><Setter TargetName="Surface" Property="Opacity" Value="0.75"/></Trigger>
+                <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.55"/><Setter Property="Cursor" Value="Arrow"/></Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style x:Key="PlayerIcon" TargetType="Button" BasedOn="{StaticResource PlayerAction}">
+        <Setter Property="Width" Value="48"/><Setter Property="Height" Value="48"/><Setter Property="Padding" Value="4"/>
+        <Setter Property="Margin" Value="3"/>
+    </Style>
+    <Style x:Key="PlayerTrack" TargetType="Slider">
+        <Setter Property="MinHeight" Value="32"/><Setter Property="Foreground" Value="{DynamicResource AniT.Brush.AccentCyan}"/>
+        <Setter Property="Background" Value="{DynamicResource AniT.Brush.Border}"/>
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Slider">
+            <Grid VerticalAlignment="Center" Height="32">
+                <Border Height="4" CornerRadius="2" Background="{TemplateBinding Background}" VerticalAlignment="Center"/>
+                <Track x:Name="PART_Track" Height="32">
+                    <Track.DecreaseRepeatButton><RepeatButton Command="Slider.DecreaseLarge" Focusable="False"><RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Background="{DynamicResource AniT.Brush.AccentCyan}" Height="4" CornerRadius="2"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.DecreaseRepeatButton>
+                    <Track.Thumb><Thumb Width="16" Height="32"><Thumb.Template><ControlTemplate TargetType="Thumb"><Ellipse Width="12" Height="12" Fill="{DynamicResource AniT.Brush.TextPrimary}" Stroke="{DynamicResource AniT.Brush.AccentCyan}" StrokeThickness="2"/></ControlTemplate></Thumb.Template></Thumb></Track.Thumb>
+                    <Track.IncreaseRepeatButton><RepeatButton Command="Slider.IncreaseLarge" Focusable="False" Opacity="0"/></Track.IncreaseRepeatButton>
+                </Track>
+                <Border x:Name="Focus" BorderBrush="{DynamicResource AniT.Brush.TextPrimary}" BorderThickness="1" CornerRadius="6" Visibility="Collapsed" IsHitTestVisible="False"/>
+            </Grid>
+            <ControlTemplate.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Focus" Property="Visibility" Value="Visible"/></Trigger></ControlTemplate.Triggers>
+        </ControlTemplate></Setter.Value></Setter>
+    </Style>
+</ResourceDictionary>

@@ -25,6 +25,12 @@ internal static class Program
             catch (Exception error) { Console.Error.WriteLine(error); return 1; }
             finally { application.Shutdown(); }
         }
+        if (args.Contains("--check-player-design"))
+        {
+            try { OnlinePlayerDesignChecks.Run(); return 0; }
+            catch (Exception error) { Console.Error.WriteLine(error); return 1; }
+            finally { application.Shutdown(); }
+        }
         if (args.Contains("--check-online-import")) return OnlineImportFlowChecks.Run(application);
         if (args.Contains("--check-online-player"))
         {
