@@ -14,6 +14,12 @@ namespace AniT.App;
 
 public partial class DashboardWindow : Window, INotifyPropertyChanged
 {
+    private void SupportProject_Click(object sender, RoutedEventArgs e)
+    {
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://pedrovitor-dev.github.io/AniT/#apoie") { UseShellExecute = true }); }
+        catch (System.Exception) { MessageBox.Show(this, "Não foi possível abrir o navegador. Acesse pedrovitor-dev.github.io/AniT/#apoie para apoiar o projeto.", "Apoiar o AniT", MessageBoxButton.OK, MessageBoxImage.Information); }
+    }
+
     private static readonly Brush ActiveHeroDotBrush = new SolidColorBrush(Color.FromRgb(168, 231, 255));
     private static readonly Brush InactiveHeroDotBrush = new SolidColorBrush(Color.FromRgb(49, 90, 137));
     private readonly DispatcherTimer heroRotationTimer = new() { Interval = TimeSpan.FromSeconds(8) };

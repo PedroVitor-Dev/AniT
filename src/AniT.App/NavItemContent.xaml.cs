@@ -6,6 +6,11 @@ namespace AniT.App;
 
 public partial class NavItemContent : UserControl
 {
+    public static readonly DependencyProperty IsBetaProperty = DependencyProperty.Register(
+        nameof(IsBeta), typeof(bool), typeof(NavItemContent), new PropertyMetadata(false));
+
+    public bool IsBeta { get => (bool)GetValue(IsBetaProperty); set => SetValue(IsBetaProperty, value); }
+
     public static readonly DependencyProperty LabelProperty = DependencyProperty.Register(
         nameof(Label),
         typeof(string),

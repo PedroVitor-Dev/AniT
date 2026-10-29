@@ -31,12 +31,18 @@
             </Viewbox>
         </Border>
 
-        <TextBlock Grid.Column="1"
+        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+        <TextBlock
                    Text="{Binding Label, ElementName=Root}"
                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                    Tag="ThemeManaged"
                    FontSize="14"
                    FontWeight="Medium"
                    VerticalAlignment="Center"/>
+            <Border HorizontalAlignment="Left" CornerRadius="4" Padding="5,1" Margin="0,3,0,0" BorderThickness="1" BorderBrush="{DynamicResource AniT.Brush.Border}" Background="{DynamicResource AniT.Brush.Surface}">
+                <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding IsBeta, ElementName=Root}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></Border.Style>
+                <TextBlock Text="BETA" FontSize="9" FontWeight="Bold" Tag="ThemeManaged" Foreground="{DynamicResource AniT.Brush.TextPrimary}"/>
+            </Border>
+        </StackPanel>
     </Grid>
 </UserControl>

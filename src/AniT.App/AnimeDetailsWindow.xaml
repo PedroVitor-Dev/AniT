@@ -240,7 +240,7 @@
                     <Button Style="{StaticResource HomeNavButton}" Click="Back_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Home}" Label="Início"/></Button>
                     <Button Style="{StaticResource HomeNavButton}" Click="Explore_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Explore}" Label="Explorar"/></Button>
                     <Button Style="{StaticResource HomeNavButton}" Click="Library_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Library}" Label="Biblioteca"/></Button>
-                    <Button Command="{x:Static local:TheaterNavigation.OpenCommand}" Style="{StaticResource HomeNavButton}"><local:NavItemContent IconData="{StaticResource AniT.Icon.Play}" Label="Movie Theater"/></Button>
+                    <Button Command="{x:Static local:TheaterNavigation.OpenCommand}" Style="{StaticResource HomeNavButton}"><local:NavItemContent IconData="{StaticResource AniT.Icon.Play}" Label="Movie Theater" IsBeta="True"/></Button>
                     <local:OnlineAnimeNavButton/>
                     <Button Style="{StaticResource HomeNavButton}" Click="Calendar_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.Calendar}" Label="Calendário"/></Button>
                     <Button Style="{StaticResource HomeNavButton}" Click="History_Click"><local:NavItemContent IconData="{StaticResource AniT.Icon.History}" Label="Histórico"/></Button>

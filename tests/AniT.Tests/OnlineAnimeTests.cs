@@ -212,6 +212,67 @@ public sealed class OnlineAnimeTests
     }
 
     [Fact]
+    public async Task SwitchingEpisodesKeepsTheTorrentAndExistingPeerConnectionRunning()
+    {
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+        var root = Path.Combine(Path.GetTempPath(), "AniT.Online.Tests", Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
+        var source = await CreateTorrentAsync(root, 2, 8 * 1024 * 1024);
+        var port = FreePort();
+        using var seedEngine = new ClientEngine(OfflineSettings(Path.Combine(root, "seed"), port));
+        var seed = await seedEngine.AddAsync(await Torrent.LoadAsync(source), root);
+        await seed.HashCheckAsync(false); await seed.StartAsync();
+        await using var service = new OnlineAnimeService(Path.Combine(root, "db"), Path.Combine(root, "state"), OfflineSettings(Path.Combine(root, "cache"), rate: 256 * 1024));
+        await service.AddAsync(source, root, "Autorizado", true, deadline.Token);
+        var engine = (ClientEngine)typeof(OnlineAnimeService).GetField("engine", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(service)!;
+        var manager = engine.Torrents.Single();
+        await manager.AddPeerAsync(new PeerInfo(new Uri($"ipv4://127.0.0.1:{port}")));
+        using var db = AniTDatabase.Create(Path.Combine(root, "db"));
+        var files = await db.MediaFiles.OrderBy(f => f.OnlineFileIndex).ToArrayAsync();
+        await service.OpenStreamAsync(files[0], deadline.Token);
+        Assert.True(manager.OpenConnections > 0);
+        var stopped = false;
+        manager.TorrentStateChanged += (_, change) => { if (change.NewState is TorrentState.Stopped or TorrentState.Stopping) stopped = true; };
+        await service.OpenStreamAsync(files[1], deadline.Token);
+        Assert.False(stopped, "Switching an episode must not shut down the torrent/DHT and disconnect its peers");
+        Assert.True(manager.OpenConnections > 0);
+        var row = Assert.Single(await service.SnapshotAsync(deadline.Token));
+        Assert.Single(row.Episodes, e => e.IsSelected);
+        Assert.Equal(files[1].EpisodeId, row.Episodes.Single(e => e.IsSelected).EpisodeId);
+    }
+
+    [Fact]
+    public async Task SlowTrackersDoNotPreventLaterAlternativesAndCancellationStopsDiscovery()
+    {
+        using var cancel = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+        var reachedLast = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var queries = Enumerable.Range(0, 8).Select(index => (Func<CancellationToken, Task>)(async token => {
+            if (index == 7) reachedLast.TrySetResult();
+            await Task.Delay(Timeout.Infinite, token);
+        })).ToArray();
+        var task = QueryTrackers(queries, cancel.Token);
+        await reachedLast.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        cancel.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task.WaitAsync(TimeSpan.FromSeconds(1)));
+    }
+
+    [Fact]
+    public async Task TrackerTimeoutAndFailureDoNotBlockTheRemainingSources()
+    {
+        var reachedLast = false; var messages = new List<string>();
+        Func<CancellationToken, Task>[] queries = [
+            token => Task.Delay(Timeout.Infinite, token),
+            _ => Task.FromException(new IOException("Unreachable source")),
+            _ => { reachedLast = true; return Task.CompletedTask; }
+        ];
+        await QueryTrackers(queries, CancellationToken.None, message => { lock (messages) messages.Add(message); }).WaitAsync(TimeSpan.FromSeconds(6));
+        Assert.True(reachedLast);
+        Assert.Equal(2, messages.Count);
+    }
+
+    static Task QueryTrackers(IReadOnlyList<Func<CancellationToken, Task>> queries, CancellationToken token, Action<string>? diagnostic = null)
+        => (Task)typeof(OnlineAnimeService).GetMethod("QueryTrackersAsync", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, [queries, diagnostic ?? (_ => { }), token])!;
+
+    [Fact]
     public async Task ImportIntoExistingAnimeKeepsItsEpisodesAndRatings()
     {
         var root = Path.Combine(Path.GetTempPath(), "AniT.Online.Tests", Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);

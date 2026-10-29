@@ -6,6 +6,27 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Não publicado]
 
+## [2.0.2] - 2026-10-29
+
+### Adicionado
+
+- Empacotamento MSIX x64 reproduzível para Microsoft Store, com identidade do Partner Center recebida por parâmetros e manifesto validado pelo MakeAppx.
+
+- Início: cartão de apoio opcional na barra lateral com arte personalizada do Baki-Pi, texto “Mantenha o projeto vivo” e link direto à seção de doações do site.
+
+
+### Corrigido
+
+- Movie Theater: contraste dos avisos de autorização e cabeçalhos de opções acompanha os temas claro/escuro, sem recoloração automática indevida. Recurso identificado como BETA no menu e na janela.
+
+
+### Melhorado
+
+- Online Anime Player: troca de episódios preserva o motor e as conexões do torrent selecionado; os outros downloads são pausados sem desligar a descoberta de fontes.
+- Descoberta consulta até oito trackers declarados em paralelo, com prazo individual de quatro segundos e novas tentativas limitadas quando não há conexões. Anúncios DHT/trackers mantêm os intervalos do MonoTorrent, sem acrescentar trackers externos ou alterar torrents privados.
+- Preparação informa quando está buscando fontes, separadamente do preparo dos trechos de vídeo.
+
+
 ## [2.0.1] - 2026-10-28
 
 ### Melhorado

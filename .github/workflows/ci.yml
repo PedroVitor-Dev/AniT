@@ -35,6 +35,10 @@ jobs:
       - name: Audit NuGet dependencies
         run: dotnet list AniT.slnx package --vulnerable --include-transitive
 
+      - name: Prepare bundled mpv
+        shell: pwsh
+        run: .\scripts\Get-Mpv.ps1 -Destination Player/MPV
+
       - name: Build
         run: dotnet build AniT.slnx --configuration Release --no-restore
 

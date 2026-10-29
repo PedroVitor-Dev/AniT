@@ -23,6 +23,7 @@ public sealed class OnlineAnimeService : IAsyncDisposable
     readonly Dictionary<string, (OnlineJob Job, TorrentManager Manager)> downloads = new();
     readonly CancellationTokenSource lifetime = new();
     OnlineStreamServer? stream;
+    CancellationTokenSource? discoveryCancellation;
     bool restored;
     readonly Dictionary<string, OnlineJob> savedJobs = new();
     readonly HashSet<string> prepared = new();
@@ -303,8 +304,10 @@ public sealed class OnlineAnimeService : IAsyncDisposable
             try {
                 if (!downloads.TryGetValue(file.OnlineTorrentId!, out var entry)) throw new InvalidOperationException("O download não foi encontrado neste perfil.");
                 if (stream is not null) { await stream.DisposeAsync(); stream = null; }
+                discoveryCancellation?.Cancel();
                 foreach (var (id, other) in downloads.ToArray()) {
-                    if (other.Manager.State is not TorrentState.Stopped) await other.Manager.StopAsync();
+                    if (ReferenceEquals(other.Manager, entry.Manager)) continue;
+                    if (other.Manager.State is not (TorrentState.Stopped or TorrentState.Paused)) await other.Manager.PauseAsync();
                     await SelectSafeFilesAsync(other.Manager, other.Job.SavePath, null);
                     var inactive = other.Job with { Paused = true, SelectedFileIndex = null };
                     downloads[id] = (inactive, other.Manager); savedJobs[id] = inactive;
@@ -314,10 +317,12 @@ public sealed class OnlineAnimeService : IAsyncDisposable
                 var selected = entry.Job with { Paused = false, SelectedFileIndex = file.OnlineFileIndex };
                 downloads[selected.Id] = (selected, manager); savedJobs[selected.Id] = selected;
                 await SaveAsync(token);
-                await manager.StartAsync();
+                if (manager.State is not (TorrentState.Downloading or TorrentState.Seeding or TorrentState.Starting)) await manager.StartAsync();
             } finally { gate.Release(); }
             peerDiscovery.RemoveAll(task => task.IsCompleted);
-            peerDiscovery.Add(DiscoverPeersAsync(manager));
+            discoveryCancellation?.Dispose();
+            discoveryCancellation = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
+            peerDiscovery.Add(DiscoverPeersAsync(manager, discoveryCancellation.Token));
             var media = manager.Files[file.OnlineFileIndex];
             var initialReceived = manager.Monitor.DataBytesReceived;
             var initialPiece = media.StartPieceIndex;
@@ -329,7 +334,7 @@ public sealed class OnlineAnimeService : IAsyncDisposable
                 while (!reporting.IsCancellationRequested) {
                     progress?.Report(new OnlinePreparationProgress(manager.Monitor.DataBytesReceived - initialReceived, manager.Monitor.DownloadRate,
                         manager.OpenConnections, media.BitField.PercentComplete, manager.Error?.Reason.ToString(), pieceBytes,
-                        manager.Bitfield[initialPiece], stage));
+                        manager.Bitfield[initialPiece], manager.OpenConnections == 0 ? "Buscando fontes do episódio…" : stage));
                     try { await Task.Delay(500, reporting.Token); } catch (OperationCanceledException) { break; }
                 }
             });
@@ -388,29 +393,42 @@ public sealed class OnlineAnimeService : IAsyncDisposable
         } finally {streamGate.Release();}
     }
 
-    async Task DiscoverPeersAsync(TorrentManager manager)
+    async Task DiscoverPeersAsync(TorrentManager manager, CancellationToken token)
     {
-        // A single tier normally uses one active tracker. Public magnets often put all
-        // their trackers in that tier; ask the declared alternatives without delaying playback.
         if (manager.TrackerManager.Private) return;
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
-        timeout.CancelAfter(TimeSpan.FromSeconds(12));
         var trackers = manager.TrackerManager.Tiers.SelectMany(tier => tier.Trackers).Distinct().Take(16).ToArray();
         try {
-            Diagnostic?.Invoke($"Consultando {trackers.Length} trackers declarados para ampliar as fontes; respeitando seus intervalos.");
-            await Parallel.ForEachAsync(trackers, new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = timeout.Token }, async (tracker, token) => {
-                try { await manager.TrackerManager.AnnounceAsync(tracker, token); }
-                catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostic?.Invoke($"Consulta de fontes: {ex.GetType().Name}."); }
-            });
+            // A dead UDP tracker must not consume the entire discovery window and
+            // prevent later alternatives from ever being queried.
+            for (var round = 0; round < 3; round++) {
+                if (round > 0) await Task.Delay(TimeSpan.FromSeconds(round == 1 ? 8 : 16), token);
+                token.ThrowIfCancellationRequested();
+                if (manager.State is TorrentState.Stopped or TorrentState.Paused) return;
+                await manager.DhtAnnounceAsync(); // MonoTorrent enforces its minimum announce interval.
+                Diagnostic?.Invoke($"Descoberta de fontes: rodada {round + 1}, {trackers.Length} trackers, {manager.OpenConnections} conexões.");
+                var queries = trackers.Select(tracker => (Func<CancellationToken, Task>)(async cancellation => await manager.TrackerManager.AnnounceAsync(tracker, cancellation))).ToArray();
+                await QueryTrackersAsync(queries, message => Diagnostic?.Invoke(message), token);
+                if (manager.OpenConnections > 0) return;
+            }
         } catch (OperationCanceledException) { }
         catch (Exception ex) { Diagnostic?.Invoke($"Consulta de fontes interrompida: {ex.GetType().Name}."); }
     }
+
+    static Task QueryTrackersAsync(IReadOnlyList<Func<CancellationToken, Task>> queries, Action<string> diagnostic, CancellationToken token)
+        => Parallel.ForEachAsync(queries, new ParallelOptions { MaxDegreeOfParallelism = 8, CancellationToken = token }, async (query, cancellation) => {
+            using var attempt = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+            attempt.CancelAfter(TimeSpan.FromSeconds(4));
+            try { await query(attempt.Token); }
+            catch (OperationCanceledException) when (!cancellation.IsCancellationRequested) { diagnostic("Um tracker excedeu 4 s; as outras fontes continuam sendo consultadas."); }
+            catch (Exception ex) when (ex is not OperationCanceledException) { diagnostic($"Consulta de fontes: {ex.GetType().Name}."); }
+        });
 
     public async Task PausePlaybackAsync(Uri? expectedAddress = null)
     {
         await streamGate.WaitAsync();
         try {
             if (expectedAddress is not null && stream?.Address != expectedAddress) return;
+            discoveryCancellation?.Cancel();
             await gate.WaitAsync();
             try {
                 if (stream is not null) { await stream.DisposeAsync(); stream = null; }
@@ -440,7 +458,7 @@ public sealed class OnlineAnimeService : IAsyncDisposable
             await Task.WhenAll(peerDiscovery);
             if (stream is not null) await stream.DisposeAsync();
             foreach (var (_, manager) in downloads.Values) await manager.StopAsync();
-        } finally { engine.Dispose(); gate.Release(); streamGate.Release(); lifetime.Dispose(); }
+        } finally { discoveryCancellation?.Dispose(); engine.Dispose(); gate.Release(); streamGate.Release(); lifetime.Dispose(); }
     }
 }
 
