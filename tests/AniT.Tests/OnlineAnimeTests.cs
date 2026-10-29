@@ -560,4 +560,71 @@ public sealed class OnlineAnimeTests
     }
 
     static int FreePort() { var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0); listener.Start(); var port = ((IPEndPoint)listener.LocalEndpoint).Port; listener.Stop(); return port; }
+    [Fact]
+    public async Task RealTorrentNewestSeekPreemptsBufferingAndKeepsOnlyTheSelectedEpisodeActive()
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(40));
+        var root = Path.Combine(Path.GetTempPath(), "AniT.Seek.Tests", Guid.NewGuid().ToString("N"));
+        var original = Path.Combine(root, "Original"); Directory.CreateDirectory(original);
+        for (var number = 1; number <= 2; number++) {
+            var bytes = new byte[8 * 1024 * 1024]; new Random(number + 180).NextBytes(bytes);
+            await File.WriteAllBytesAsync(Path.Combine(original, $"Authorized Test - {number:00}.mkv"), bytes, timeout.Token);
+        }
+        var metadata = await new TorrentCreator { PieceLength = 2 * 1024 * 1024 }.CreateAsync(new TorrentFileSource(original));
+        var source = Path.Combine(root, "test.torrent"); await File.WriteAllBytesAsync(source, metadata.Encode(), timeout.Token);
+        var port = FreePort(); using var seedEngine = new ClientEngine(OfflineSettings(Path.Combine(root, "seed"), port));
+        var seed = await seedEngine.AddAsync(await Torrent.LoadAsync(source), root); await seed.HashCheckAsync(false); await seed.StartAsync();
+        await using var relay = new TorrentPeerRelay(port, 1024 * 1024);
+        await using var service = new OnlineAnimeService(Path.Combine(root, "db"), Path.Combine(root, "state"), OfflineSettings(Path.Combine(root, "cache")));
+        await service.AddAsync(source, root, "Autorizado", true, timeout.Token);
+        var engine = (ClientEngine)typeof(OnlineAnimeService).GetField("engine", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(service)!;
+        var manager = engine.Torrents.Single();
+        await manager.AddPeerAsync(new PeerInfo(new Uri($"ipv4://127.0.0.1:{relay.Port}")));
+        using var db = AniTDatabase.Create(Path.Combine(root, "db"));
+        var file = await db.MediaFiles.OrderBy(f => f.OnlineFileIndex).LastAsync(timeout.Token);
+        var obsoleteSeek = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var metrics = new System.Collections.Concurrent.ConcurrentBag<OnlinePlaybackMetric>();
+        var oldOffset = 6 * 1024 * 1024; var wantedOffset = 2 * 1024 * 1024;
+        var trace = new OnlinePlaybackTrace(item => {
+            metrics.Add(item);
+            if (item.Name == "read_wait_started" && item.Values["offset_bytes"] == oldOffset) obsoleteSeek.TrySetResult();
+        });
+        var address = await service.OpenStreamAsync(file, timeout.Token, trace: trace);
+        using var client = new HttpClient();
+        using var initialRequest = new HttpRequestMessage(HttpMethod.Get, address); initialRequest.Headers.Range = new RangeHeaderValue(0, 4 * 1024 * 1024 - 1);
+        using var initial = await client.SendAsync(initialRequest, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
+        using var oldCancellation = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token);
+        using var oldRequest = new HttpRequestMessage(HttpMethod.Get, address); oldRequest.Headers.Range = new RangeHeaderValue(oldOffset, oldOffset + 65535);
+        var oldResponse = client.SendAsync(oldRequest, oldCancellation.Token);
+        await obsoleteSeek.Task.WaitAsync(timeout.Token);
+        Assert.False(oldResponse.IsCompleted, "A whole missing 2 MiB piece cannot already have crossed the limited relay");
+        var seeking = System.Diagnostics.Stopwatch.StartNew();
+        using var latestRequest = new HttpRequestMessage(HttpMethod.Get, address); latestRequest.Headers.Range = new RangeHeaderValue(wantedOffset, wantedOffset + 65535);
+        using var latest = await client.SendAsync(latestRequest, timeout.Token).WaitAsync(TimeSpan.FromSeconds(10));
+        var actual = await latest.Content.ReadAsByteArrayAsync(timeout.Token);
+        var expected = await File.ReadAllBytesAsync(Path.Combine(original, "Authorized Test - 02.mkv"), timeout.Token);
+        Assert.Equal(expected[wantedOffset..(wantedOffset + 65536)], actual);
+        Assert.Contains(metrics, item => item.Name == "read_preempted");
+        Assert.All(manager.Files.Where((_, index) => index != file.OnlineFileIndex), other => {
+            Assert.Equal(Priority.DoNotDownload, other.Priority); Assert.Equal(0, other.BitField.TrueCount);
+        });
+        oldCancellation.Cancel();
+        try { using var old = await oldResponse; } catch (OperationCanceledException) { }
+        initial.Dispose();
+        var seekMs = seeking.Elapsed.TotalMilliseconds;
+        trace.Finish("controlled_latest_seek_complete");
+        var output = Environment.GetEnvironmentVariable("ANIT_STREAMING_STEP5_OUTPUT");
+        if (!string.IsNullOrWhiteSpace(output)) {
+            Directory.CreateDirectory(output);
+            await File.WriteAllLinesAsync(Path.Combine(output, "seek-during-buffering.jsonl"), metrics.OrderBy(item => item.Sequence).Select(item => System.Text.Json.JsonSerializer.Serialize(item)));
+            await File.WriteAllTextAsync(Path.Combine(output, "seek-result.json"), System.Text.Json.JsonSerializer.Serialize(new {
+                piece_bytes = 2 * 1024 * 1024, wire_limit_bytes_per_second = 1024 * 1024,
+                latest_seek_ms = seekMs, verified_bytes = actual.Length,
+                received_bytes = manager.Monitor.DataBytesReceived, selected_percent = manager.Files[file.OnlineFileIndex].BitField.PercentComplete,
+                preemptions = metrics.Count(item => item.Name == "read_preempted"), unselected_verified_pieces = 0
+            }));
+        }
+        await service.PausePlaybackAsync(address); await seed.StopAsync();
+    }
+
 }

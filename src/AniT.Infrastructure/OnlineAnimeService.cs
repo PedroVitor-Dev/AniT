@@ -455,13 +455,15 @@ public sealed class OnlineAnimeService : IAsyncDisposable
                     }
                 } catch { await input.DisposeAsync(); throw; }
                 Diagnostic?.Invoke($"Início verificado; liberando player para episódio {file.OnlineFileIndex} com {media.BitField.PercentComplete:0.0}% baixado.");
-                stream = new OnlineStreamServer(input, Path.GetFileName(media.Path), (offset, count) => {
-                    var first = manager.Torrent!.ByteOffsetToPieceIndex(media.OffsetInTorrent + offset);
-                    var last = offset + count == media.Length ? media.EndPieceIndex
-                        : manager.Torrent.ByteOffsetToPieceIndex(media.OffsetInTorrent + offset + count);
-                    for (var piece = first; piece <= last; piece++) if (!manager.Bitfield[piece]) return false;
-                    return true;
-                }) { Diagnostic = message => Diagnostic?.Invoke(message) };
+                bool PhysicalAvailable(long offset, int count) => OnlinePieceRange.IsAvailable(
+                    media.OffsetInTorrent, media.Length, manager.Torrent!.PieceLength, offset, count, piece => manager.Bitfield[piece]);
+                bool Available(long offset, int count) => input is MatroskaStreamingView view
+                    ? view.IsRangeAvailable(offset, count, PhysicalAvailable) : PhysicalAvailable(offset, count);
+                stream = new OnlineStreamServer(input, Path.GetFileName(media.Path), Available) {
+                    Diagnostic = message => Diagnostic?.Invoke(message),
+                    ReadDiagnostic = (name, id, value) => trace?.Event(name, ("request_id", id),
+                        (name is "http_demand_started" or "index_demand_started" or "read_wait_started" ? "offset_bytes" : "elapsed_ms", value))
+                };
                 trace?.Mark("http_stream_ready");
                 return stream.Address;
             } finally { reporting.Cancel(); await reportTask; }
@@ -493,15 +495,18 @@ public sealed class OnlineAnimeService : IAsyncDisposable
         catch { trace.Event("network_sampling_unavailable"); }
     }
 
-    public async Task<bool> PrepareSeekIndexAsync(Uri address,CancellationToken token)
+    public async Task<bool> PrepareSeekIndexAsync(Uri address, CancellationToken token)
     {
-        using var operation=CancellationTokenSource.CreateLinkedTokenSource(token,lifetime.Token);token=operation.Token;
+        using var operation = CancellationTokenSource.CreateLinkedTokenSource(token, lifetime.Token);
+        token = operation.Token;
+        OnlineStreamServer? target;
         await streamGate.WaitAsync(token);
-        try {
-            if(stream?.Address!=address)return false;
-            Diagnostic?.Invoke("Preparando índice verificado para busca precisa, sem baixar os anexos de fontes.");
-            return await stream.PrepareIndexAsync(token);
-        } finally {streamGate.Release();}
+        try { target = stream?.Address == address ? stream : null; }
+        finally { streamGate.Release(); }
+        if (target is null) return false;
+        Diagnostic?.Invoke("Preparando índice sob demanda, sem bloquear a troca ou o fechamento do episódio.");
+        // The server owns cancellation/draining. Never hold streamGate while network pieces are missing.
+        return await target.PrepareIndexAsync(token);
     }
 
     internal static string PeerCacheKey(InfoHashes hashes) => "v1:" + hashes.V1?.ToHex() + ";v2:" + hashes.V2?.ToHex();

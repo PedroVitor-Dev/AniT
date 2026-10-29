@@ -40,6 +40,8 @@ public sealed class MpvOnlinePlayer : IDisposable
     public bool SeekIndexReady => usingIndex;
     CancellationTokenSource? fileLifetime;
     readonly SemaphoreSlim indexing = new(1, 1);
+    readonly object warmingSync = new();
+    CancellationTokenSource? warmingIndex;
     readonly SynchronizationContext? context = SynchronizationContext.Current
         ?? (System.Windows.Application.Current is { } application ? new System.Windows.Threading.DispatcherSynchronizationContext(application.Dispatcher) : null);
     readonly ConcurrentDictionary<int, TaskCompletionSource<JsonElement>> pending = new();
@@ -186,6 +188,9 @@ public sealed class MpvOnlinePlayer : IDisposable
 
     async Task WarmIndexAsync(Uri address, CancellationToken token)
     {
+        using var request = CancellationTokenSource.CreateLinkedTokenSource(token);
+        lock (warmingSync) { warmingIndex?.Cancel(); warmingIndex = request; }
+        token = request.Token;
         try
         {
             while (true)
@@ -219,10 +224,13 @@ public sealed class MpvOnlinePlayer : IDisposable
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { Trace("Índice em segundo plano: " + ex.Message); }
+        finally { lock (warmingSync) { if (ReferenceEquals(warmingIndex, request)) warmingIndex = null; } }
     }
 
     public async Task SeekAsync(TimeSpan target, CancellationToken token = default)
     {
+        // An explicit seek must not queue behind a speculative index fetch that is buffering.
+        lock (warmingSync) warmingIndex?.Cancel();
         using var request = CancellationTokenSource.CreateLinkedTokenSource(token, fileLifetime?.Token ?? lifetime?.Token ?? CancellationToken.None);
         token = request.Token;
         await indexing.WaitAsync(token);
@@ -255,6 +263,7 @@ public sealed class MpvOnlinePlayer : IDisposable
     public void Dispose()
     {
         telemetry?.Finish("disposed");
+        lock (warmingSync) warmingIndex?.Cancel();
         closing = true; fileLifetime?.Cancel(); fileLifetime?.Dispose(); fileLifetime = null; lifetime?.Cancel();
         foreach (var request in pending.Values) request.TrySetCanceled(); pending.Clear(); loaded?.TrySetCanceled();
         pipe?.Dispose(); pipe = null;

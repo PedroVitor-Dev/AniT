@@ -68,3 +68,28 @@ Validação controlada: o teste de streaming HTTP usa um seed local autorizado e
 ## Etapa 4 — comparação dos motores
 
 A avaliação e a decisão estão em [ONLINE_ENGINE_DECISION.md](ONLINE_ENGINE_DECISION.md). A bancada é independente do aplicativo, usa rede em loopback e gera relatórios de abertura e busca de intervalos verificados. O motor de produção permanece MonoTorrent 3.0.2; nenhum resultado desse ensaio mede primeiro quadro ou descoberta em rede pública.
+
+## Etapa 5 — leitura sob demanda, início e índices
+
+O servidor HTTP mantém um cursor e uma demanda por resposta/preparo de índice. A demanda mais recente tem preferência para dados ausentes; um pedido novo interrompe a espera anterior e orienta o streaming picker. Leitores antigos podem entregar bytes disponíveis, restaurando depois a posição preferida. Ao terminar ou desconectar, a demanda libera a prioridade. Não há mais reinício periódico da leitura a cada 300 ms. O polling de disponibilidade não reposiciona leitores antigos. A desconexão cancela a espera e libera o pedido.
+
+O índice MKV usa a mesma arbitragem, em blocos de até 64 KiB, sem segurar a leitura durante o índice inteiro nem o bloqueio de troca/fechamento do serviço. O player cancela o índice automático antes de uma busca explícita. Fechar a reprodução cancela e drena esses pedidos antes de descartar o stream. Índices fora do arquivo ou acima de 16 MiB são rejeitados.
+
+O parser lê os cabeçalhos EBML necessários e um SeekHead limitado a 256 KiB, sem exigir antecipadamente um bloco inicial fixo desse tamanho. No streaming, os anexos de fontes já ocultados recebem payload virtual zerado, evitando solicitar seu conteúdo nessas leituras. Tamanho, offsets e pacotes de mídia são preservados; o arquivo salvo não muda. O motor ainda pode receber peças compartilhadas ou antecipadas no mesmo episódio. As fontes incorporadas permanecem disponíveis no arquivo completo.
+
+A disponibilidade usa o último byte incluído no intervalo (`offset + count - 1`), evitando esperar a peça seguinte no limite exato. Os trechos virtuais não exigem suas peças físicas.
+
+Sinais locais novos: `http_demand_started`/`index_demand_started` (ID e offset), `read_wait_started` (primeiro intervalo ausente da demanda), `read_preempted`/`read_resumed` (ID e espera em ms) e `index_demand_ready`. Não incluem nomes, magnet, URL, hash ou IP. Primeiro quadro e rebuffer continuam medidos separadamente no player.
+
+### Validação controlada
+
+```powershell
+$env:ANIT_STREAMING_STEP5_OUTPUT = 'C:/caminho/para/saida'
+dotnet test tests/AniT.Tests -c Release --filter FullyQualifiedName~RealTorrentNewestSeek
+```
+
+A fixture usa dois arquivos sintéticos de 8 MiB, peças de 2 MiB e relay TCP limitado a 1 MiB/s. Abre o segundo arquivo, mantém a resposta inicial ativa, busca uma região ausente em 75% e solicita 25% enquanto a busca anterior espera. Confere 64 KiB byte a byte contra a origem e verifica que o outro episódio continua desmarcado e sem peças verificadas. Exporta `seek-during-buffering.jsonl` e `seek-result.json` quando a variável está definida.
+
+No ensaio local de 29/10/2026, a nova busca recebeu 64 KiB corretos em aproximadamente 2,48 s, com 50% do arquivo verificado, uma preempção e zero peças verificadas do outro episódio. É uma fixture com fonte conhecida, sem player/decodificação: não mede primeiro quadro nem comprova ganho no magnet real.
+
+As regressões também cobrem leitura longa sem reinícios, desconexão durante espera, vídeo pedido durante preparo do índice, fechamento com índice travado, anexos que não podem ser lidos e limites exatos de peças. O teste IPC verifica que a busca explícita cancela o índice em segundo plano sem esperar seus dados.

@@ -25,4 +25,5 @@
   </ItemGroup>
 
   <ItemGroup><Compile Include="../Shared/TheaterTestRelay.cs" Link="TheaterTestRelay.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../AniT.UiChecks/TorrentPeerRelay.cs" Link="TorrentPeerRelay.cs" /></ItemGroup>
 </Project>
