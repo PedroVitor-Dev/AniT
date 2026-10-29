@@ -64,3 +64,7 @@ Até 16 trackers são consultados independentemente, com prazo de 45 s para perm
 O DHT mantém o cache nativo habilitado, mas não é inicializado antecipadamente: na API pública do MonoTorrent 3.0.2, `ClientEngine.Dht` só expõe estado/monitoramento. Antecipar seu início exigiria mudar a integração do motor. Não usamos reflexão nem iniciamos torrents fictícios para contornar isso.
 
 Validação controlada: o teste de streaming HTTP usa um seed local autorizado e uma dica persistida, sem `AddPeerAsync` manual no manager. Verifica primeira transferência, cabeçalho verificado, abertura antes do download completo e integridade dos ranges. Isso comprova o caminho de reconexão; não mede disponibilidade ou tempo de primeiro quadro de um swarm público.
+
+## Etapa 4 — comparação dos motores
+
+A avaliação e a decisão estão em [ONLINE_ENGINE_DECISION.md](ONLINE_ENGINE_DECISION.md). A bancada é independente do aplicativo, usa rede em loopback e gera relatórios de abertura e busca de intervalos verificados. O motor de produção permanece MonoTorrent 3.0.2; nenhum resultado desse ensaio mede primeiro quadro ou descoberta em rede pública.
