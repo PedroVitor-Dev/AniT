@@ -10,6 +10,19 @@ namespace AniT.App;
 
 public partial class App
 {
+    static string onlinePlayerTitle = "Online Anime Player";
+    static bool onlinePlayerFullscreen;
+    static OnlinePlayerWindow? onlinePlayerWindow;
+    static void ShowOnlinePlayer(global::AniT.Player.MpvOnlinePlayer player)
+    {
+        onlinePlayerWindow?.CloseFromPlayer();
+        var window = new OnlinePlayerWindow(player, onlinePlayerTitle);
+        onlinePlayerWindow = window;
+        window.Closed += (_, _) => { if (ReferenceEquals(onlinePlayerWindow, window)) onlinePlayerWindow = null; };
+        window.Show();
+        player.AttachVideoWindow(window.VideoHandle);
+        if (onlinePlayerFullscreen) window.SetFullscreen(true);
+    }
     static OnlineAnimeService? online;
     static OnlineTraceJournal? onlineJournal;
     static OnlinePlaybackTrace? activeOnlineTrace;

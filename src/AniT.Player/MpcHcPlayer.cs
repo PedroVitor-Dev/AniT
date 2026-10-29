@@ -16,6 +16,7 @@ public sealed record MpcHcPlaybackOptions(
 public sealed class MpcHcPlayer : IMediaPlayer, IDisposable
 {
     public OnlinePlaybackTrace? OnlineTrace { get; set; }
+    public Action<MpvOnlinePlayer>? ConfigureOnlinePlayer { get; set; }
     private readonly MpcHcBridge bridge;
     private readonly string executablePath;
     private readonly bool onlineStreaming;
@@ -70,7 +71,10 @@ public sealed class MpcHcPlayer : IMediaPlayer, IDisposable
                 onlinePlayer.Diagnostic += (_, message) => Diagnostic?.Invoke(this, "[ONLINE MPV] " + message);
             }
             onlineActive = true;
-            try { await onlinePlayer.PlayStreamAsync(address, position, options, cancellationToken, OnlineTrace); }
+            try {
+                if (!onlinePlayer.IsRunning) ConfigureOnlinePlayer?.Invoke(onlinePlayer);
+                await onlinePlayer.PlayStreamAsync(address, position, options, cancellationToken, OnlineTrace);
+            }
             catch { OnlineTrace?.Finish(cancellationToken.IsCancellationRequested ? "cancelled" : "player_failed"); onlinePlayer.Dispose(); onlinePlayer = null; onlineActive = false; throw; }
             return;
         }

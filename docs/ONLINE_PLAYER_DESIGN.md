@@ -20,8 +20,9 @@ ornamental nem mascote durante a reprodução.
 
 `OnlinePlayerDesignChecks` compõe uma **prévia de design**, com dados fictícios e
 controles ainda sem ligação ao motor. Ela não aparece no fluxo do usuário e não
-acessa perfis, biblioteca, torrent ou player. O player de reprodução atual continua
-em mpv; hospedar o vídeo e ligar esses controles é o passo 8. Listas completas de
+acessa perfis, biblioteca, torrent ou player. A integração funcional foi realizada no [passo 8](ONLINE_PLAYER_HOST.md),
+com janela do AniT e vídeo mpv incorporado. A composição deste teste continua
+sendo uma prévia estática de design. Listas completas de
 áudio/legendas e preferências são o passo 9.
 
 Os originais enviados pelo usuário estão preservados em `assets/player`. Somente

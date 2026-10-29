@@ -859,6 +859,7 @@ public partial class App : Application
             throw new InvalidOperationException("O MPC-HC integrado não foi encontrado. Reinstale o AniT ou escolha o aplicativo padrão do Windows nas configurações.");
         await using var context = OpenFreshDatabase();
         var episode = await context.Episodes
+            .Include(item => item.Season).ThenInclude(item => item!.Anime)
             .Include(item => item.MediaFiles)
             .ThenInclude(file => file.LibraryRoot)
             .Include(item => item.PlaybackProgress)
@@ -911,6 +912,10 @@ public partial class App : Application
             playbackSettings.PreferredAudioLanguage, playbackSettings.PreferredSubtitleLanguage);
         if (onlineAddress is not null) {
             MediaPlayer!.OnlineTrace = onlineTrace;
+            onlinePlayerTitle = (episode.Season?.Anime?.EnglishTitle ?? episode.Season?.Anime?.Title ?? global::System.IO.Path.GetFileNameWithoutExtension(mediaPath)) + $" · Episódio {episode.Number:00}";
+            onlinePlayerFullscreen = options.StartFullscreen;
+            onlinePlayerWindow?.SetEpisodeTitle(onlinePlayerTitle);
+            onlinePlayerWindow?.SetFullscreen(onlinePlayerFullscreen);
             try { await MediaPlayer.PlayStreamAsync(onlineAddress, resumeAt, options); }
             catch { onlineTrace?.Finish("player_failed"); await PauseOnlinePlaybackAsync(onlineAddress); throw; }
         }
@@ -1108,6 +1113,7 @@ public partial class App : Application
         var playerPath = ResolveBundledPlayerPath();
         if (!global::System.IO.File.Exists(playerPath)) return;
         MediaPlayer = new global::AniT.Player.MpcHcPlayer(playerPath, onlineStreaming: true, prepareOnlineSeek: (address, token) => online is { } service ? service.PrepareSeekIndexAsync(address, token) : Task.FromResult(false));
+        MediaPlayer.ConfigureOnlinePlayer = ShowOnlinePlayer;
         MediaPlayer.PositionChanged += async (_, progress) => await PersistProgressAsync(progress);
         MediaPlayer.PlaybackEnded += async (_, _) => await CompleteActiveEpisodeAsync();
         MediaPlayer.PlaybackClosed += async (_, progress) =>

@@ -1,0 +1,32 @@
+<Window x:Class="AniT.App.OnlinePlayerWindow" x:ClassModifier="internal" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:player="clr-namespace:AniT.Player;assembly=AniT.Player"
+    Title="AniT Player" Width="1120" Height="720" MinWidth="640" MinHeight="420" WindowStartupLocation="CenterScreen"
+    Background="{DynamicResource AniT.Brush.Background}" Foreground="{DynamicResource AniT.Brush.TextPrimary}" PreviewKeyDown="KeyPressed" PreviewMouseMove="PointerMoved" PreviewMouseDown="PointerPressed">
+    <Window.Resources><ResourceDictionary><ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Styles/OnlinePlayerTheme.xaml"/></ResourceDictionary.MergedDictionaries></ResourceDictionary></Window.Resources>
+    <DockPanel x:Name="Layout">
+        <Border x:Name="Header" DockPanel.Dock="Top" Padding="18,10" Background="{DynamicResource AniT.Brush.Surface}">
+            <DockPanel><Button DockPanel.Dock="Right" Content="Voltar ao AniT" Style="{StaticResource PlayerAction}" Margin="16,0,0,0" Click="ReturnClick"/>
+                <StackPanel VerticalAlignment="Center"><TextBlock Text="ANIT PLAYER" Style="{StaticResource PlayerCaption}"/>
+                    <TextBlock x:Name="EpisodeTitle" Style="{StaticResource PlayerText}" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+        <Border x:Name="Chrome" DockPanel.Dock="Bottom" Background="{DynamicResource AniT.Brush.Surface}" Padding="18,8,18,12">
+            <StackPanel>
+                <TextBlock x:Name="Status" Text="Abrindo seu episódio…" Style="{StaticResource PlayerCaption}" AutomationProperties.LiveSetting="Polite"/>
+                <Slider x:Name="Timeline" Style="{StaticResource PlayerTrack}" Minimum="0" Maximum="1" IsEnabled="False" IsMoveToPointEnabled="True" ToolTip="Posição do episódio" AutomationProperties.Name="Posição do episódio"
+                    PreviewMouseLeftButtonDown="TimelineDown" PreviewMouseLeftButtonUp="TimelineUp" PreviewKeyUp="TimelineKeyUp" LostMouseCapture="TimelineLostCapture"/>
+                <TextBlock x:Name="TimeLabel" Text="00:00 / --:--" Style="{StaticResource PlayerCaption}"/>
+                <WrapPanel Margin="0,6,0,0">
+                    <Button Style="{StaticResource PlayerIcon}" ToolTip="Voltar 10 segundos (←)" AutomationProperties.Name="Voltar 10 segundos" Click="BackClick"><Image Width="38" Height="38" Source="/AniT;component/Assets/Player/21_voltar_10s.png"/></Button>
+                    <Button x:Name="PlayAction" Style="{StaticResource PlayerIcon}" ToolTip="Reproduzir ou pausar (Espaço)" AutomationProperties.Name="Reproduzir ou pausar" Click="PlayClick"><Image x:Name="PlayIcon" Width="38" Height="38" Source="/AniT;component/Assets/Player/01_play.png"/></Button>
+                    <Button Style="{StaticResource PlayerIcon}" ToolTip="Avançar 10 segundos (→)" AutomationProperties.Name="Avançar 10 segundos" Click="ForwardClick"><Image Width="38" Height="38" Source="/AniT;component/Assets/Player/22_avancar_10s.png"/></Button>
+                    <Button x:Name="MuteAction" Style="{StaticResource PlayerIcon}" ToolTip="Ativar ou silenciar áudio (M)" AutomationProperties.Name="Ativar ou silenciar áudio" Click="MuteClick"><Image x:Name="VolumeIcon" Width="38" Height="38" Source="/AniT;component/Assets/Player/20_volume_alto.png"/></Button>
+                    <Slider x:Name="Volume" Width="110" Minimum="0" Maximum="100" Value="100" Style="{StaticResource PlayerTrack}" Margin="8,0" VerticalAlignment="Center" AutomationProperties.Name="Volume" ToolTip="Volume" ValueChanged="VolumeChanged"/>
+                    <Button x:Name="FullscreenAction" Style="{StaticResource PlayerIcon}" ToolTip="Tela cheia (F ou F11); Esc para sair" AutomationProperties.Name="Tela cheia" Click="FullscreenClick"><Image Width="38" Height="38" Source="/AniT;component/Assets/Player/23_tela_cheia.png"/></Button>
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+        <!-- WPF controls remain outside the native video surface: no airspace overlays. -->
+        <player:MpvVideoHost x:Name="Video" Focusable="False"/>
+    </DockPanel>
+</Window>

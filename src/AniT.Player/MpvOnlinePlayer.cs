@@ -17,6 +17,7 @@ public sealed partial class MpvOnlinePlayer : IDisposable
     double? cacheSeconds, outputDrops, decoderDrops, avSync;
     void ObservePlayback()
     {
+        PublishSnapshot();
         if (videoReady && frameInfoReady && playbackRestarted) telemetry?.Mark("first_video_frame_signal");
         telemetry?.PlaybackState(buffering, paused, seeking);
         telemetry?.Sample("player", ("position_seconds", position?.TotalSeconds ?? double.NaN),
@@ -79,19 +80,19 @@ public sealed partial class MpvOnlinePlayer : IDisposable
         if (!File.Exists(executable)) throw new FileNotFoundException("O motor de streaming do Beta não foi encontrado. Atualize o AniT.", executable);
         if (!ReferenceEquals(telemetry, trace)) telemetry?.Finish("replaced");
         trace?.Mark("player_requested");
-        if (!IsRunning) { Dispose(); telemetry = trace; trace?.Mark("process_start_requested"); await StartAsync(token); trace?.Mark("ipc_ready"); }
+        if (!IsRunning) { DisposeCore(false); telemetry = trace; trace?.Mark("process_start_requested"); await StartAsync(token); trace?.Mark("ipc_ready"); }
         else telemetry = trace;
         fileLifetime?.Cancel(); fileLifetime?.Dispose(); fileLifetime = CancellationTokenSource.CreateLinkedTokenSource(lifetime!.Token);
         using var operation = CancellationTokenSource.CreateLinkedTokenSource(token, fileLifetime.Token); token = operation.Token;
         var fileGeneration = ++generation;
         ResetBufferObservation(); playbackSpeed = options.Speed;
         seeking = frameInfoReady = playbackRestarted = false; cacheSeconds = outputDrops = decoderDrops = avSync = null;
-        usingIndex = false; position = duration = null; videoReady = false; paused = true; buffering = false; CurrentFilePath = address.AbsoluteUri;
+        usingIndex = false; position = duration = null; videoReady = false; paused = true; buffering = false; CurrentFilePath = address.AbsoluteUri; PublishSnapshot();
         telemetry?.Mark("loadfile_requested");
         loaded = new(TaskCreationOptions.RunContinuationsAsynchronously); awaitingFileStart = true;
         await CommandAsync(["set_property", "pause", true], token);
         await CommandAsync(["set_property", "speed", options.Speed], token);
-        await CommandAsync(["set_property", "fullscreen", options.StartFullscreen], token);
+        await CommandAsync(["set_property", "fullscreen", videoParent == IntPtr.Zero && options.StartFullscreen], token);
         await CommandAsync(["set_property", "alang", options.PreferredAudioLanguage == "auto" ? "" : Language(options.PreferredAudioLanguage)], token);
         await CommandAsync(["set_property", "sid", options.PreferredSubtitleLanguage == "off" ? "no" : "auto"], token);
         await CommandAsync(["set_property", "slang", options.PreferredSubtitleLanguage is "auto" or "off" ? "" : Language(options.PreferredSubtitleLanguage)], token);
@@ -113,6 +114,11 @@ public sealed partial class MpvOnlinePlayer : IDisposable
         closing = false; generation++; lifetime = new(); var name = "AniT.Online." + Guid.NewGuid().ToString("N");
         var start = new ProcessStartInfo(executable) { UseShellExecute = false, CreateNoWindow = true };
         foreach (var arg in new[] { "--no-config", "--no-terminal", "--idle=yes", "--force-window=immediate", "--title=Online Anime Player · AniT", "--pause=yes", "--cache=yes", "--cache-pause-initial=no", "--cache-pause-wait=1", "--demuxer-max-bytes=33554432", "--demuxer-max-back-bytes=8388608", "--cache-secs=10", "--demuxer-readahead-secs=10", "--network-timeout=120", "--demuxer-mkv-probe-video-duration=no", "--input-ipc-server=\\\\.\\pipe\\" + name }) start.ArgumentList.Add(arg);
+        if (videoParent != IntPtr.Zero) {
+            start.ArgumentList.Add("--wid=" + WindowId(videoParent));
+            start.ArgumentList.Add("--input-doubleclick-time=" + MpvVideoHost.DoubleClickMilliseconds);
+            foreach (var option in new[] { "--osc=no", "--osd-level=0", "--input-builtin-bindings=no", "--input-default-bindings=no", "--window-dragging=no" }) start.ArgumentList.Add(option);
+        }
         process = Process.Start(start) ?? throw new IOException("Não foi possível iniciar o motor de streaming.");
         Trace($"mpv iniciado (PID {process.Id}).");
         telemetry?.Mark("process_started");
@@ -121,7 +127,11 @@ public sealed partial class MpvOnlinePlayer : IDisposable
         writer = new StreamWriter(pipe, new UTF8Encoding(false), 1024, leaveOpen: true) { AutoFlush = true };
         _ = ReadLoopAsync(pipe, lifetime.Token);
         _ = WatchExitAsync(process, lifetime);
-        var index = 0; foreach (var property in new[] { "time-pos", "duration", "pause", "paused-for-cache", "video-out-params", "demuxer-cache-state", "demuxer-cache-duration", "speed" }) await CommandAsync(["observe_property", ++index, property], token);
+        var index = 0; foreach (var property in new[] { "time-pos", "duration", "pause", "paused-for-cache", "video-out-params", "demuxer-cache-state", "demuxer-cache-duration", "speed", "volume", "mute" }) await CommandAsync(["observe_property", ++index, property], token);
+        if (videoParent != IntPtr.Zero) {
+            await CommandAsync(["define-section", "anit-host", HostBindings, "force"], token);
+            await CommandAsync(["enable-section", "anit-host", "allow-hide-cursor"], token);
+        }
     }
     async Task ReadLoopAsync(NamedPipeClientStream connection, CancellationToken token)
     {
@@ -140,6 +150,7 @@ public sealed partial class MpvOnlinePlayer : IDisposable
                 if (!root.TryGetProperty("event", out var e)) continue;
                 switch (e.GetString())
                 {
+                    case "client-message": ReceiveHostInput(root); break;
                     case "start-file": awaitingFileStart = false; break;
                     case "file-loaded": loaded?.TrySetResult(); if (!awaitingFileStart) { telemetry?.Mark("container_loaded"); if (telemetry is not null) _ = ObserveDiagnosticsAsync(generation, fileLifetime?.Token ?? token); } Trace("Contêiner carregado pelo mpv."); break;
                     case "seek": if (!awaitingFileStart) { ResetBufferObservation(); seeking = true; telemetry?.Event("seek_requested"); ObservePlayback(); } break;
@@ -162,6 +173,8 @@ public sealed partial class MpvOnlinePlayer : IDisposable
                             case "video-frame-info" when value.ValueKind == JsonValueKind.Object && value.TryGetProperty("picture-type", out var pictureType) && pictureType.ValueKind == JsonValueKind.String: frameInfoReady = !string.IsNullOrEmpty(pictureType.GetString()); break;
                             case "demuxer-cache-duration": cacheSeconds = BufferNumber(value); cacheSecondsTimestamp = Stopwatch.GetTimestamp(); break;
                             case "demuxer-cache-state": cacheState = MpvCacheState.Parse(value); break;
+                            case "volume": if (BufferNumber(value) is { } level) volume = Math.Clamp(level, 0, 100); break;
+                            case "mute" when value.ValueKind is JsonValueKind.True or JsonValueKind.False: muted = value.GetBoolean(); break;
                             case "speed": if (BufferNumber(value) is > 0 and var speed) playbackSpeed = speed; break;
                             case "frame-drop-count" when value.ValueKind == JsonValueKind.Number: outputDrops = value.GetDouble(); break;
                             case "decoder-frame-drop-count" when value.ValueKind == JsonValueKind.Number: decoderDrops = value.GetDouble(); break;
@@ -277,7 +290,8 @@ public sealed partial class MpvOnlinePlayer : IDisposable
     public void Resume() => Forget(["set_property", "pause", false]);
     public void SetSpeed(double speed) => Forget(["set_property", "speed", speed]);
     async void Forget(object[] command) { try { await CommandAsync(command); } catch (Exception ex) { Trace(ex.Message); } }
-    public void Dispose()
+    public void Dispose() => DisposeCore(true);
+    void DisposeCore(bool notify)
     {
         telemetry?.Finish("disposed");
         lock (warmingSync) warmingIndex?.Cancel();
@@ -289,5 +303,6 @@ public sealed partial class MpvOnlinePlayer : IDisposable
         writer = null;
         var owned = process; process = null; if (owned is not null) { try { if (!owned.HasExited) owned.Kill(entireProcessTree: true); } catch (InvalidOperationException) { } catch (System.ComponentModel.Win32Exception) { } owned.Dispose(); }
         lifetime?.Dispose(); lifetime = null;
+        if (notify) Disposed?.Invoke(this, EventArgs.Empty);
     }
 }
