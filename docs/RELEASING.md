@@ -1,6 +1,6 @@
 # Processo de release
 
-Processo de preparação da distribuição 2.0.0. A publicação depende da validação do artefato e da situação da assinatura.
+Processo de preparação da distribuição 2.0.1. A publicação depende da validação do artefato e da situação da assinatura.
 
 ## Versionamento
 
@@ -10,7 +10,7 @@ Use [Versionamento Semântico](https://semver.org/lang/pt-BR/):
 - `MINOR`: funcionalidade compatível;
 - `PATCH`: correção compatível.
 
-A versão pública usa três componentes (`2.0.0`). Metadados internos do Windows podem representar `FileVersion` com quatro componentes (`2.0.0.0`) sem alterar o nome público.
+A versão pública usa três componentes (`2.0.1`). Metadados internos do Windows podem representar `FileVersion` com quatro componentes (`2.0.1.0`) sem alterar o nome público.
 
 ## Preparação
 
@@ -52,13 +52,13 @@ O CI em `.github/workflows/ci.yml` executa restore travado, auditoria NuGet, bui
 Instale Inno Setup 7 e execute:
 
 ```powershell
-.\scripts\Build-Installer.ps1 -Version 2.0.0 -CertificateThumbprint SEU_THUMBPRINT
+.\scripts\Build-Installer.ps1 -Version 2.0.1 -CertificateThumbprint SEU_THUMBPRINT
 ```
 
 A distribuição exige certificado Authenticode válido com chave privada e finalidade Code Signing em `Cert:\CurrentUser\My`. Sem certificado, o script encerra antes de limpar artefatos. Para testes locais, use explicitamente `-AllowUnsigned`; esses builds não devem ser publicados como release oficial:
 
 ```powershell
-.\scripts\Build-Installer.ps1 -Version 2.0.0 -AllowUnsigned
+.\scripts\Build-Installer.ps1 -Version 2.0.1 -AllowUnsigned
 ```
 
 O script assina e verifica `AniT.exe` e as DLLs próprias (`AniT.dll`, `AniT.*.dll`), usa SHA-256 e timestamp RFC 3161 e configura o Inno Setup para assinar o instalador e o desinstalador embutido. O instalador é verificado antes de calcular o hash. Binários de terceiros preservam suas assinaturas originais. Não coloque senha, chave privada ou arquivo `.pfx` no repositório.
@@ -66,7 +66,7 @@ O script assina e verifica `AniT.exe` e as DLLs próprias (`AniT.dll`, `AniT.*.d
 O script publica `win-x64` autossuficiente, prepara assets, inclui o MPC-HC homologado e compila:
 
 ```text
-artifacts\installer\AniT-Setup-2.0.0-win-x64.exe
+artifacts\installer\AniT-Setup-2.0.1-win-x64.exe
 artifacts\installer\SHA256SUMS.txt
 ```
 

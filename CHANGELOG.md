@@ -6,6 +6,8 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Não publicado]
 
+## [2.0.1] - 2026-10-28
+
 ### Melhorado
 
 - Online Anime Player: importação por arquivo/URL `.torrent` ou magnet, sem pedir nome ou destino quando já existe pasta padrão. Popup com etapas reais, efeitos discretos e confirmação “Carregado!”, seguido do retorno ao Início.
@@ -22,6 +24,8 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 - Preparação com velocidade, fontes, dados recebidos e tempo decorrido; normalização de magnet links com espaços e Unicode.
 
 ### Corrigido
+
+- Importação: seleção da pasta padrão ordena datas em memória, evitando a consulta `DateTimeOffset ORDER BY` não suportada pelo SQLite.
 
 - Metadados: aliases recebidos das integrações são inseridos explicitamente como novas linhas, evitando uma falha de concorrência que podia impedir a gravação do nome e da capa.
 

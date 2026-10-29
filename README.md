@@ -31,16 +31,16 @@ O **AniT** é um aplicativo desktop open source para Windows que transforma past
 O projeto é **local-first**: perfis, biblioteca, conquistas, progresso e configurações ficam no seu computador. O acesso à internet é opcional: além das fontes de metadados, tradução e artes habilitadas, pode ser usado no Movie Theater e no Online Anime Player.
 
 > [!NOTE]
-> A versão desta distribuição é a **2.0.0**. O instalador é autossuficiente para Windows x64, não exige .NET instalado e ainda não possui assinatura digital. Confira o hash publicado antes de executar.
+> A versão desta distribuição é a **2.0.1**. O instalador é autossuficiente para Windows x64, não exige .NET instalado e ainda não possui assinatura digital. Confira o hash publicado antes de executar.
 
 ## Baixar e instalar
 
 1. Abra a [release mais recente](https://github.com/PedroVitor-Dev/AniT/releases/latest).
-2. Baixe `AniT-Setup-2.0.0-win-x64.exe` e `SHA256SUMS.txt`.
+2. Baixe `AniT-Setup-2.0.1-win-x64.exe` e `SHA256SUMS.txt`.
 3. Compare o SHA-256 do instalador:
 
 ```powershell
-Get-FileHash .\AniT-Setup-2.0.0-win-x64.exe -Algorithm SHA256
+Get-FileHash .\AniT-Setup-2.0.1-win-x64.exe -Algorithm SHA256
 ```
 
 4. Execute o instalador, escolha o idioma e, se quiser, crie um atalho na Área de Trabalho.
