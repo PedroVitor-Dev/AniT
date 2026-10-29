@@ -8,6 +8,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/AniT.Tests/AniT.Tests.csproj" />
+    <Project Path="tests/AniT.Player.Tests/AniT.Player.Tests.csproj" />
     <Project Path="tests/AniT.UiChecks/AniT.UiChecks.csproj" />
   </Folder>
 </Solution>

@@ -848,11 +848,11 @@ public partial class App : Application
     public static async Task PlayEpisodeAsync(Guid episodeId)
     {
         if (!await playbackStartLock.WaitAsync(0)) return;
-        try { await StartEpisodeCoreAsync(episodeId); }
+        try { await StartEpisodeCoreAsync(episodeId, TimeProvider.System.GetTimestamp()); }
         finally { playbackStartLock.Release(); }
     }
 
-    private static async Task StartEpisodeCoreAsync(Guid episodeId)
+    private static async Task StartEpisodeCoreAsync(Guid episodeId, long clickedAt)
     {
         var playbackSettings = global::AniT.Infrastructure.AniTSystemSettingsStore.Load();
         if (playbackSettings.PlaybackPlayerMode == global::AniT.Infrastructure.PlaybackPlayerMode.IntegratedMpcHc && MediaPlayer is null)
@@ -876,11 +876,13 @@ public partial class App : Application
         MediaPlayer?.CancelOnlinePreparation();
         var mediaPath = global::System.IO.Path.Combine(mediaFile.LibraryRoot!.Path, mediaFile.RelativePath);
         Uri? onlineAddress = null;
+        global::AniT.Core.OnlinePlaybackTrace? onlineTrace = null;
         if (!mediaFile.IsCloud) await PauseOnlinePlaybackAsync();
         if (mediaFile.IsCloud)
         {
             if (MediaPlayer is null) throw new InvalidOperationException("O streaming exige o MPC-HC integrado. Ative-o nas configurações de reprodução.");
-            onlineAddress = await PrepareOnlineStreamAsync(mediaFile);
+            onlineTrace = BeginOnlineTrace(clickedAt);
+            onlineAddress = await PrepareOnlineStreamAsync(mediaFile, onlineTrace);
         }
         activeEpisodeId = episodeId;
         activePlaybackIsOnlineStream = onlineAddress is not null;
@@ -908,8 +910,9 @@ public partial class App : Application
             playbackSettings.DefaultPlaybackSpeed, playbackSettings.StartPlaybackFullscreen,
             playbackSettings.PreferredAudioLanguage, playbackSettings.PreferredSubtitleLanguage);
         if (onlineAddress is not null) {
-            try { await MediaPlayer!.PlayStreamAsync(onlineAddress, resumeAt, options); }
-            catch { await PauseOnlinePlaybackAsync(onlineAddress); throw; }
+            MediaPlayer!.OnlineTrace = onlineTrace;
+            try { await MediaPlayer.PlayStreamAsync(onlineAddress, resumeAt, options); }
+            catch { onlineTrace?.Finish("player_failed"); await PauseOnlinePlaybackAsync(onlineAddress); throw; }
         }
         else await MediaPlayer!.PlayAsync(mediaFile, resumeAt, options);
         lastProgressWrite = DateTimeOffset.UtcNow;

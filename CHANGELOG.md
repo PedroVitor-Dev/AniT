@@ -6,6 +6,11 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Não publicado]
 
+### Adicionado
+
+- Diagnóstico local do streaming: marcos desde o clique, descoberta de fontes, preparo do arquivo e sinais do mpv; amostras de cache, frames descartados e desvio A/V. Relatório separa startup, busca, pausa manual e rebuffer, com escrita assíncrona limitada e procedimento de comparação fria/quente.
+
+
 ## [2.0.2] - 2026-10-29
 
 ### Adicionado

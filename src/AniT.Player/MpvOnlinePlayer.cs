@@ -12,6 +12,28 @@ namespace AniT.Player;
 public sealed class MpvOnlinePlayer : IDisposable
 {
     readonly string executable;
+    OnlinePlaybackTrace? telemetry;
+    bool seeking, frameInfoReady, playbackRestarted;
+    double? cacheSeconds, outputDrops, decoderDrops, avSync;
+    void ObservePlayback()
+    {
+        if (videoReady && frameInfoReady && playbackRestarted) telemetry?.Mark("first_video_frame_signal");
+        telemetry?.PlaybackState(buffering, paused, seeking);
+        telemetry?.Sample("player", ("position_seconds", position?.TotalSeconds ?? double.NaN),
+            ("cache_seconds", cacheSeconds ?? double.NaN), ("output_dropped_frames", outputDrops ?? double.NaN),
+            ("decoder_dropped_frames", decoderDrops ?? double.NaN), ("av_sync_seconds", avSync ?? double.NaN),
+            ("paused", paused ? 1 : 0), ("buffering", buffering ? 1 : 0), ("seeking", seeking ? 1 : 0));
+    }
+    async Task ObserveDiagnosticsAsync(int expectedGeneration, CancellationToken token)
+    {
+        var expectedTrace = telemetry;
+        var index = 100;
+        foreach (var property in new[] { "video-frame-info", "demuxer-cache-duration", "frame-drop-count", "decoder-frame-drop-count", "avsync" }) {
+            if (token.IsCancellationRequested || generation != expectedGeneration) return;
+            try { await CommandAsync(["observe_property", ++index, property], token); }
+            catch { if (generation == expectedGeneration) expectedTrace?.Event("player_metric_unavailable", ("property_index", index)); }
+        }
+    }
     readonly Func<Uri, CancellationToken, Task<bool>>? prepareSeek;
     bool usingIndex;
     bool awaitingFileStart;
@@ -48,15 +70,20 @@ public sealed class MpvOnlinePlayer : IDisposable
     }
     void Trace(string message) => Dispatch(() => Diagnostic?.Invoke(this, message));
 
-    public async Task PlayStreamAsync(Uri address, TimeSpan? resume, MpcHcPlaybackOptions options, CancellationToken token)
+    public async Task PlayStreamAsync(Uri address, TimeSpan? resume, MpcHcPlaybackOptions options, CancellationToken token, OnlinePlaybackTrace? trace = null)
     {
         if (address.Scheme != "http" || address.Host != "127.0.0.1") throw new ArgumentException("O player aceita somente o streaming local do AniT.");
         if (!File.Exists(executable)) throw new FileNotFoundException("O motor de streaming do Beta não foi encontrado. Atualize o AniT.", executable);
-        if (!IsRunning) { Dispose(); await StartAsync(token); }
+        if (!ReferenceEquals(telemetry, trace)) telemetry?.Finish("replaced");
+        trace?.Mark("player_requested");
+        if (!IsRunning) { Dispose(); telemetry = trace; trace?.Mark("process_start_requested"); await StartAsync(token); trace?.Mark("ipc_ready"); }
+        else telemetry = trace;
         fileLifetime?.Cancel(); fileLifetime?.Dispose(); fileLifetime = CancellationTokenSource.CreateLinkedTokenSource(lifetime!.Token);
         using var operation = CancellationTokenSource.CreateLinkedTokenSource(token, fileLifetime.Token); token = operation.Token;
         generation++;
+        seeking = frameInfoReady = playbackRestarted = false; cacheSeconds = outputDrops = decoderDrops = avSync = null;
         usingIndex = false; position = duration = null; videoReady = false; paused = true; buffering = false; CurrentFilePath = address.AbsoluteUri;
+        telemetry?.Mark("loadfile_requested");
         loaded = new(TaskCreationOptions.RunContinuationsAsynchronously); awaitingFileStart = true;
         await CommandAsync(["set_property", "pause", true], token);
         await CommandAsync(["set_property", "speed", options.Speed], token);
@@ -81,8 +108,9 @@ public sealed class MpvOnlinePlayer : IDisposable
         foreach (var arg in new[] { "--no-config", "--no-terminal", "--idle=yes", "--force-window=immediate", "--title=Online Anime Player · AniT", "--pause=yes", "--cache=yes", "--cache-pause-initial=no", "--cache-pause-wait=1", "--demuxer-max-bytes=33554432", "--demuxer-readahead-secs=10", "--network-timeout=120", "--demuxer-mkv-probe-video-duration=no", "--input-ipc-server=\\\\.\\pipe\\" + name }) start.ArgumentList.Add(arg);
         process = Process.Start(start) ?? throw new IOException("Não foi possível iniciar o motor de streaming.");
         Trace($"mpv iniciado (PID {process.Id}).");
+        telemetry?.Mark("process_started");
         pipe = new NamedPipeClientStream(".", name, PipeDirection.InOut, PipeOptions.Asynchronous);
-        try { await pipe.ConnectAsync(10000, token); } catch { Dispose(); throw; }
+        try { await pipe.ConnectAsync(10000, token); } catch { telemetry?.Finish(token.IsCancellationRequested ? "cancelled" : "ipc_failed"); Dispose(); throw; }
         writer = new StreamWriter(pipe, new UTF8Encoding(false), 1024, leaveOpen: true) { AutoFlush = true };
         _ = ReadLoopAsync(pipe, lifetime.Token);
         _ = WatchExitAsync(process, lifetime);
@@ -106,7 +134,9 @@ public sealed class MpvOnlinePlayer : IDisposable
                 switch (e.GetString())
                 {
                     case "start-file": awaitingFileStart = false; break;
-                    case "file-loaded": loaded?.TrySetResult(); Trace("Contêiner carregado pelo mpv."); break;
+                    case "file-loaded": loaded?.TrySetResult(); if (!awaitingFileStart) { telemetry?.Mark("container_loaded"); if (telemetry is not null) _ = ObserveDiagnosticsAsync(generation, fileLifetime?.Token ?? token); } Trace("Contêiner carregado pelo mpv."); break;
+                    case "seek": if (!awaitingFileStart) { seeking = true; telemetry?.Event("seek_requested"); ObservePlayback(); } break;
+                    case "playback-restart": if (!awaitingFileStart) { seeking = false; playbackRestarted = true; telemetry?.Event("playback_restarted"); ObservePlayback(); } break;
                     case "property-change":
                         if (awaitingFileStart || !root.TryGetProperty("data", out var value)) break;
                         switch (root.GetProperty("name").GetString())
@@ -118,15 +148,21 @@ public sealed class MpvOnlinePlayer : IDisposable
                             case "duration" when value.ValueKind == JsonValueKind.Number: duration = TimeSpan.FromSeconds(value.GetDouble()); break;
                             case "pause" when value.ValueKind is JsonValueKind.True or JsonValueKind.False: paused = value.GetBoolean(); break;
                             case "paused-for-cache" when value.ValueKind is JsonValueKind.True or JsonValueKind.False: buffering = value.GetBoolean(); break;
-                            case "video-out-params" when value.ValueKind == JsonValueKind.Object && value.TryGetProperty("crop-w", out _): videoReady = true; Trace("Saída de vídeo configurada: " + value.GetRawText()); break;
+                            case "video-frame-info" when value.ValueKind == JsonValueKind.Object && value.TryGetProperty("picture-type", out var pictureType) && pictureType.ValueKind == JsonValueKind.String: frameInfoReady = !string.IsNullOrEmpty(pictureType.GetString()); break;
+                            case "demuxer-cache-duration" when value.ValueKind == JsonValueKind.Number: cacheSeconds = value.GetDouble(); break;
+                            case "frame-drop-count" when value.ValueKind == JsonValueKind.Number: outputDrops = value.GetDouble(); break;
+                            case "decoder-frame-drop-count" when value.ValueKind == JsonValueKind.Number: decoderDrops = value.GetDouble(); break;
+                            case "avsync" when value.ValueKind == JsonValueKind.Number: avSync = value.GetDouble(); break;
+                            case "video-out-params" when value.ValueKind == JsonValueKind.Object && value.TryGetProperty("crop-w", out _): videoReady = true; telemetry?.Mark("video_output_configured"); Trace("Saída de vídeo configurada: " + value.GetRawText()); break;
                         }
+                        ObservePlayback();
                         break;
                     case "end-file":
                         if (awaitingFileStart) break;
                         if (root.TryGetProperty("reason", out var ending) && (ending.GetString() is "error" or "eof") && loaded is { Task.IsCompleted: false })
                             loaded.TrySetException(new IOException("O streaming terminou antes de carregar o vídeo."));
-                        if (root.TryGetProperty("reason", out var reason) && reason.GetString() == "eof") Dispatch(() => PlaybackEnded?.Invoke(this, EventArgs.Empty));
-                        else if (reason.ValueKind == JsonValueKind.String && reason.GetString() == "error") loaded?.TrySetException(new IOException("O vídeo não pôde ser aberto pelo motor de streaming.")); break;
+                        if (root.TryGetProperty("reason", out var reason) && reason.GetString() == "eof") { telemetry?.Finish("eof"); Dispatch(() => PlaybackEnded?.Invoke(this, EventArgs.Empty)); }
+                        else if (reason.ValueKind == JsonValueKind.String && reason.GetString() == "error") { telemetry?.Finish("player_error"); loaded?.TrySetException(new IOException("O vídeo não pôde ser aberto pelo motor de streaming.")); } break;
                 }
             }
         }
@@ -135,7 +171,7 @@ public sealed class MpvOnlinePlayer : IDisposable
     }
     async Task WatchExitAsync(Process owned, CancellationTokenSource session)
     {
-        try { await owned.WaitForExitAsync(); try { session.Cancel(); } catch (ObjectDisposedException) { } if (!closing && ReferenceEquals(process, owned)) { var args = new PlaybackPositionChangedEventArgs(position ?? TimeSpan.Zero, duration, videoReady && position.HasValue); Dispatch(() => PlaybackClosed?.Invoke(this, args)); } }
+        try { await owned.WaitForExitAsync(); try { session.Cancel(); } catch (ObjectDisposedException) { } if (!closing && ReferenceEquals(process, owned)) { telemetry?.Finish("player_closed"); var args = new PlaybackPositionChangedEventArgs(position ?? TimeSpan.Zero, duration, videoReady && position.HasValue); Dispatch(() => PlaybackClosed?.Invoke(this, args)); } }
         catch (InvalidOperationException) { }
     }
     public async Task<JsonElement> CommandAsync(object[] command, CancellationToken token = default)
@@ -171,6 +207,7 @@ public sealed class MpvOnlinePlayer : IDisposable
                 var options = new Dictionary<string, string> { { "index", "default" }, { "start", current.TotalSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture) }, { "pause", "yes" } };
                 if (audio.ValueKind is JsonValueKind.Number or JsonValueKind.String) options["aid"] = audio.ValueKind == JsonValueKind.String ? audio.GetString()! : audio.GetRawText();
                 if (subtitle.ValueKind is JsonValueKind.Number or JsonValueKind.String) options["sid"] = subtitle.ValueKind == JsonValueKind.String ? subtitle.GetString()! : subtitle.GetRawText();
+                telemetry?.Event("index_reload_begin"); seeking = true;
                 loaded = new(TaskCreationOptions.RunContinuationsAsynchronously); awaitingFileStart = true;
                 await CommandAsync(["loadfile", address.AbsoluteUri, "replace", -1, options], token);
                 await loaded.Task.WaitAsync(TimeSpan.FromSeconds(120), token);
@@ -217,6 +254,7 @@ public sealed class MpvOnlinePlayer : IDisposable
     async void Forget(object[] command) { try { await CommandAsync(command); } catch (Exception ex) { Trace(ex.Message); } }
     public void Dispose()
     {
+        telemetry?.Finish("disposed");
         closing = true; fileLifetime?.Cancel(); fileLifetime?.Dispose(); fileLifetime = null; lifetime?.Cancel();
         foreach (var request in pending.Values) request.TrySetCanceled(); pending.Clear(); loaded?.TrySetCanceled();
         pipe?.Dispose(); pipe = null;

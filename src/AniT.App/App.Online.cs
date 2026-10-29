@@ -11,6 +11,17 @@ namespace AniT.App;
 public partial class App
 {
     static OnlineAnimeService? online;
+    static OnlineTraceJournal? onlineJournal;
+    static OnlinePlaybackTrace? activeOnlineTrace;
+    static OnlinePlaybackTrace BeginOnlineTrace(long clickedAt)
+    {
+        activeOnlineTrace?.Finish("replaced");
+        onlineJournal ??= new OnlineTraceJournal(Path.Combine(dataRootPath, "Diagnostics", "Online"));
+        var journal = onlineJournal;
+        activeOnlineTrace = new OnlinePlaybackTrace(journal.Write, startTimestamp: clickedAt);
+        activeOnlineTrace.Mark("episode_resolved");
+        return activeOnlineTrace;
+    }
     static CancellationTokenSource? onlineMonitor;
     static Task? onlineMonitorTask;
     public static OnlineAnimeService Online => online ??= CreateOnlineService();
@@ -44,6 +55,8 @@ public partial class App
         onlineMonitor?.Cancel();
         if (onlineMonitorTask is not null) await onlineMonitorTask.ConfigureAwait(false);
         if (online is { } service) { online = null; await service.DisposeAsync().ConfigureAwait(false); }
+        activeOnlineTrace?.Finish("service_stopped"); activeOnlineTrace = null;
+        if (onlineJournal is { } journal) { onlineJournal = null; await journal.DisposeAsync().ConfigureAwait(false); }
         onlineMonitor?.Dispose(); onlineMonitor = null; onlineMonitorTask = null;
     }
 
@@ -54,15 +67,17 @@ public partial class App
         catch (Exception ex) { WritePlaybackLog("[ONLINE] Ao pausar episódio: " + ex.Message); }
     }
 
-    static async Task<Uri> PrepareOnlineStreamAsync(MediaFile file)
+    static async Task<Uri> PrepareOnlineStreamAsync(MediaFile file, OnlinePlaybackTrace trace)
     {
         // A modeless preparation surface leaves cancellation accessible while peers supply the first pieces.
         using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(5));
         var window = new OnlineBufferWindow(timeout);
         window.Show();
         var progress = new Progress<OnlinePreparationProgress>(window.Report);
-        try { var service = Online; return await Task.Run(() => service.OpenStreamAsync(file, timeout.Token, progress)); }
-        catch (OperationCanceledException) { throw new InvalidOperationException("Preparação interrompida. Verifique a disponibilidade do torrent em Online Anime Player e tente novamente."); }
+        trace.Mark("preparation_window_shown");
+        try { var service = Online; trace.Mark("online_service_ready"); return await Task.Run(() => service.OpenStreamAsync(file, timeout.Token, progress, trace)); }
+        catch (OperationCanceledException) { trace.Finish("preparation_cancelled"); throw new InvalidOperationException("Preparação interrompida. Verifique a disponibilidade do torrent em Online Anime Player e tente novamente."); }
+        catch { trace.Finish("preparation_failed"); throw; }
         finally { window.Close(); }
     }
 }

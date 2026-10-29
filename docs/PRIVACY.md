@@ -2,7 +2,7 @@
 
 ## Resumo
 
-O AniT é local-first. Não existe conta AniT, servidor próprio, telemetria obrigatória ou sincronização automática em nuvem. Biblioteca, perfis, histórico e preferências permanecem no computador.
+O AniT é local-first. Não existe conta AniT, servidor próprio, envio automático de telemetria ao projeto ou sincronização automática em nuvem. Biblioteca, perfis, histórico e preferências permanecem no computador.
 
 ## Dados armazenados
 
@@ -29,6 +29,8 @@ Locais principais:
 ```
 
 Arquivos `.bak`, logs e arquivos `-wal`/`-shm` podem existir durante recuperação e uso normal do SQLite.
+
+Os diagnósticos estruturados do Online Anime Player ficam em `%LOCALAPPDATA%/AniT/Diagnostics/Online/`. Registram horários, etapas, contagem de conexões, velocidade, cache e sinais do player, com identificador aleatório por tentativa. Esses registros não incluem magnet, URL, título, caminho do vídeo, hash do torrent ou endereços dos peers. A retenção é limitada a dez arquivos de aproximadamente 8 MiB; não há envio automático. Os logs tradicionais do aplicativo podem conter outras informações técnicas: revise qualquer arquivo antes de compartilhá-lo. Consulte [Diagnóstico do streaming](ONLINE_DIAGNOSTICS.md).
 
 ## PIN dos perfis
 

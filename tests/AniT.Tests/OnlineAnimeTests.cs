@@ -192,7 +192,12 @@ public sealed class OnlineAnimeTests
         await downloader.AddPeerAsync(new PeerInfo(new Uri($"ipv4://127.0.0.1:{seedPort}")));
         using var db = AniTDatabase.Create(Path.Combine(root,"test.db"));
         var file = await db.MediaFiles.SingleAsync();
-        var address = await service.OpenStreamAsync(file, deadline.Token);
+        var metrics = new System.Collections.Concurrent.ConcurrentBag<OnlinePlaybackMetric>();
+        var trace = new OnlinePlaybackTrace(metrics.Add);
+        var address = await service.OpenStreamAsync(file, deadline.Token, trace: trace);
+        Assert.Contains(metrics, item => item.Name == "header_verified");
+        Assert.Contains(metrics, item => item.Name == "http_stream_ready");
+        Assert.Contains(metrics, item => item.Name == "first_data_observed");
         Assert.True(downloader.Progress < 100, "Playback must start before full download");
         using var client = new HttpClient();
         using var request = new HttpRequestMessage(HttpMethod.Get, address); request.Headers.Range = new RangeHeaderValue(0,65535);
@@ -208,6 +213,21 @@ public sealed class OnlineAnimeTests
         using var tailRequest = new HttpRequestMessage(HttpMethod.Get, address); tailRequest.Headers.Range = new RangeHeaderValue(expected.Length - 1024, expected.Length - 1);
         using var tail = await client.SendAsync(tailRequest, deadline.Token); tail.EnsureSuccessStatusCode();
         Assert.Equal(expected[^1024..], await tail.Content.ReadAsByteArrayAsync(deadline.Token));
+        trace.Finish("controlled_cold_complete");
+        var cold = metrics.Single(item => item.Kind == "summary");
+        Assert.True(cold.Values["http_stream_ready_ms"] >= cold.Values["header_verified_ms"]);
+        await service.PausePlaybackAsync(address);
+        var warmMetrics = new System.Collections.Concurrent.ConcurrentBag<OnlinePlaybackMetric>();
+        var warmTrace = new OnlinePlaybackTrace(warmMetrics.Add);
+        await service.OpenStreamAsync(file, deadline.Token, trace: warmTrace); warmTrace.Finish("controlled_warm_complete");
+        Assert.Equal(100, warmMetrics.Single(item => item.Name == "file_selected").Values["cached_percent"]);
+        Assert.DoesNotContain(warmMetrics.LastOrDefault(item => item.Kind == "summary")!.Values.Keys, key => key == "first_video_frame_signal_ms");
+        var output = Environment.GetEnvironmentVariable("ANIT_TRACE_TEST_OUTPUT");
+        if (!string.IsNullOrWhiteSpace(output)) {
+            Directory.CreateDirectory(output);
+            await File.WriteAllLinesAsync(Path.Combine(output, "controlled-cold.jsonl"), metrics.OrderBy(item => item.Sequence).Select(item => System.Text.Json.JsonSerializer.Serialize(item)));
+            await File.WriteAllLinesAsync(Path.Combine(output, "controlled-warm.jsonl"), warmMetrics.OrderBy(item => item.Sequence).Select(item => System.Text.Json.JsonSerializer.Serialize(item)));
+        }
         await seeder.StopAsync();
     }
 

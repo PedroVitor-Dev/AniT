@@ -15,6 +15,7 @@ public sealed record MpcHcPlaybackOptions(
 /// <summary>Controls the bundled MPC-HC instance through its documented /slave WM_COPYDATA API.</summary>
 public sealed class MpcHcPlayer : IMediaPlayer, IDisposable
 {
+    public OnlinePlaybackTrace? OnlineTrace { get; set; }
     private readonly MpcHcBridge bridge;
     private readonly string executablePath;
     private readonly bool onlineStreaming;
@@ -69,8 +70,8 @@ public sealed class MpcHcPlayer : IMediaPlayer, IDisposable
                 onlinePlayer.Diagnostic += (_, message) => Diagnostic?.Invoke(this, "[ONLINE MPV] " + message);
             }
             onlineActive = true;
-            try { await onlinePlayer.PlayStreamAsync(address, position, options, cancellationToken); }
-            catch { onlinePlayer.Dispose(); onlinePlayer = null; onlineActive = false; throw; }
+            try { await onlinePlayer.PlayStreamAsync(address, position, options, cancellationToken, OnlineTrace); }
+            catch { OnlineTrace?.Finish(cancellationToken.IsCancellationRequested ? "cancelled" : "player_failed"); onlinePlayer.Dispose(); onlinePlayer = null; onlineActive = false; throw; }
             return;
         }
         await bridge.StartAsync(executablePath, cancellationToken);
