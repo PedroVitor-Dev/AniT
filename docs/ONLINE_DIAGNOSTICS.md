@@ -54,3 +54,13 @@ Serviço é obtido fora da thread da interface durante o preparo. O popup começ
 Cancelamento durante ativação limpa as prioridades, interrompe o manager (inclusive em inicialização) e volta ao estado de espera sem apagar arquivos. Falha/cancelamento de leitura do catálogo não deixa a restauração marcada como concluída. A listagem aguarda a operação de metadados apenas se ela pertencer ao torrent efetivamente escolhido; seu cancelamento segue o token da preparação.
 
 Regressões: catálogo com 80 magnets sem peers não cria nenhum manager; abrir um arquivo de teste já em cache cria apenas o manager escolhido, ignorando outro magnet indisponível; cancelar na seleção e repetir preserva o arquivo e mantém um único manager; importar novamente um torrent listado é rejeitado sem iniciar download.
+
+## Etapa 3: reconexão e descoberta
+
+O marcador `recent_peers_loaded` indica a leitura das dicas locais antes da descoberta adicional. O cache usa apenas conexões de torrents públicos, separadas pelo conjunto de infohashes, com expiração de 24 h e limites de 64 torrents / 32 peers. Não cria managers ao listar a biblioteca e só injeta fontes ao abrir o episódio.
+
+Até 16 trackers são consultados independentemente, com prazo de 45 s para permitir retransmissões UDP. A consulta roda em segundo plano: uma fonte disponível pode entregar o vídeo sem esperar pelos trackers lentos. As rodadas extras de anúncio foram removidas; o motor mantém os intervalos e tentativas automáticas. Cancelar a preparação ou fechar o player cancela as consultas suplementares.
+
+O DHT mantém o cache nativo habilitado, mas não é inicializado antecipadamente: na API pública do MonoTorrent 3.0.2, `ClientEngine.Dht` só expõe estado/monitoramento. Antecipar seu início exigiria mudar a integração do motor. Não usamos reflexão nem iniciamos torrents fictícios para contornar isso.
+
+Validação controlada: o teste de streaming HTTP usa um seed local autorizado e uma dica persistida, sem `AddPeerAsync` manual no manager. Verifica primeira transferência, cabeçalho verificado, abertura antes do download completo e integridade dos ranges. Isso comprova o caminho de reconexão; não mede disponibilidade ou tempo de primeiro quadro de um swarm público.

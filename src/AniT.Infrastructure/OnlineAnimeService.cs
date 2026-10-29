@@ -17,6 +17,7 @@ public sealed class OnlineAnimeService : IAsyncDisposable
     readonly string databasePath;
     readonly string statePath;
     readonly ClientEngine engine;
+    readonly OnlinePeerCache recentPeers;
     readonly SemaphoreSlim gate = new(1, 1);
     readonly SemaphoreSlim streamGate = new(1, 1);
     readonly List<Task> peerDiscovery = [];
@@ -37,6 +38,7 @@ public sealed class OnlineAnimeService : IAsyncDisposable
         this.databasePath = databasePath;
         Directory.CreateDirectory(stateDirectory);
         statePath = Path.Combine(stateDirectory, "downloads.json");
+        recentPeers = new OnlinePeerCache(Path.Combine(stateDirectory, "recent-peers.json"));
         engine = new ClientEngine(settings ?? new EngineSettingsBuilder {
             CacheDirectory = Path.Combine(stateDirectory, "engine"),
             AutoSaveLoadFastResume = true, AutoSaveLoadMagnetLinkMetadata = true, AutoSaveLoadDhtCache = true,
@@ -133,6 +135,8 @@ public sealed class OnlineAnimeService : IAsyncDisposable
             } else manager = await engine.AddStreamingAsync(await Torrent.LoadAsync(job.Source), job.SavePath);
             await SelectSafeFilesAsync(manager, job.SavePath, null, token);
             token.ThrowIfCancellationRequested();
+            if (!manager.TrackerManager.Private)
+                manager.PeerConnected += (_, e) => recentPeers.Remember(PeerCacheKey(manager.InfoHashes), e.Peer.Uri);
             return manager;
         } catch {
             if (manager is not null) { await manager.StopAsync(); await engine.RemoveAsync(manager); }
@@ -405,7 +409,7 @@ public sealed class OnlineAnimeService : IAsyncDisposable
             peerDiscovery.RemoveAll(task => task.IsCompleted);
             discoveryCancellation?.Dispose();
             discoveryCancellation = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
-            peerDiscovery.Add(DiscoverPeersAsync(manager, discoveryCancellation.Token));
+            peerDiscovery.Add(DiscoverPeersAsync(manager, discoveryCancellation.Token, trace));
             trace?.Mark("peer_discovery_requested");
             var media = manager.Files[file.OnlineFileIndex];
             var initialReceived = manager.Monitor.DataBytesReceived;
@@ -500,33 +504,34 @@ public sealed class OnlineAnimeService : IAsyncDisposable
         } finally {streamGate.Release();}
     }
 
-    async Task DiscoverPeersAsync(TorrentManager manager, CancellationToken token)
+    internal static string PeerCacheKey(InfoHashes hashes) => "v1:" + hashes.V1?.ToHex() + ";v2:" + hashes.V2?.ToHex();
+
+    async Task DiscoverPeersAsync(TorrentManager manager, CancellationToken token, OnlinePlaybackTrace? trace = null)
     {
+        // Private swarms use only the engine's tracker policy. Never inject cached peers.
         if (manager.TrackerManager.Private) return;
-        var trackers = manager.TrackerManager.Tiers.SelectMany(tier => tier.Trackers).Distinct().Take(16).ToArray();
         try {
-            // A dead UDP tracker must not consume the entire discovery window and
-            // prevent later alternatives from ever being queried.
-            for (var round = 0; round < 3; round++) {
-                if (round > 0) await Task.Delay(TimeSpan.FromSeconds(round == 1 ? 8 : 16), token);
-                token.ThrowIfCancellationRequested();
-                if (manager.State is TorrentState.Stopped or TorrentState.Paused) return;
-                await manager.DhtAnnounceAsync(); // MonoTorrent enforces its minimum announce interval.
-                Diagnostic?.Invoke($"Descoberta de fontes: rodada {round + 1}, {trackers.Length} trackers, {manager.OpenConnections} conexões.");
-                var queries = trackers.Select(tracker => (Func<CancellationToken, Task>)(async cancellation => await manager.TrackerManager.AnnounceAsync(tracker, cancellation))).ToArray();
-                await QueryTrackersAsync(queries, message => Diagnostic?.Invoke(message), token);
-                if (manager.OpenConnections > 0) return;
-            }
+            var cached = await recentPeers.ReadAsync(PeerCacheKey(manager.InfoHashes), token);
+            token.ThrowIfCancellationRequested();
+            if (cached.Count > 0) await manager.AddPeersAsync(cached.Select(uri => new PeerInfo(uri)));
+            trace?.Mark("recent_peers_loaded");
+            Diagnostic?.Invoke($"Fontes recentes disponíveis: {cached.Count}.");
+            await manager.DhtAnnounceAsync(); // Library enforces its minimum interval.
+            var trackers = manager.TrackerManager.Tiers.SelectMany(tier => tier.Trackers).Distinct().Take(16).ToArray();
+            var queries = trackers.Select(tracker => (Func<CancellationToken, Task>)(async cancellation => await manager.TrackerManager.AnnounceAsync(tracker, cancellation))).ToArray();
+            // One supplemental pass only. Automatic engine announces own subsequent retries
+            // and tracker minimum intervals; no application-level announce loop.
+            await QueryTrackersAsync(queries, message => Diagnostic?.Invoke(message), token, TimeSpan.FromSeconds(45));
         } catch (OperationCanceledException) { }
         catch (Exception ex) { Diagnostic?.Invoke($"Consulta de fontes interrompida: {ex.GetType().Name}."); }
     }
 
-    static Task QueryTrackersAsync(IReadOnlyList<Func<CancellationToken, Task>> queries, Action<string> diagnostic, CancellationToken token)
-        => Parallel.ForEachAsync(queries, new ParallelOptions { MaxDegreeOfParallelism = 8, CancellationToken = token }, async (query, cancellation) => {
+    static Task QueryTrackersAsync(IReadOnlyList<Func<CancellationToken, Task>> queries, Action<string> diagnostic, CancellationToken token, TimeSpan timeout)
+        => Parallel.ForEachAsync(queries, new ParallelOptions { MaxDegreeOfParallelism = 16, CancellationToken = token }, async (query, cancellation) => {
             using var attempt = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
-            attempt.CancelAfter(TimeSpan.FromSeconds(4));
+            attempt.CancelAfter(timeout);
             try { await query(attempt.Token); }
-            catch (OperationCanceledException) when (!cancellation.IsCancellationRequested) { diagnostic("Um tracker excedeu 4 s; as outras fontes continuam sendo consultadas."); }
+            catch (OperationCanceledException) when (!cancellation.IsCancellationRequested) { diagnostic("Um tracker excedeu o prazo; as outras fontes continuam disponíveis."); }
             catch (Exception ex) when (ex is not OperationCanceledException) { diagnostic($"Consulta de fontes: {ex.GetType().Name}."); }
         });
 
@@ -537,6 +542,7 @@ public sealed class OnlineAnimeService : IAsyncDisposable
             if (expectedAddress is not null && stream?.Address != expectedAddress) return;
             discoveryCancellation?.Cancel();
             telemetrySampling?.Cancel();
+            await recentPeers.FlushAsync();
             await gate.WaitAsync();
             try {
                 if (stream is not null) { await stream.DisposeAsync(); stream = null; }
@@ -565,6 +571,7 @@ public sealed class OnlineAnimeService : IAsyncDisposable
         try {
             await Task.WhenAll(peerDiscovery);
             await Task.WhenAll(telemetryTasks);
+            await recentPeers.FlushAsync();
             if (stream is not null) await stream.DisposeAsync();
             foreach (var (_, manager) in downloads.Values) await manager.StopAsync();
         } finally { telemetrySampling?.Dispose(); discoveryCancellation?.Dispose(); engine.Dispose(); gate.Release(); streamGate.Release(); lifetime.Dispose(); }

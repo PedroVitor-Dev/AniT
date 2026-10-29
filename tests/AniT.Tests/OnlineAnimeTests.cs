@@ -189,12 +189,17 @@ public sealed class OnlineAnimeTests
         var id = await service.AddAsync(source, root, "Autorizado", true, deadline.Token);
         var engine = (ClientEngine)typeof(OnlineAnimeService).GetField("engine", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(service)!;
         var downloader = engine.Torrents.Single();
-        await downloader.AddPeerAsync(new PeerInfo(new Uri($"ipv4://127.0.0.1:{seedPort}")));
+        // Simulate a previous session's persisted source. No manual peer injection
+        // into the manager: playback discovery must recover the source itself.
+        var hints = new OnlinePeerCache(Path.Combine(root, "state", "recent-peers.json"));
+        hints.Remember(OnlineAnimeService.PeerCacheKey(downloader.InfoHashes), new Uri($"ipv4://127.0.0.1:{seedPort}"));
+        await hints.FlushAsync();
         using var db = AniTDatabase.Create(Path.Combine(root,"test.db"));
         var file = await db.MediaFiles.SingleAsync();
         var metrics = new System.Collections.Concurrent.ConcurrentBag<OnlinePlaybackMetric>();
         var trace = new OnlinePlaybackTrace(metrics.Add);
         var address = await service.OpenStreamAsync(file, deadline.Token, trace: trace);
+        Assert.Contains(metrics, item => item.Name == "recent_peers_loaded");
         Assert.Contains(metrics, item => item.Name == "header_verified");
         Assert.Contains(metrics, item => item.Name == "http_stream_ready");
         Assert.Contains(metrics, item => item.Name == "first_data_observed");
@@ -265,8 +270,8 @@ public sealed class OnlineAnimeTests
     {
         using var cancel = new CancellationTokenSource(TimeSpan.FromSeconds(3));
         var reachedLast = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var queries = Enumerable.Range(0, 8).Select(index => (Func<CancellationToken, Task>)(async token => {
-            if (index == 7) reachedLast.TrySetResult();
+        var queries = Enumerable.Range(0, 16).Select(index => (Func<CancellationToken, Task>)(async token => {
+            if (index == 15) reachedLast.TrySetResult();
             await Task.Delay(Timeout.Infinite, token);
         })).ToArray();
         var task = QueryTrackers(queries, cancel.Token);
@@ -290,7 +295,7 @@ public sealed class OnlineAnimeTests
     }
 
     static Task QueryTrackers(IReadOnlyList<Func<CancellationToken, Task>> queries, CancellationToken token, Action<string>? diagnostic = null)
-        => (Task)typeof(OnlineAnimeService).GetMethod("QueryTrackersAsync", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, [queries, diagnostic ?? (_ => { }), token])!;
+        => (Task)typeof(OnlineAnimeService).GetMethod("QueryTrackersAsync", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, [queries, diagnostic ?? (_ => { }), token, TimeSpan.FromMilliseconds(150)])!;
 
     sealed class InlinePreparationProgress(Action<OnlinePreparationProgress> observe) : IProgress<OnlinePreparationProgress>
     {

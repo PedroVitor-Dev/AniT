@@ -91,3 +91,7 @@ Apagar dados do AniT não remove seus vídeos originais.
 ## Futuras integrações
 
 Conta, sincronização, atualização automática ou telemetria deverão ser opcionais, documentadas e discutidas publicamente antes de qualquer implementação.
+
+### Cache local de fontes recentes
+
+O Online Anime Player guarda, na pasta do perfil, `Online/<identificador-do-perfil>/recent-peers.json` com endereços IP, portas, identificadores de torrents públicos e a data da conexão. Esses dados servem exclusivamente para tentar reconectar fontes já utilizadas. O cache permanece neste computador, expira em 24 horas e limita-se a 64 torrents e 32 fontes por torrent. Torrents privados não são registrados nem recebem fontes desse cache. Apagar esse arquivo remove as dicas salvas; conexões futuras podem gerar novas entradas. Esse cache é separado dos logs de diagnóstico, que continuam sem endereços de peers ou hashes de torrents.
