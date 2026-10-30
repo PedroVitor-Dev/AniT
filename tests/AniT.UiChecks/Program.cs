@@ -25,6 +25,7 @@ internal static class Program
             catch (Exception error) { Console.Error.WriteLine(error); return 1; }
             finally { application.Shutdown(); }
         }
+        if (args.Contains("--check-player-extras")) return OnlinePlayerExtrasChecks.Run(application);
         if (args.Contains("--check-player-tracks")) return OnlinePlayerTrackChecks.Run(application);
         if (args.Contains("--check-player-host")) return OnlinePlayerHostChecks.Run(application);
         if (args.Contains("--check-player-design"))

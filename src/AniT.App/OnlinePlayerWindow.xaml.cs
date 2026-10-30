@@ -29,11 +29,12 @@ internal partial class OnlinePlayerWindow : Window
     Rect savedBounds;
     public IntPtr VideoHandle => Video.Handle;
 
-    public OnlinePlayerWindow(MpvOnlinePlayer player, string title, global::AniT.Infrastructure.OnlinePlayerPreferencesStore? preferencesStore = null)
+    public OnlinePlayerWindow(MpvOnlinePlayer player, string title, global::AniT.Infrastructure.OnlinePlayerPreferencesStore? preferencesStore = null, global::AniT.Infrastructure.PlaybackMomentStore? moments = null, Guid? episode = null)
     {
         this.player = player;
         InitializePreferences(preferencesStore);
         InitializeComponent();
+        momentStore=moments;SetEpisodeContext(episode);
         Width = Math.Min(Width, Math.Max(MinWidth, SystemParameters.WorkArea.Width * 0.9));
         Height = Math.Min(Height, Math.Max(MinHeight, SystemParameters.WorkArea.Height * 0.9));
         SetEpisodeTitle(title);
@@ -53,6 +54,8 @@ internal partial class OnlinePlayerWindow : Window
     }
     internal void SetEpisodeTitle(string title)
     {
+        CloseSubtitleCenter();
+        CloseMoments();
         assistant.Reset(); buildingReserve=false;
         CloseMenus();
         EpisodeTitle.Text = title; EpisodeTitle.ToolTip = title; Title = title + " · AniT Player";
@@ -62,6 +65,8 @@ internal partial class OnlinePlayerWindow : Window
     {
         if (stopped) return;
         stopped = true;
+        CloseSubtitleCenter();
+        CloseMoments();
         CloseMenus(); CaptureVolumePreferences(player.Snapshot); preferenceSave.Stop(); SavePreferences();
         refresh.Stop(); clickDelay.Stop(); lifetime.Cancel(); seek?.Cancel(); seek?.Dispose(); lifetime.Dispose();
         player.UserInput -= OnInput; player.PlaybackClosed -= OnPlayerClosed; player.Disposed -= OnPlayerDisposed;
@@ -96,6 +101,7 @@ internal partial class OnlinePlayerWindow : Window
             case "volume-down": Run(() => player.SetVolumeAsync(player.Snapshot.Volume - 5, lifetime.Token)); break;
             case "mute": Run(() => player.ToggleMuteAsync(lifetime.Token)); break;
             case "close": Close(); break;
+            case "moments": OpenMoments(); break;
             case "menu": OpenMenu(BuildContextMenu(), null); break;
             case "audio": OpenMenu(BuildTrackMenu("audio"), AudioAction); break;
             case "subtitles": OpenMenu(BuildTrackMenu("sub"), SubtitleAction); break;
@@ -183,7 +189,7 @@ internal partial class OnlinePlayerWindow : Window
             if (args.Key != Key.Escape && args.Key != Key.F11) return;
         }
         if (args.Key == Key.Space && Chrome.IsKeyboardFocusWithin) return;
-        var action = args.Key switch { Key.A => "audio", Key.S => "subtitles", Key.Apps => "menu", Key.F10 when Keyboard.Modifiers == ModifierKeys.Shift => "menu", Key.Space or Key.P => "pause", Key.F or Key.F11 => "fullscreen", Key.Escape => "escape", Key.Left => "back", Key.Right => "forward", Key.Up => "volume-up", Key.Down => "volume-down", Key.M => "mute", Key.W when Keyboard.Modifiers == ModifierKeys.Control => "close", _ => null };
+        var action = args.Key switch { Key.B => "moments", Key.A => "audio", Key.S => "subtitles", Key.Apps => "menu", Key.F10 when Keyboard.Modifiers == ModifierKeys.Shift => "menu", Key.Space or Key.P => "pause", Key.F or Key.F11 => "fullscreen", Key.Escape => "escape", Key.Left => "back", Key.Right => "forward", Key.Up => "volume-up", Key.Down => "volume-down", Key.M => "mute", Key.W when Keyboard.Modifiers == ModifierKeys.Control => "close", _ => null };
         if (action is null) return;
         args.Handled = true; HandleInput(action);
     }

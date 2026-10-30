@@ -25,7 +25,7 @@ internal partial class OnlinePlayerWindow
     void InitializePreferences(OnlinePlayerPreferencesStore? store)
     {
         preferencesStore=store;preferences=store?.Load()??new();
-        if(store is not null){player.InitialVolume=preferences.Volume;player.InitialMuted=preferences.Muted;}
+        if(store is not null){player.InitialVolume=preferences.Volume;player.InitialMuted=preferences.Muted;player.InitialSubtitleAppearance=preferences.SubtitleAppearance;}
         preferenceSave.Tick+=(_,_)=>SavePreferences();
     }
     void QueueSave()
@@ -104,6 +104,7 @@ internal partial class OnlinePlayerWindow
     {
         var state=player.Tracks;
         if(kind=="sub") {
+            menu.Items.Add(Item("Central de legendas…",()=>{OpenSubtitleCenter();return Task.CompletedTask;}));
             var off=Item("Desligar legendas",async()=>{await player.SelectSubtitleAsync(null,lifetime.Token);RememberTrack(null,true,true);},true,state.SubtitleId is null);
             off.Tag=new TrackChoice(kind,null);menu.Items.Add(off);
         }
@@ -138,6 +139,7 @@ internal partial class OnlinePlayerWindow
         remember.StaysOpenOnClick=true;
         remember.Click+=(_,args)=>{args.Handled=true;preferences=preferences with{RememberLanguages=remember.IsChecked};QueueSave();SavePreferences();};
         menu.Items.Add(remember);
+        menu.Items.Add(Item("Central de legendas…",()=>{OpenSubtitleCenter();return Task.CompletedTask;}));
         var baki=Item("Assistência do Baki-Pi",check:true,selected:preferences.BakiAssistantEnabled);
         baki.Click+=(_,args)=>{args.Handled=true;preferences=preferences with{BakiAssistantEnabled=baki.IsChecked};assistant.Reset();QueueSave();SavePreferences();UpdateAssistant(player.Snapshot);};menu.Items.Add(baki);
     }

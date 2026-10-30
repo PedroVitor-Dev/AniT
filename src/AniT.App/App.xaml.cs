@@ -920,7 +920,9 @@ public partial class App : Application
             MediaPlayer!.OnlineTrace = onlineTrace;
             onlinePlayerTitle = (episode.Season?.Anime?.EnglishTitle ?? episode.Season?.Anime?.Title ?? global::System.IO.Path.GetFileNameWithoutExtension(mediaPath)) + $" · Episódio {episode.Number:00}";
             onlinePlayerFullscreen = options.StartFullscreen;
+            onlinePlayerEpisode = episodeId;
             onlinePlayerWindow?.SetEpisodeTitle(onlinePlayerTitle);
+            onlinePlayerWindow?.SetEpisodeContext(episodeId);
             onlinePlayerWindow?.SetFullscreen(onlinePlayerFullscreen);
             try { await MediaPlayer.PlayStreamAsync(onlineAddress, resumeAt, options); }
             catch { onlineTrace?.Finish("player_failed"); await PauseOnlinePlaybackAsync(onlineAddress); throw; }

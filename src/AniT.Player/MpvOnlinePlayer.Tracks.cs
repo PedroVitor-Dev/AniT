@@ -1,3 +1,4 @@
+using System.IO;
 using System.Globalization;
 using System.Text.Json;
 
@@ -17,6 +18,7 @@ public sealed partial class MpvOnlinePlayer
     void PublishTracks() => Volatile.Write(ref tracks,new(mediaTracks,audioId,subtitleId,playbackSpeed,subtitleDelay));
     void ResetTracks()
     {
+        importedSubtitles.Clear();
         mediaTracks = Array.Empty<OnlineMediaTrack>();audioId=subtitleId=null;subtitleDelay=0;PublishTracks();
     }
     internal void ObserveTracks(string name,JsonElement value)
@@ -70,15 +72,22 @@ public sealed partial class MpvOnlinePlayer
         try {
             var audio=await CommandAsync(["get_property","aid"],token);
             var subtitle=await CommandAsync(["get_property","sid"],token);
+            var selectedPath=ExternalPath(await CommandAsync(["get_property","track-list"],token),TrackId(subtitle));
+            var externalFiles=importedSubtitles.ToArray();
             ResetBufferObservation();seeking=true;PublishSnapshot();
             loaded=new(TaskCreationOptions.RunContinuationsAsynchronously);awaitingFileStart=true;
             await CommandAsync(["loadfile",path,"replace",-1,new Dictionary<string,string> {
                 ["index"]="default",["start"]=target.TotalSeconds.ToString(CultureInfo.InvariantCulture),["pause"]="yes",
-                ["aid"]=SelectionOption(audio),["sid"]=SelectionOption(subtitle),
+                ["aid"]=SelectionOption(audio),["sid"]=selectedPath is not null?"no":SelectionOption(subtitle),
                 ["sub-delay"]=Tracks.SubtitleDelay.ToString(CultureInfo.InvariantCulture),
                 ["speed"]=playbackSpeed.ToString(CultureInfo.InvariantCulture)
             }],token);
             await loaded.Task.WaitAsync(TimeSpan.FromSeconds(120),token);usingIndex=true;
+            foreach(var external in externalFiles)if(File.Exists(external))await CommandAsync(["sub-add",external,"auto"],token);
+            if(selectedPath is not null){var id=ExternalId(await CommandAsync(["get_property","track-list"],token),selectedPath);await CommandAsync(["set_property","sid",id is {} restored?(object)restored:"no"],token);}
+            else await CommandAsync(["set_property","sid",SelectionOption(subtitle)],token);
+            if(InitialSubtitleAppearance is {} style)await ApplySubtitleStyleCore(style,token);
+            await RefreshTracksAsync(token);
         } finally {await FinishPauseReloadAsync(expected,sessionToken);}
 
     }

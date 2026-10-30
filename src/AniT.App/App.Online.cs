@@ -12,12 +12,13 @@ public partial class App
 {
     static string onlinePlayerTitle = "Online Anime Player";
     static bool onlinePlayerFullscreen;
+    static Guid? onlinePlayerEpisode;
     static OnlinePlayerWindow? onlinePlayerWindow;
     static OnlinePlayerPreferencesStore OnlinePlayerPreferences()=>new(Path.Combine(dataRootPath,"Online",ProfileSettingsStore.ActiveProfileId.ToString("N"),"player-preferences.json"));
     static void ShowOnlinePlayer(global::AniT.Player.MpvOnlinePlayer player)
     {
         onlinePlayerWindow?.CloseFromPlayer();
-        var window = new OnlinePlayerWindow(player, onlinePlayerTitle, OnlinePlayerPreferences());
+        var window = new OnlinePlayerWindow(player, onlinePlayerTitle, OnlinePlayerPreferences(), new PlaybackMomentStore(Path.Combine(dataRootPath,"Online",ProfileSettingsStore.ActiveProfileId.ToString("N"),"moments.json")), onlinePlayerEpisode);
         onlinePlayerWindow = window;
         window.Closed += (_, _) => { if (ReferenceEquals(onlinePlayerWindow, window)) onlinePlayerWindow = null; };
         window.Show();

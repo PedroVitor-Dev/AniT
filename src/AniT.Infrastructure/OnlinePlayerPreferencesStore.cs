@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace AniT.Infrastructure;
 
 public sealed record OnlinePlayerPreferences(bool RememberLanguages=true,string? AudioLanguage=null,string? SubtitleLanguage=null,
-    double Volume=100,bool Muted=false,double? Speed=null,bool BakiAssistantEnabled=true,bool ProtectMomentSpoilers=true)
+    double Volume=100,bool Muted=false,double? Speed=null,bool BakiAssistantEnabled=true,bool ProtectMomentSpoilers=true,AniT.Core.SubtitleAppearanceSettings? SubtitleAppearance=null)
 {
     public static string? NormalizeLanguage(string? value)
     {
@@ -14,6 +14,7 @@ public sealed record OnlinePlayerPreferences(bool RememberLanguages=true,string?
     public OnlinePlayerPreferences Normalize()=>this with {
         AudioLanguage=NormalizeLanguage(AudioLanguage) is "off" ? null : NormalizeLanguage(AudioLanguage),
         SubtitleLanguage=NormalizeLanguage(SubtitleLanguage),Volume=double.IsFinite(Volume)?Math.Clamp(Volume,0,100):100,
+        SubtitleAppearance=SubtitleAppearance?.Normalize(),
         Speed=Speed is { } speed&&double.IsFinite(speed)&&speed>=0.25&&speed<=3?speed:null
     };
 }

@@ -1,6 +1,6 @@
 <Window x:Class="AniT.App.OnlinePlayerWindow" x:ClassModifier="internal" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:player="clr-namespace:AniT.Player;assembly=AniT.Player"
     Title="AniT Player" Width="1120" Height="720" MinWidth="640" MinHeight="420" WindowStartupLocation="CenterScreen"
-    Background="{DynamicResource AniT.Brush.Background}" Foreground="{DynamicResource AniT.Brush.TextPrimary}" PreviewKeyDown="KeyPressed" PreviewMouseMove="PointerMoved" PreviewMouseDown="PointerPressed">
+    Background="{DynamicResource AniT.Brush.Background}" Foreground="{DynamicResource AniT.Brush.TextPrimary}" PreviewKeyDown="KeyPressed" PreviewMouseMove="PointerMoved" PreviewMouseDown="PointerPressed" AllowDrop="True" PreviewDragOver="SubtitleDragOver" Drop="SubtitleDrop">
     <Window.Resources><ResourceDictionary><ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Styles/OnlinePlayerTheme.xaml"/></ResourceDictionary.MergedDictionaries></ResourceDictionary></Window.Resources>
     <DockPanel x:Name="Layout">
         <Border x:Name="Header" DockPanel.Dock="Top" Padding="18,10" Background="{DynamicResource AniT.Brush.Surface}">
@@ -32,6 +32,8 @@
                     <Slider x:Name="Volume" Width="110" Minimum="0" Maximum="100" Value="100" Style="{StaticResource PlayerTrack}" Margin="8,0" VerticalAlignment="Center" AutomationProperties.Name="Volume" ToolTip="Volume" ValueChanged="VolumeChanged"/>
                     <Button x:Name="AudioAction" Style="{StaticResource PlayerAction}" Margin="3" MaxWidth="180" Click="AudioClick" ToolTip="Escolher faixa de áudio (A)" AutomationProperties.Name="Faixas de áudio"><TextBlock x:Name="AudioLabel" Text="Áudio" Style="{StaticResource PlayerText}" MaxWidth="130" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/></Button>
                     <Button x:Name="SubtitleAction" Style="{StaticResource PlayerAction}" Margin="3" MaxWidth="180" Click="SubtitleClick" ToolTip="Escolher legenda (S)" AutomationProperties.Name="Legendas"><TextBlock x:Name="SubtitleLabel" Text="Legendas" Style="{StaticResource PlayerText}" MaxWidth="130" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/></Button>
+                    <Button Content="Central de legendas" Style="{StaticResource PlayerAction}" Margin="3" Click="SubtitlesCenterClick"/>
+                    <Button x:Name="MomentsAction" Content="Momentos" Style="{StaticResource PlayerAction}" Margin="3" Click="MomentsClick" IsEnabled="False" ToolTip="Seus momentos (B)"/>
                     <Button x:Name="OptionsAction" Content="Opções" Style="{StaticResource PlayerAction}" Margin="3" Click="OptionsClick" ToolTip="Velocidade e preferências"/>
                     <Button x:Name="FullscreenAction" Style="{StaticResource PlayerIcon}" ToolTip="Tela cheia (F ou F11); Esc para sair" AutomationProperties.Name="Tela cheia" Click="FullscreenClick"><Image Width="38" Height="38" Source="/AniT;component/Assets/Player/23_tela_cheia.png"/></Button>
                 </WrapPanel>

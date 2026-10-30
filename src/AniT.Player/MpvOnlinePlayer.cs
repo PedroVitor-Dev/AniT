@@ -99,6 +99,7 @@ public sealed partial class MpvOnlinePlayer : IDisposable
         await CommandAsync(["set_property", "slang", options.PreferredSubtitleLanguage is "auto" or "off" ? "" : Language(options.PreferredSubtitleLanguage)], token);
         await CommandAsync(["set_property", "aid", "auto"], token);
         await CommandAsync(["set_property", "sub-delay", 0], token);
+        if(InitialSubtitleAppearance is {} subtitleStyle)await ApplySubtitleStyleCore(subtitleStyle.Normalize(),token);
         await ResetBufferOptionsAsync(token);
         await CommandAsync(["loadfile", address.AbsoluteUri, "replace", -1, new Dictionary<string, string> { { "index", Path.GetExtension(address.AbsolutePath).ToLowerInvariant() is ".mkv" or ".webm" ? "recreate" : "default" }, { "pause", "yes" } }], token);
         await loaded.Task.WaitAsync(TimeSpan.FromSeconds(120), token);
@@ -120,7 +121,7 @@ public sealed partial class MpvOnlinePlayer : IDisposable
         if (videoParent != IntPtr.Zero) {
             start.ArgumentList.Add("--wid=" + WindowId(videoParent));
             start.ArgumentList.Add("--input-doubleclick-time=" + MpvVideoHost.DoubleClickMilliseconds);
-            foreach (var option in new[] { "--osc=no", "--osd-level=0", "--input-builtin-bindings=no", "--input-default-bindings=no", "--window-dragging=no" }) start.ArgumentList.Add(option);
+            foreach (var option in new[] { "--drag-and-drop=no", "--osc=no", "--osd-level=0", "--input-builtin-bindings=no", "--input-default-bindings=no", "--window-dragging=no" }) start.ArgumentList.Add(option);
         }
         process = Process.Start(start) ?? throw new IOException("Não foi possível iniciar o motor de streaming.");
         Trace($"mpv iniciado (PID {process.Id}).");
