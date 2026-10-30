@@ -75,7 +75,7 @@ internal static class OnlinePlayerHostChecks
                 await Key("SPACE");await Until(()=>!player.Snapshot.Paused);
                 // Check actual window chrome in both themes and larger text at 1366 and compact size.
                 foreach(var theme in new[]{AppearanceThemeMode.Dark,AppearanceThemeMode.Light})
-                foreach(var size in new[]{(1100d,700d),(640d,540d)})
+                foreach(var size in new[]{(1100d,700d),(640d,540d),(640d,420d)})
                 foreach(var scale in new[]{100,140}) {
                     AppearanceManager.Apply(AniTSystemSettings.Default with{ThemeMode=theme,TextScalePercent=scale});
                     window.Width=size.Item1;window.Height=size.Item2;window.HandleInput("pointer");window.UpdateView(player.Snapshot);window.UpdateLayout();
@@ -83,12 +83,14 @@ internal static class OnlinePlayerHostChecks
                         var bounds=button.TransformToAncestor(window).TransformBounds(new Rect(button.RenderSize));
                         if(bounds.Left<0||bounds.Right>window.ActualWidth||bounds.Bottom>window.ActualHeight)throw new Exception("Native host chrome clipped");
                     }
-                    if(scale==100) {
+                    {
                         // RenderTargetBitmap excludes native GPU surfaces; frame checks below use mpv output.
                         var bitmap=new RenderTargetBitmap((int)window.ActualWidth,(int)window.ActualHeight,96,96,PixelFormats.Pbgra32);bitmap.Render(window);
-                        var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));using var file=File.Create(Path.Combine(output,$"host-{theme}-{size.Item1}.png"));encoder.Save(file);
+                        var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));using var file=File.Create(Path.Combine(output,$"host-{theme}-{scale}-{size.Item1}.png"));encoder.Save(file);
                     }
                 }
+                // Keep the user's actual cursor out of the autohide assertion after layout changes.
+                window.Left=-20000;window.Top=-20000;await Task.Delay(100,token);
                 ((Button)window.FindName("PlayAction")).Focus();window.HandleInput("pointer");
                 window.UpdateView(player.Snapshot,10);
                 if(window.ControlsVisible)throw new Exception("Playing controls did not autohide");
@@ -107,8 +109,8 @@ internal static class OnlinePlayerHostChecks
                 await player.PlayStreamAsync(server.Address,null,MpcHcPlaybackOptions.Default,token);
                 await Until(()=>player.Snapshot.VideoReady&&player.Snapshot.Position?.TotalSeconds>0.5);
                 player.Dispose();await Until(()=>!window.IsVisible);
-                await File.WriteAllTextAsync(Path.Combine(output,"result.json"),JsonSerializer.Serialize(new{embedded=true,first_frame=true,native_input=true,single_click_pause=true,double_click_preserves_pause=true,index_prefetch_preserves_stream=true,fullscreen_restore=true,seek=true,rapid_seek=true,mute=true,volume=true,autohide=true,checkpoint=true,reopen=true,layouts=8},new JsonSerializerOptions{WriteIndented=true}),token);
-                Console.WriteLine("Online native host: embedding, first frame, native input, pause, double-click, fullscreen, seek, volume, mute, autohide, close/checkpoint, reopen and 8 layouts passed. "+output);
+                await File.WriteAllTextAsync(Path.Combine(output,"result.json"),JsonSerializer.Serialize(new{embedded=true,first_frame=true,native_input=true,single_click_pause=true,double_click_preserves_pause=true,index_prefetch_preserves_stream=true,fullscreen_restore=true,seek=true,rapid_seek=true,mute=true,volume=true,autohide=true,checkpoint=true,reopen=true,layouts=12},new JsonSerializerOptions{WriteIndented=true}),token);
+                Console.WriteLine("Online native host: embedding, first frame, native input, pause, double-click, fullscreen, seek, volume, mute, autohide, close/checkpoint, reopen and 12 layouts passed. "+output);
                 result=0;
             } catch(Exception error){Console.Error.WriteLine(error);}
             finally{window?.CloseFromPlayer();runner.Close();app.Shutdown();}

@@ -98,3 +98,22 @@ prazo para obter peças ainda ausentes de um swarm público. Nenhum novo instala
 ou pacote Store foi gerado nesta correção.
 
 O fluxo completo --check-online-player --mkv também passou: reprodução com 13,3% do episódio presente, avanço para 65 s em 6,7 s sob limitação de rede, retorno, conclusão, reabertura e cancelamento durante início bloqueado (mídia sintética).
+
+## Acabamento do cabeçalho e controles — 30/10/2026
+
+O player usa a nova placa ilustrada do Baki-Pi (assets/player/1.png), em uma cópia
+otimizada com transparência e 840 px de largura; o original e os demais arquivos
+1–5 são preservados. Título do episódio com hierarquia de fonte, placa de marca e
+botão de retorno centralizado. Ícones de reprodução maiores, sem uma segunda
+moldura ao redor das ilustrações; tela cheia fixa à direita. Faixas e ferramentas
+ficam em uma linha independente, com rótulos compactados para ícones em larguras
+menores. Tooltips e nomes de acessibilidade permanecem nos botões.
+
+As superfícies e textos usam recursos do tema, inclusive a legenda do cabeçalho.
+A placa tem texto escuro sobre a região clara da ilustração, nos dois temas.
+Nenhuma moldura é desenhada sobre o vídeo e nenhuma textura é recalculada por quadro.
+
+Validação: --check-player-host passou em 12 combinações (1100×700, 640×540,
+640×420; temas claro/escuro; texto 100/140%), além de clique/duplo clique, atalhos,
+pausa, seek, volume, ocultação e reabertura. --check-player-extras passou para
+assistência/reserva, momentos e legendas com oito layouts. Não foi gerado instalador.

@@ -15,10 +15,10 @@
         <Setter Property="BorderBrush" Value="{DynamicResource AniT.Brush.Border}"/>
         <Setter Property="Padding" Value="16,10"/><Setter Property="MinHeight" Value="44"/>
         <Setter Property="FontSize" Value="14"/><Setter Property="FontFamily" Value="Segoe UI"/>
-        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
             <Border x:Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="{TemplateBinding Padding}">
-                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" RecognizesAccessKey="True"/>
             </Border>
             <ControlTemplate.Triggers>
                 <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource AniT.Brush.SurfaceHover}"/></Trigger>
@@ -31,6 +31,20 @@
     <Style x:Key="PlayerIcon" TargetType="Button" BasedOn="{StaticResource PlayerAction}">
         <Setter Property="Width" Value="48"/><Setter Property="Height" Value="48"/><Setter Property="Padding" Value="4"/>
         <Setter Property="Margin" Value="3"/>
+    </Style>
+    <Style x:Key="PlayerTransport" TargetType="Button" BasedOn="{StaticResource PlayerIcon}">
+        <Setter Property="Width" Value="48"/><Setter Property="Height" Value="48"/>
+        <Setter Property="Background" Value="Transparent"/><Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Padding" Value="2"/><Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style x:Key="PlayerTool" TargetType="Button" BasedOn="{StaticResource PlayerAction}">
+        <Setter Property="Padding" Value="10,7"/><Setter Property="MinHeight" Value="38"/>
+        <Setter Property="Margin" Value="3,0"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    </Style>
+    <Style x:Key="PlayerGlyph" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/><Setter Property="FontSize" Value="15"/>
+        <Setter Property="Tag" Value="ThemeManaged"/><Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
     <Style x:Key="PlayerTrack" TargetType="Slider">
         <Setter Property="MinHeight" Value="32"/><Setter Property="Foreground" Value="{DynamicResource AniT.Brush.AccentCyan}"/>

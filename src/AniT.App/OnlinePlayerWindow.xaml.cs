@@ -44,7 +44,8 @@ internal partial class OnlinePlayerWindow : Window
         player.Disposed += OnPlayerDisposed;
         refresh.Tick += (_, _) => UpdateView(player.Snapshot);
         clickDelay.Tick += (_, _) => { clickDelay.Stop(); Run(() => player.TogglePauseAsync(lifetime.Token)); };
-        Loaded += (_, _) => { refresh.Start(); UpdateView(player.Snapshot); };
+        SizeChanged += (_, _) => UpdateChromeDensity();
+        Loaded += (_, _) => { UpdateChromeDensity(); refresh.Start(); UpdateView(player.Snapshot); };
         Closing += (_, _) => {
             if (closing) return;
             closing = true;
@@ -52,6 +53,14 @@ internal partial class OnlinePlayerWindow : Window
             player.ClosePlayback();
         };
         Closed += (_, _) => Stop();
+    }
+    void UpdateChromeDensity()
+    {
+        var expanded = ActualWidth >= 1000;
+        SubtitleToolLabel.Visibility = MomentsToolLabel.Visibility = OptionsToolLabel.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
+        BrandPlate.Width = ActualWidth < 800 ? 132 : 198;
+        BrandPlate.Height = ActualWidth < 800 ? 48 : 70;
+        BrandWordmark.Width = ActualWidth < 800 ? 76 : 108;
     }
     internal void SetEpisodeTitle(string title)
     {

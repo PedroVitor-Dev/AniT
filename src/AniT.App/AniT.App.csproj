@@ -92,6 +92,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="..\..\assets\player\optimized\ornament-1.png" Link="Assets\Player\ornament-1.png" />
     <Resource Include="..\..\assets\player\baki_pi_player_assets\01_play.png" Link="Assets\Player\01_play.png" />
     <Resource Include="..\..\assets\player\baki_pi_player_assets\02_pause.png" Link="Assets\Player\02_pause.png" />
     <Resource Include="..\..\assets\player\baki_pi_player_assets\17_mudo.png" Link="Assets\Player\17_mudo.png" />

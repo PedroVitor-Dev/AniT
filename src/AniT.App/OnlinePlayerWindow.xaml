@@ -3,16 +3,25 @@
     Background="{DynamicResource AniT.Brush.Background}" Foreground="{DynamicResource AniT.Brush.TextPrimary}" PreviewKeyDown="KeyPressed" PreviewMouseMove="PointerMoved" PreviewMouseDown="PointerPressed" AllowDrop="True" PreviewDragOver="SubtitleDragOver" Drop="SubtitleDrop">
     <Window.Resources><ResourceDictionary><ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Styles/OnlinePlayerTheme.xaml"/></ResourceDictionary.MergedDictionaries></ResourceDictionary></Window.Resources>
     <DockPanel x:Name="Layout">
-        <Border x:Name="Header" DockPanel.Dock="Top" Padding="18,10" Background="{DynamicResource AniT.Brush.Surface}">
-            <DockPanel><Button DockPanel.Dock="Right" Content="Voltar ao AniT" Style="{StaticResource PlayerAction}" Margin="16,0,0,0" Click="ReturnClick"/>
-                <StackPanel VerticalAlignment="Center"><TextBlock Text="ANIT PLAYER" Style="{StaticResource PlayerCaption}"/>
-                    <TextBlock x:Name="EpisodeTitle" Style="{StaticResource PlayerText}" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+        <Border x:Name="Header" DockPanel.Dock="Top" Padding="16,4,18,4" Background="{DynamicResource AniT.Brush.Surface}" BorderBrush="{DynamicResource AniT.Brush.Border}" BorderThickness="0,0,0,1">
+            <Grid MinHeight="78"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <Grid x:Name="BrandPlate" Width="198" Height="70" Margin="0,0,18,0" IsHitTestVisible="False">
+                    <Image Source="/AniT;component/Assets/Player/ornament-1.png" Stretch="Uniform" Tag="PlayerFrame"/>
+                    <Viewbox x:Name="BrandWordmark" Width="108" Height="18" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0"><TextBlock Text="AniT Player" Tag="ThemeManaged" Foreground="#072D52" FontFamily="Segoe UI Semibold" FontSize="15" FontWeight="Bold"/></Viewbox>
+                </Grid>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,4,12,4">
+                    <TextBlock Text="AGORA ASSISTINDO" Style="{StaticResource PlayerCaption}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource AniT.Brush.TextSecondary}" Margin="0,0,0,5"/>
+                    <TextBlock x:Name="EpisodeTitle" Style="{StaticResource PlayerText}" FontSize="19" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
-            </DockPanel>
+                <Button Grid.Column="2" Style="{StaticResource PlayerAction}" Padding="12,8" VerticalAlignment="Center" Click="ReturnClick" ToolTip="Fechar o player e voltar ao AniT" AutomationProperties.Name="Voltar ao AniT">
+                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,8,0"/><TextBlock Text="Voltar ao AniT" Style="{StaticResource PlayerText}"/></StackPanel>
+                </Button>
+            </Grid>
         </Border>
-        <Border x:Name="Chrome" DockPanel.Dock="Bottom" Background="{DynamicResource AniT.Brush.Surface}" Padding="18,8,18,12">
+        <Border x:Name="Chrome" DockPanel.Dock="Bottom" Background="{DynamicResource AniT.Brush.Surface}" Padding="18,8,18,10" BorderBrush="{DynamicResource AniT.Brush.Border}" BorderThickness="0,1,0,0">
             <StackPanel>
-                <DockPanel>
+                <DockPanel Margin="0,0,0,3">
+                    <Border DockPanel.Dock="Right" Background="{DynamicResource AniT.Brush.SurfaceAlt}" CornerRadius="8" Padding="9,3" Margin="12,0,0,0"><TextBlock x:Name="TimeLabel" Text="00:00 / --:--" Style="{StaticResource PlayerCaption}" FontFamily="Consolas" VerticalAlignment="Center"/></Border>
                     <Image x:Name="AssistantFace" DockPanel.Dock="Left" Source="/AniT;component/Assets/Player/loading.png" Width="32" Height="36" Margin="0,0,8,0" Visibility="Collapsed"/>
                     <Button x:Name="AssistantDismiss" DockPanel.Dock="Right" Content="×" Style="{StaticResource PlayerAction}" Padding="8,2" MinHeight="32" Margin="4,0,0,0" Visibility="Collapsed" ToolTip="Dispensar o Baki-Pi neste episódio" Click="DismissAssistant" AutomationProperties.Name="Dispensar assistência neste episódio"/>
                     <Button x:Name="AssistantAction" DockPanel.Dock="Right" Style="{StaticResource PlayerAction}" Padding="10,2" MinHeight="32" Visibility="Collapsed" Click="AssistantClick"/>
@@ -23,20 +32,24 @@
                 <Slider x:Name="Timeline" Margin="0,6,0,0" Style="{StaticResource PlayerTrack}" Minimum="0" Maximum="1" IsEnabled="False" IsMoveToPointEnabled="True" ToolTip="Posição do episódio" AutomationProperties.Name="Posição do episódio"
                     PreviewMouseLeftButtonDown="TimelineDown" PreviewMouseLeftButtonUp="TimelineUp" PreviewKeyUp="TimelineKeyUp" LostMouseCapture="TimelineLostCapture"/>
                 </Grid>
-                <TextBlock x:Name="TimeLabel" Text="00:00 / --:--" Style="{StaticResource PlayerCaption}"/>
-                <WrapPanel Margin="0,6,0,0">
-                    <Button Style="{StaticResource PlayerIcon}" ToolTip="Voltar 10 segundos (←)" AutomationProperties.Name="Voltar 10 segundos" Click="BackClick"><Image Width="38" Height="38" Source="/AniT;component/Assets/Player/21_voltar_10s.png"/></Button>
-                    <Button x:Name="PlayAction" Style="{StaticResource PlayerIcon}" ToolTip="Reproduzir ou pausar (Espaço)" AutomationProperties.Name="Reproduzir ou pausar" Click="PlayClick"><Image x:Name="PlayIcon" Width="38" Height="38" Source="/AniT;component/Assets/Player/01_play.png"/></Button>
-                    <Button Style="{StaticResource PlayerIcon}" ToolTip="Avançar 10 segundos (→)" AutomationProperties.Name="Avançar 10 segundos" Click="ForwardClick"><Image Width="38" Height="38" Source="/AniT;component/Assets/Player/22_avancar_10s.png"/></Button>
-                    <Button x:Name="MuteAction" Style="{StaticResource PlayerIcon}" ToolTip="Ativar ou silenciar áudio (M)" AutomationProperties.Name="Ativar ou silenciar áudio" Click="MuteClick"><Image x:Name="VolumeIcon" Width="38" Height="38" Source="/AniT;component/Assets/Player/20_volume_alto.png"/></Button>
-                    <Slider x:Name="Volume" Width="110" Minimum="0" Maximum="100" Value="100" Style="{StaticResource PlayerTrack}" Margin="8,0" VerticalAlignment="Center" AutomationProperties.Name="Volume" ToolTip="Volume" ValueChanged="VolumeChanged"/>
-                    <Button x:Name="AudioAction" Style="{StaticResource PlayerAction}" Margin="3" MaxWidth="180" Click="AudioClick" ToolTip="Escolher faixa de áudio (A)" AutomationProperties.Name="Faixas de áudio"><TextBlock x:Name="AudioLabel" Text="Áudio" Style="{StaticResource PlayerText}" MaxWidth="130" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/></Button>
-                    <Button x:Name="SubtitleAction" Style="{StaticResource PlayerAction}" Margin="3" MaxWidth="180" Click="SubtitleClick" ToolTip="Escolher legenda (S)" AutomationProperties.Name="Legendas"><TextBlock x:Name="SubtitleLabel" Text="Legendas" Style="{StaticResource PlayerText}" MaxWidth="130" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/></Button>
-                    <Button Content="Central de legendas" Style="{StaticResource PlayerAction}" Margin="3" Click="SubtitlesCenterClick"/>
-                    <Button x:Name="MomentsAction" Content="Momentos" Style="{StaticResource PlayerAction}" Margin="3" Click="MomentsClick" IsEnabled="False" ToolTip="Seus momentos (B)"/>
-                    <Button x:Name="OptionsAction" Content="Opções" Style="{StaticResource PlayerAction}" Margin="3" Click="OptionsClick" ToolTip="Velocidade e preferências"/>
-                    <Button x:Name="FullscreenAction" Style="{StaticResource PlayerIcon}" ToolTip="Tela cheia (F ou F11); Esc para sair" AutomationProperties.Name="Tela cheia" Click="FullscreenClick"><Image Width="38" Height="38" Source="/AniT;component/Assets/Player/23_tela_cheia.png"/></Button>
-                </WrapPanel>
+                <Grid Margin="0,4,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Style="{StaticResource PlayerTransport}" ToolTip="Voltar 10 segundos (←)" AutomationProperties.Name="Voltar 10 segundos" Click="BackClick"><Image Width="42" Height="42" Source="/AniT;component/Assets/Player/21_voltar_10s.png"/></Button>
+                        <Button x:Name="PlayAction" Style="{StaticResource PlayerTransport}" Width="58" Height="58" ToolTip="Reproduzir ou pausar (Espaço)" AutomationProperties.Name="Reproduzir ou pausar" Click="PlayClick"><Image x:Name="PlayIcon" Width="50" Height="50" Source="/AniT;component/Assets/Player/01_play.png"/></Button>
+                        <Button Style="{StaticResource PlayerTransport}" ToolTip="Avançar 10 segundos (→)" AutomationProperties.Name="Avançar 10 segundos" Click="ForwardClick"><Image Width="42" Height="42" Source="/AniT;component/Assets/Player/22_avancar_10s.png"/></Button>
+                        <Border Width="1" Height="24" Background="{DynamicResource AniT.Brush.Border}" Margin="12,0"/>
+                        <Button x:Name="MuteAction" Style="{StaticResource PlayerTransport}" ToolTip="Ativar ou silenciar áudio (M)" AutomationProperties.Name="Ativar ou silenciar áudio" Click="MuteClick"><Image x:Name="VolumeIcon" Width="36" Height="36" Source="/AniT;component/Assets/Player/20_volume_alto.png"/></Button>
+                        <Slider x:Name="Volume" Width="90" Minimum="0" Maximum="100" Value="100" Style="{StaticResource PlayerTrack}" Margin="4,0" VerticalAlignment="Center" AutomationProperties.Name="Volume" ToolTip="Volume" ValueChanged="VolumeChanged"/>
+                    </StackPanel>
+                    <Button x:Name="FullscreenAction" Grid.Column="1" Style="{StaticResource PlayerTransport}" ToolTip="Tela cheia (F ou F11); Esc para sair" AutomationProperties.Name="Tela cheia" Click="FullscreenClick"><Image Width="42" Height="42" Source="/AniT;component/Assets/Player/23_tela_cheia.png"/></Button>
+                </Grid>
+                <Grid Margin="0,4,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <Button x:Name="AudioAction" Style="{StaticResource PlayerTool}" Click="AudioClick" ToolTip="Escolher faixa de áudio (A)" AutomationProperties.Name="Faixas de áudio"><DockPanel><TextBlock Text="&#xE8D6;" Style="{StaticResource PlayerGlyph}" Margin="0,0,8,0"/><TextBlock x:Name="AudioLabel" Text="Áudio" Style="{StaticResource PlayerText}" FontSize="12" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/></DockPanel></Button>
+                    <Button x:Name="SubtitleAction" Grid.Column="1" Style="{StaticResource PlayerTool}" Click="SubtitleClick" ToolTip="Escolher legenda (S)" AutomationProperties.Name="Legendas"><DockPanel><TextBlock Text="&#xE8F2;" Style="{StaticResource PlayerGlyph}" Margin="0,0,8,0"/><TextBlock x:Name="SubtitleLabel" Text="Legendas" Style="{StaticResource PlayerText}" FontSize="12" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/></DockPanel></Button>
+                    <Button Grid.Column="2" Style="{StaticResource PlayerTool}" Click="SubtitlesCenterClick" ToolTip="Central de legendas: importar e ajustar aparência" AutomationProperties.Name="Central de legendas"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8D2;" Style="{StaticResource PlayerGlyph}"/><TextBlock x:Name="SubtitleToolLabel" Text="Central de legendas" Style="{StaticResource PlayerText}" FontSize="12" Margin="8,0,0,0"/></StackPanel></Button>
+                    <Button x:Name="MomentsAction" Grid.Column="3" Style="{StaticResource PlayerTool}" Click="MomentsClick" IsEnabled="False" ToolTip="Seus momentos (B)" AutomationProperties.Name="Momentos"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE734;" Style="{StaticResource PlayerGlyph}"/><TextBlock x:Name="MomentsToolLabel" Text="Momentos" Style="{StaticResource PlayerText}" FontSize="12" Margin="8,0,0,0"/></StackPanel></Button>
+                    <Button x:Name="OptionsAction" Grid.Column="4" Style="{StaticResource PlayerTool}" Click="OptionsClick" ToolTip="Opções: velocidade e preferências" AutomationProperties.Name="Opções"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE713;" Style="{StaticResource PlayerGlyph}"/><TextBlock x:Name="OptionsToolLabel" Text="Opções" Style="{StaticResource PlayerText}" FontSize="12" Margin="8,0,0,0"/></StackPanel></Button>
+                </Grid>
             </StackPanel>
         </Border>
         <!-- WPF controls remain outside the native video surface: no airspace overlays. -->
