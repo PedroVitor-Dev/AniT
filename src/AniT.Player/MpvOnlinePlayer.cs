@@ -85,7 +85,8 @@ public sealed partial class MpvOnlinePlayer : IDisposable
         fileLifetime?.Cancel(); fileLifetime?.Dispose(); fileLifetime = CancellationTokenSource.CreateLinkedTokenSource(lifetime!.Token);
         using var operation = CancellationTokenSource.CreateLinkedTokenSource(token, fileLifetime.Token); token = operation.Token;
         var fileGeneration = ++generation;
-        ResetBufferObservation(); playbackSpeed = options.Speed;
+        lock(pauseSync) indexReloading=false;
+        ResetBufferObservation(); playbackSpeed = options.Speed; ResetTracks();
         seeking = frameInfoReady = playbackRestarted = false; cacheSeconds = outputDrops = decoderDrops = avSync = null;
         usingIndex = false; position = duration = null; videoReady = false; paused = true; buffering = false; CurrentFilePath = address.AbsoluteUri; PublishSnapshot();
         telemetry?.Mark("loadfile_requested");
@@ -96,6 +97,8 @@ public sealed partial class MpvOnlinePlayer : IDisposable
         await CommandAsync(["set_property", "alang", options.PreferredAudioLanguage == "auto" ? "" : Language(options.PreferredAudioLanguage)], token);
         await CommandAsync(["set_property", "sid", options.PreferredSubtitleLanguage == "off" ? "no" : "auto"], token);
         await CommandAsync(["set_property", "slang", options.PreferredSubtitleLanguage is "auto" or "off" ? "" : Language(options.PreferredSubtitleLanguage)], token);
+        await CommandAsync(["set_property", "aid", "auto"], token);
+        await CommandAsync(["set_property", "sub-delay", 0], token);
         await ResetBufferOptionsAsync(token);
         await CommandAsync(["loadfile", address.AbsoluteUri, "replace", -1, new Dictionary<string, string> { { "index", Path.GetExtension(address.AbsolutePath).ToLowerInvariant() is ".mkv" or ".webm" ? "recreate" : "default" }, { "pause", "yes" } }], token);
         await loaded.Task.WaitAsync(TimeSpan.FromSeconds(120), token);
@@ -127,7 +130,9 @@ public sealed partial class MpvOnlinePlayer : IDisposable
         writer = new StreamWriter(pipe, new UTF8Encoding(false), 1024, leaveOpen: true) { AutoFlush = true };
         _ = ReadLoopAsync(pipe, lifetime.Token);
         _ = WatchExitAsync(process, lifetime);
-        var index = 0; foreach (var property in new[] { "time-pos", "duration", "pause", "paused-for-cache", "video-out-params", "demuxer-cache-state", "demuxer-cache-duration", "speed", "volume", "mute" }) await CommandAsync(["observe_property", ++index, property], token);
+        var index = 0; foreach (var property in new[] { "time-pos", "duration", "pause", "paused-for-cache", "video-out-params", "demuxer-cache-state", "demuxer-cache-duration", "speed", "volume", "mute", "track-list", "aid", "sid", "sub-delay" }) await CommandAsync(["observe_property", ++index, property], token);
+        await SetVolumeAsync(InitialVolume, token);
+        await CommandAsync(["set_property", "mute", InitialMuted], token);
         if (videoParent != IntPtr.Zero) {
             await CommandAsync(["define-section", "anit-host", HostBindings, "force"], token);
             await CommandAsync(["enable-section", "anit-host", "allow-hide-cursor"], token);
@@ -173,9 +178,10 @@ public sealed partial class MpvOnlinePlayer : IDisposable
                             case "video-frame-info" when value.ValueKind == JsonValueKind.Object && value.TryGetProperty("picture-type", out var pictureType) && pictureType.ValueKind == JsonValueKind.String: frameInfoReady = !string.IsNullOrEmpty(pictureType.GetString()); break;
                             case "demuxer-cache-duration": cacheSeconds = BufferNumber(value); cacheSecondsTimestamp = Stopwatch.GetTimestamp(); break;
                             case "demuxer-cache-state": cacheState = MpvCacheState.Parse(value); break;
+                            case "track-list": case "aid": case "sid": case "sub-delay": ObserveTracks(root.GetProperty("name").GetString()!, value); break;
                             case "volume": if (BufferNumber(value) is { } level) volume = Math.Clamp(level, 0, 100); break;
                             case "mute" when value.ValueKind is JsonValueKind.True or JsonValueKind.False: muted = value.GetBoolean(); break;
-                            case "speed": if (BufferNumber(value) is > 0 and var speed) playbackSpeed = speed; break;
+                            case "speed": if (BufferNumber(value) is > 0 and var speed) playbackSpeed = speed; PublishTracks(); break;
                             case "frame-drop-count" when value.ValueKind == JsonValueKind.Number: outputDrops = value.GetDouble(); break;
                             case "decoder-frame-drop-count" when value.ValueKind == JsonValueKind.Number: decoderDrops = value.GetDouble(); break;
                             case "avsync" when value.ValueKind == JsonValueKind.Number: avSync = value.GetDouble(); break;
@@ -207,7 +213,7 @@ public sealed partial class MpvOnlinePlayer : IDisposable
         try { await writing.WaitAsync(token); try { await output.WriteLineAsync(JsonSerializer.Serialize(new { command, request_id = id }).AsMemory(), token); } finally { writing.Release(); } return await response.Task.WaitAsync(TimeSpan.FromSeconds(5), token); }
         finally { pending.TryRemove(id, out _); }
     }
-    public async Task PauseAsync(CancellationToken token = default) => await CommandAsync(["set_property", "pause", true], token);
+    public Task PauseAsync(CancellationToken token = default) => ChangeUserPauseAsync(true,token);
     public void CancelPendingPreparation() => fileLifetime?.Cancel();
 
     async Task WarmIndexAsync(Uri address, CancellationToken token)
@@ -235,18 +241,8 @@ public sealed partial class MpvOnlinePlayer : IDisposable
                 // Reopen only after there is a playback cushion; native OSC/keyboard seeks
                 // then use the real cues too, without having to go through AniT's wrapper.
                 var current = await GetPositionAsync(token);
-                var keepPaused = paused;
-                var audio = await CommandAsync(["get_property", "aid"], token);
-                var subtitle = await CommandAsync(["get_property", "sid"], token);
-                var options = new Dictionary<string, string> { { "index", "default" }, { "start", current.TotalSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture) }, { "pause", "yes" } };
-                if (audio.ValueKind is JsonValueKind.Number or JsonValueKind.String) options["aid"] = audio.ValueKind == JsonValueKind.String ? audio.GetString()! : audio.GetRawText();
-                if (subtitle.ValueKind is JsonValueKind.Number or JsonValueKind.String) options["sid"] = subtitle.ValueKind == JsonValueKind.String ? subtitle.GetString()! : subtitle.GetRawText();
-                telemetry?.Event("index_reload_begin"); ResetBufferObservation(); seeking = true;
-                loaded = new(TaskCreationOptions.RunContinuationsAsynchronously); awaitingFileStart = true;
-                await CommandAsync(["loadfile", address.AbsoluteUri, "replace", -1, options], token);
-                await loaded.Task.WaitAsync(TimeSpan.FromSeconds(120), token);
-                usingIndex = true;
-                await CommandAsync(["set_property", "pause", keepPaused], token);
+                telemetry?.Event("index_reload_begin");
+                await ReloadIndexedAsync(address.AbsoluteUri,current,token);
                 Trace("Índice pronto também para os controles do player.");
             }
             finally { indexing.Release(); }
@@ -271,11 +267,7 @@ public sealed partial class MpvOnlinePlayer : IDisposable
         using var operation = CancellationTokenSource.CreateLinkedTokenSource(token, fileLifetime?.Token ?? lifetime?.Token ?? CancellationToken.None); token = operation.Token;
         if (!usingIndex && prepareSeek is not null && CurrentFilePath is { } path && await prepareSeek(new Uri(path), token))
         {
-            var keepPaused = paused; ResetBufferObservation(); seeking = true;
-            loaded = new(TaskCreationOptions.RunContinuationsAsynchronously); awaitingFileStart = true;
-            await CommandAsync(["loadfile", path, "replace", -1, new Dictionary<string, string> { { "index", "default" }, { "start", target.TotalSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture) }, { "pause", "yes" } }], token);
-            await loaded.Task.WaitAsync(TimeSpan.FromSeconds(120), token); usingIndex = true;
-            await CommandAsync(["set_property", "pause", keepPaused], token);
+            await ReloadIndexedAsync(path,target,token);
         }
         else await CommandAsync(["seek", target.TotalSeconds, "absolute+exact"], token);
     }
@@ -286,8 +278,8 @@ public sealed partial class MpvOnlinePlayer : IDisposable
         if (result.ValueKind != JsonValueKind.Number) throw new IOException("Posição indisponível durante o buffering.");
         var value = TimeSpan.FromSeconds(result.GetDouble()); Trace($"Posição MPV: {value.TotalSeconds:0.###}s."); return value;
     }
-    public Task<PlayerState> GetStateAsync(CancellationToken token = default) => Task.FromResult(!IsRunning ? PlayerState.Stopped : paused || buffering ? PlayerState.Paused : PlayerState.Playing);
-    public void Resume() => Forget(["set_property", "pause", false]);
+    public Task<PlayerState> GetStateAsync(CancellationToken token = default) => Task.FromResult(!IsRunning ? PlayerState.Stopped : UserPaused || buffering ? PlayerState.Paused : PlayerState.Playing);
+    public void Resume() => ResumeRequested();
     public void SetSpeed(double speed) => Forget(["set_property", "speed", speed]);
     async void Forget(object[] command) { try { await CommandAsync(command); } catch (Exception ex) { Trace(ex.Message); } }
     public void Dispose() => DisposeCore(true);

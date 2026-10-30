@@ -29,9 +29,10 @@ internal partial class OnlinePlayerWindow : Window
     Rect savedBounds;
     public IntPtr VideoHandle => Video.Handle;
 
-    public OnlinePlayerWindow(MpvOnlinePlayer player, string title)
+    public OnlinePlayerWindow(MpvOnlinePlayer player, string title, global::AniT.Infrastructure.OnlinePlayerPreferencesStore? preferencesStore = null)
     {
         this.player = player;
+        InitializePreferences(preferencesStore);
         InitializeComponent();
         Width = Math.Min(Width, Math.Max(MinWidth, SystemParameters.WorkArea.Width * 0.9));
         Height = Math.Min(Height, Math.Max(MinHeight, SystemParameters.WorkArea.Height * 0.9));
@@ -52,6 +53,7 @@ internal partial class OnlinePlayerWindow : Window
     }
     internal void SetEpisodeTitle(string title)
     {
+        CloseMenus();
         EpisodeTitle.Text = title; EpisodeTitle.ToolTip = title; Title = title + " · AniT Player";
         showError = false; ShowControls();
     }
@@ -59,6 +61,7 @@ internal partial class OnlinePlayerWindow : Window
     {
         if (stopped) return;
         stopped = true;
+        CloseMenus(); CaptureVolumePreferences(player.Snapshot); preferenceSave.Stop(); SavePreferences();
         refresh.Stop(); clickDelay.Stop(); lifetime.Cancel(); seek?.Cancel(); seek?.Dispose(); lifetime.Dispose();
         player.UserInput -= OnInput; player.PlaybackClosed -= OnPlayerClosed; player.Disposed -= OnPlayerDisposed;
     }
@@ -85,18 +88,22 @@ internal partial class OnlinePlayerWindow : Window
             case "double-click": lastDoubleClick = Stopwatch.GetTimestamp(); clickDelay.Stop(); SetFullscreen(!fullscreen); break;
             case "pause": Run(() => player.TogglePauseAsync(lifetime.Token)); break;
             case "fullscreen": SetFullscreen(!fullscreen); break;
-            case "escape": if (fullscreen) SetFullscreen(false); break;
+            case "escape": if(activeMenu?.IsOpen==true)CloseMenus();else if (fullscreen) SetFullscreen(false); break;
             case "back": SeekRelative(-10); break;
             case "forward": SeekRelative(10); break;
             case "volume-up": Run(() => player.SetVolumeAsync(player.Snapshot.Volume + 5, lifetime.Token)); break;
             case "volume-down": Run(() => player.SetVolumeAsync(player.Snapshot.Volume - 5, lifetime.Token)); break;
             case "mute": Run(() => player.ToggleMuteAsync(lifetime.Token)); break;
             case "close": Close(); break;
+            case "menu": OpenMenu(BuildContextMenu(), null); break;
+            case "audio": OpenMenu(BuildTrackMenu("audio"), AudioAction); break;
+            case "subtitles": OpenMenu(BuildTrackMenu("sub"), SubtitleAction); break;
         }
     }
     internal void SetFullscreen(bool enabled)
     {
         if (fullscreen == enabled || closing) return;
+        CloseMenus();
         fullscreen = enabled;
         if (enabled) {
             savedStyle = WindowStyle; savedResize = ResizeMode; savedState = WindowState;
@@ -121,14 +128,16 @@ internal partial class OnlinePlayerWindow : Window
             Timeline.IsEnabled = state.VideoReady && state.Duration is { TotalSeconds: > 0 };
             Timeline.Maximum = Math.Max(1, state.Duration?.TotalSeconds ?? 1);
             if (!dragging) Timeline.Value = Math.Clamp(pendingSeekPosition ?? state.Position?.TotalSeconds ?? 0, 0, Timeline.Maximum);
-            TimeLabel.Text = Format(TimeSpan.FromSeconds(Timeline.Value)) + " / " + (state.Duration is { } duration ? Format(duration) : "--:--");
+            TimeLabel.Text = (dragging || pendingSeekPosition is not null ? "Ir para " + Format(TimeSpan.FromSeconds(Timeline.Value)) + " · " : "")
+                + Format(state.Position ?? TimeSpan.Zero) + " / " + (state.Duration is { } duration ? Format(duration) : "--:--");
+            RefreshTrackControls(state);
             if (!Volume.IsMouseCaptureWithin && !Volume.IsKeyboardFocusWithin) Volume.Value = state.Volume;
             if (state.Paused != lastPaused) { lastPaused = state.Paused; PlayIcon.Source = Image(state.Paused ? "01_play" : "02_pause"); }
             if (state.Muted != lastMuted) { lastMuted = state.Muted; VolumeIcon.Source = Image(state.Muted ? "17_mudo" : "20_volume_alto"); }
             if (!showError) Status.Text = state.Seeking || pendingSeekPosition is not null ? "Buscando o trecho escolhido…" : state.Buffering ? "Repondo a reserva de vídeo…"
                 : !state.VideoReady ? "Abrindo seu episódio…" : state.Paused ? "Pausado" : $"Reproduzindo · {state.CacheSeconds:0} s de reserva";
             bool hide = state.VideoReady && !state.Paused && !state.Buffering && !state.Seeking && !showError
-                && pendingSeekPosition is null && !dragging && !Chrome.IsMouseOver && !Chrome.IsMouseCaptureWithin && !(keyboardNavigation && (Chrome.IsKeyboardFocusWithin || Header.IsKeyboardFocusWithin)) && (idleSeconds ?? idle.Elapsed.TotalSeconds) >= 3;
+                && activeMenu?.IsOpen != true && pendingSeekPosition is null && !dragging && !Chrome.IsMouseOver && !Chrome.IsMouseCaptureWithin && !(keyboardNavigation && (Chrome.IsKeyboardFocusWithin || Header.IsKeyboardFocusWithin)) && (idleSeconds ?? idle.Elapsed.TotalSeconds) >= 3;
             if (hide) Header.Visibility = Chrome.Visibility = Visibility.Collapsed;
             else Header.Visibility = Chrome.Visibility = Visibility.Visible;
         } finally { syncing = false; }
@@ -172,7 +181,7 @@ internal partial class OnlinePlayerWindow : Window
             if (args.Key != Key.Escape && args.Key != Key.F11) return;
         }
         if (args.Key == Key.Space && Chrome.IsKeyboardFocusWithin) return;
-        var action = args.Key switch { Key.Space or Key.P => "pause", Key.F or Key.F11 => "fullscreen", Key.Escape => "escape", Key.Left => "back", Key.Right => "forward", Key.Up => "volume-up", Key.Down => "volume-down", Key.M => "mute", Key.W when Keyboard.Modifiers == ModifierKeys.Control => "close", _ => null };
+        var action = args.Key switch { Key.A => "audio", Key.S => "subtitles", Key.Apps => "menu", Key.F10 when Keyboard.Modifiers == ModifierKeys.Shift => "menu", Key.Space or Key.P => "pause", Key.F or Key.F11 => "fullscreen", Key.Escape => "escape", Key.Left => "back", Key.Right => "forward", Key.Up => "volume-up", Key.Down => "volume-down", Key.M => "mute", Key.W when Keyboard.Modifiers == ModifierKeys.Control => "close", _ => null };
         if (action is null) return;
         args.Handled = true; HandleInput(action);
     }

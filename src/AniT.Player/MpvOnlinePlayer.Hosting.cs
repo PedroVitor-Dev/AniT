@@ -23,9 +23,16 @@ public sealed partial class MpvOnlinePlayer
         if (IsRunning) throw new InvalidOperationException("A superfície do vídeo deve ser definida antes de iniciar o player.");
         if (parent == IntPtr.Zero) throw new ArgumentException("A superfície do vídeo não está pronta.", nameof(parent));
         videoParent = parent;
+        position = duration = null; videoReady = buffering = seeking = false; paused = true;
+        ResetTracks(); ResetBufferObservation(); PublishSnapshot();
     }
     internal static string WindowId(IntPtr parent) => unchecked((uint)parent.ToInt64()).ToString(CultureInfo.InvariantCulture);
     internal const string HostBindings = """
+        MBTN_RIGHT script-message anit-ui menu
+        a script-message anit-ui audio
+        s script-message anit-ui subtitles
+        MENU script-message anit-ui menu
+        Shift+F10 script-message anit-ui menu
         MBTN_LEFT script-message anit-ui click
         MBTN_LEFT_DBL script-message anit-ui double-click
         MOUSE_MOVE script-message anit-ui pointer
@@ -53,12 +60,12 @@ public sealed partial class MpvOnlinePlayer
             if (Stopwatch.GetElapsedTime(Interlocked.Read(ref lastPointer), now).TotalMilliseconds < 33) return;
             Interlocked.Exchange(ref lastPointer, now);
         }
-        if (action is "click" or "double-click" or "pointer" or "pause" or "fullscreen" or "escape" or "back" or "forward" or "volume-up" or "volume-down" or "mute" or "close")
+        if (action is "click" or "double-click" or "pointer" or "pause" or "fullscreen" or "escape" or "back" or "forward" or "volume-up" or "volume-down" or "mute" or "close" or "menu" or "audio" or "subtitles")
             Dispatch(() => UserInput?.Invoke(this, action));
     }
-    void PublishSnapshot() => Volatile.Write(ref snapshot, new(position, duration, paused, buffering, seeking, videoReady,
+    void PublishSnapshot() => Volatile.Write(ref snapshot, new(position, duration, UserPaused, buffering, seeking, videoReady,
         Math.Max(0, BufferSample().Seconds ?? 0), volume, muted));
-    public async Task TogglePauseAsync(CancellationToken token = default) => await CommandAsync(["cycle", "pause"], token);
+    public Task TogglePauseAsync(CancellationToken token = default) => ChangeUserPauseAsync(null,token);
     public async Task SetVolumeAsync(double value, CancellationToken token = default)
     {
         if (!double.IsFinite(value)) throw new ArgumentOutOfRangeException(nameof(value));

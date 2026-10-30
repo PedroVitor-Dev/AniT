@@ -34,7 +34,8 @@ Os controles ficam fora da superfície nativa, evitando o problema de airspace W
 Quando recolhem, o vídeo aproveita a área. Não há janela transparente flutuante nem
 camada que cubra legendas. Texto e superfícies seguem os temas claro/escuro; a área
 renderizada e as legendas pertencem ao motor. O recolhimento é imediato, sem animação
-contínua. Listas de áudio/legendas e preferências continuam no passo 9.
+contínua. Listas de áudio/legendas e preferências foram adicionadas no
+[passo 9](ONLINE_PLAYER_TRACKS.md).
 
 ## Ciclo de vida e custo
 

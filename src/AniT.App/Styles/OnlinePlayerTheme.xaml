@@ -46,4 +46,40 @@
             <ControlTemplate.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Focus" Property="Visibility" Value="Visible"/></Trigger></ControlTemplate.Triggers>
         </ControlTemplate></Setter.Value></Setter>
     </Style>
+    <Style x:Key="PlayerMenuItem" TargetType="MenuItem">
+        <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/><Setter Property="Background" Value="Transparent"/>
+        <Setter Property="MinHeight" Value="40"/>
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="MenuItem">
+            <Grid>
+                <Border x:Name="Row" Background="{TemplateBinding Background}" Padding="10,8" CornerRadius="6">
+                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="22"/><ColumnDefinition Width="*"/><ColumnDefinition Width="18"/></Grid.ColumnDefinitions>
+                        <TextBlock x:Name="Check" Text="✓" Visibility="Collapsed" Foreground="{DynamicResource AniT.Brush.TextPrimary}"/>
+                        <ContentPresenter Grid.Column="1" ContentSource="Header" RecognizesAccessKey="False" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="Arrow" Grid.Column="2" Text="›" Visibility="Collapsed" HorizontalAlignment="Right" Foreground="{DynamicResource AniT.Brush.TextPrimary}"/>
+                    </Grid>
+                </Border>
+                <Popup x:Name="PART_Popup" Placement="Right" IsOpen="{TemplateBinding IsSubmenuOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="None">
+                    <Border Background="{DynamicResource AniT.Brush.Surface}" BorderBrush="{DynamicResource AniT.Brush.Border}" BorderThickness="1" CornerRadius="10" Padding="6" MinWidth="250" MaxWidth="420">
+                        <ScrollViewer MaxHeight="400" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" CanContentScroll="True"><ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/></ScrollViewer>
+                    </Border>
+                </Popup>
+            </Grid>
+            <ControlTemplate.Triggers>
+                <Trigger Property="HasItems" Value="True"><Setter TargetName="Arrow" Property="Visibility" Value="Visible"/></Trigger>
+                <Trigger Property="IsChecked" Value="True"><Setter TargetName="Check" Property="Visibility" Value="Visible"/></Trigger>
+                <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="Row" Property="Background" Value="{DynamicResource AniT.Brush.SurfaceHover}"/></Trigger>
+                <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.6"/></Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate></Setter.Value></Setter>
+        <Setter Property="ItemContainerStyle" Value="{DynamicResource PlayerMenuItem}"/>
+    </Style>
+    <Style x:Key="PlayerPopup" TargetType="ContextMenu">
+        <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/><Setter Property="Background" Value="{DynamicResource AniT.Brush.Surface}"/>
+        <Setter Property="ItemContainerStyle" Value="{StaticResource PlayerMenuItem}"/><Setter Property="MaxWidth" Value="420"/>
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ContextMenu">
+            <Border Background="{TemplateBinding Background}" BorderBrush="{DynamicResource AniT.Brush.Border}" BorderThickness="1" CornerRadius="12" Padding="6" MinWidth="260">
+                <ScrollViewer MaxHeight="400" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" CanContentScroll="True"><ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/></ScrollViewer>
+            </Border>
+        </ControlTemplate></Setter.Value></Setter>
+    </Style>
 </ResourceDictionary>

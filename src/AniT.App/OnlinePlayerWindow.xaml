@@ -13,8 +13,11 @@
         <Border x:Name="Chrome" DockPanel.Dock="Bottom" Background="{DynamicResource AniT.Brush.Surface}" Padding="18,8,18,12">
             <StackPanel>
                 <TextBlock x:Name="Status" Text="Abrindo seu episódio…" Style="{StaticResource PlayerCaption}" AutomationProperties.LiveSetting="Polite"/>
-                <Slider x:Name="Timeline" Style="{StaticResource PlayerTrack}" Minimum="0" Maximum="1" IsEnabled="False" IsMoveToPointEnabled="True" ToolTip="Posição do episódio" AutomationProperties.Name="Posição do episódio"
+                <Grid>
+                <Canvas x:Name="CacheRail" Height="4" VerticalAlignment="Top" Margin="8,2" Background="{DynamicResource AniT.Brush.Border}" IsHitTestVisible="False" SizeChanged="CacheRailSizeChanged"/>
+                <Slider x:Name="Timeline" Margin="0,6,0,0" Style="{StaticResource PlayerTrack}" Minimum="0" Maximum="1" IsEnabled="False" IsMoveToPointEnabled="True" ToolTip="Posição do episódio" AutomationProperties.Name="Posição do episódio"
                     PreviewMouseLeftButtonDown="TimelineDown" PreviewMouseLeftButtonUp="TimelineUp" PreviewKeyUp="TimelineKeyUp" LostMouseCapture="TimelineLostCapture"/>
+                </Grid>
                 <TextBlock x:Name="TimeLabel" Text="00:00 / --:--" Style="{StaticResource PlayerCaption}"/>
                 <WrapPanel Margin="0,6,0,0">
                     <Button Style="{StaticResource PlayerIcon}" ToolTip="Voltar 10 segundos (←)" AutomationProperties.Name="Voltar 10 segundos" Click="BackClick"><Image Width="38" Height="38" Source="/AniT;component/Assets/Player/21_voltar_10s.png"/></Button>
@@ -22,6 +25,9 @@
                     <Button Style="{StaticResource PlayerIcon}" ToolTip="Avançar 10 segundos (→)" AutomationProperties.Name="Avançar 10 segundos" Click="ForwardClick"><Image Width="38" Height="38" Source="/AniT;component/Assets/Player/22_avancar_10s.png"/></Button>
                     <Button x:Name="MuteAction" Style="{StaticResource PlayerIcon}" ToolTip="Ativar ou silenciar áudio (M)" AutomationProperties.Name="Ativar ou silenciar áudio" Click="MuteClick"><Image x:Name="VolumeIcon" Width="38" Height="38" Source="/AniT;component/Assets/Player/20_volume_alto.png"/></Button>
                     <Slider x:Name="Volume" Width="110" Minimum="0" Maximum="100" Value="100" Style="{StaticResource PlayerTrack}" Margin="8,0" VerticalAlignment="Center" AutomationProperties.Name="Volume" ToolTip="Volume" ValueChanged="VolumeChanged"/>
+                    <Button x:Name="AudioAction" Style="{StaticResource PlayerAction}" Margin="3" MaxWidth="180" Click="AudioClick" ToolTip="Escolher faixa de áudio (A)" AutomationProperties.Name="Faixas de áudio"><TextBlock x:Name="AudioLabel" Text="Áudio" Style="{StaticResource PlayerText}" MaxWidth="130" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/></Button>
+                    <Button x:Name="SubtitleAction" Style="{StaticResource PlayerAction}" Margin="3" MaxWidth="180" Click="SubtitleClick" ToolTip="Escolher legenda (S)" AutomationProperties.Name="Legendas"><TextBlock x:Name="SubtitleLabel" Text="Legendas" Style="{StaticResource PlayerText}" MaxWidth="130" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/></Button>
+                    <Button x:Name="OptionsAction" Content="Opções" Style="{StaticResource PlayerAction}" Margin="3" Click="OptionsClick" ToolTip="Velocidade e preferências"/>
                     <Button x:Name="FullscreenAction" Style="{StaticResource PlayerIcon}" ToolTip="Tela cheia (F ou F11); Esc para sair" AutomationProperties.Name="Tela cheia" Click="FullscreenClick"><Image Width="38" Height="38" Source="/AniT;component/Assets/Player/23_tela_cheia.png"/></Button>
                 </WrapPanel>
             </StackPanel>

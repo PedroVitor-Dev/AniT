@@ -911,6 +911,12 @@ public partial class App : Application
             playbackSettings.DefaultPlaybackSpeed, playbackSettings.StartPlaybackFullscreen,
             playbackSettings.PreferredAudioLanguage, playbackSettings.PreferredSubtitleLanguage);
         if (onlineAddress is not null) {
+            var preferences = OnlinePlayerPreferences().Load();
+            options = options with {
+                Speed = preferences.Speed ?? options.Speed,
+                PreferredAudioLanguage = preferences.RememberLanguages ? preferences.AudioLanguage ?? options.PreferredAudioLanguage : options.PreferredAudioLanguage,
+                PreferredSubtitleLanguage = preferences.RememberLanguages ? preferences.SubtitleLanguage ?? options.PreferredSubtitleLanguage : options.PreferredSubtitleLanguage
+            };
             MediaPlayer!.OnlineTrace = onlineTrace;
             onlinePlayerTitle = (episode.Season?.Anime?.EnglishTitle ?? episode.Season?.Anime?.Title ?? global::System.IO.Path.GetFileNameWithoutExtension(mediaPath)) + $" · Episódio {episode.Number:00}";
             onlinePlayerFullscreen = options.StartFullscreen;
