@@ -1,0 +1,23 @@
+{
+  "source_commit": "d719ba3",
+  "version": "2.0.2",
+  "installer": "artifacts/player-test-d719ba3/installer/AniT-Setup-2.0.2-player-test-win-x64.exe",
+  "bytes": 329187212,
+  "sha256": "bfcf70cdae631cb71150763086c3a411ab2b42b2fbae509733430eb8fb7ff06b",
+  "signature": "NotSigned",
+  "mpv_matches_source": true,
+  "mpc_matches_source": true,
+  "dotnet_tests_passed": 425,
+  "python_tests_passed": 8,
+  "local_torrent_pipeline": "passed",
+  "public_swarm_performance": "not measured",
+  "installed_on_user_pc": false,
+  "base_coverage_percent": 77.82,
+  "ui_layouts": 116,
+  "onboarding_constructor_to_frame_ms": 458,
+  "onboarding_excludes_process_bootstrap": true,
+  "pipeline_first_playback_selected_percent": 13.3,
+  "pipeline_seek_under_throttle_seconds": 6.5,
+  "pipeline_ui_pulses": 80,
+  "pipeline_user_close_during_startup": "passed"
+}
