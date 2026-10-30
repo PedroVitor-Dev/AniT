@@ -23,7 +23,9 @@ internal static class OnlinePlayerHostChecks
                 var output=Environment.GetEnvironmentVariable("ANIT_PLAYER_HOST_OUTPUT") ?? Path.Combine(Path.GetTempPath(),"AniT.Player.Host");Directory.CreateDirectory(output);
                 var fixture=Environment.GetEnvironmentVariable("ANIT_PLAYER_HOST_FIXTURE") ?? throw new Exception("Set ANIT_PLAYER_HOST_FIXTURE to an authorized video.");
                 await using var server = new OnlineStreamServer(File.OpenRead(fixture),Path.GetFileName(fixture));
-                using var player = new MpvOnlinePlayer(Path.Combine(AppContext.BaseDirectory,"Player","MPV","mpv.exe"));
+                var allowIndex=false; var indexCalls=0; var containerLoads=0;
+                using var player = new MpvOnlinePlayer(Path.Combine(AppContext.BaseDirectory,"Player","MPV","mpv.exe"), (_,_) => { indexCalls++; return Task.FromResult(allowIndex); });
+                player.Diagnostic+=(_,message)=>{if(message=="Contêiner carregado pelo mpv.")containerLoads++;};
                 window = new OnlinePlayerWindow(player,"Vídeo sintético autorizado · Episódio 01") { ShowActivated=false };
                 window.Show(); player.AttachVideoWindow(window.VideoHandle);
                 player.UserInput+=(_,action)=>Console.WriteLine("Native input: "+action);
@@ -36,6 +38,15 @@ internal static class OnlinePlayerHostChecks
                 if((await player.CommandAsync(["get_property","osc"],token)).GetBoolean())throw new Exception("Native OSC must be disabled");
                 var native=GetWindow(window.VideoHandle,5);
                 if(native==IntPtr.Zero||GetParent(native)!=window.VideoHandle)throw new Exception("mpv did not attach a native video child");
+                if((await player.CommandAsync(["get_property","input-doubleclick-time"],token)).GetInt32()!=0)throw new Exception("AniT must own embedded double-click recognition");
+                // Background cue preparation must not reopen the file or discard its packet cache.
+                allowIndex=true;
+                var planField=typeof(MpvOnlinePlayer).GetField("bufferPlan",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic)!;
+                planField.SetValue(player,AniT.Core.OnlineBufferPlan.Initial with{CanPrepareIndex=true});
+                var warmup=(Task)typeof(MpvOnlinePlayer).GetMethod("WarmIndexAsync",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic)!.Invoke(player,[server.Address,token])!;
+                await warmup;await Task.Delay(200,token);
+                if(indexCalls<1||containerLoads!=1||player.SeekIndexReady)throw new Exception("Speculative index reopened playback");
+                allowIndex=false;
                 async Task Key(string value) { await player.CommandAsync(["keypress",value],token); }
                 // Native input goes through mpv's real input section, IPC and AniT actions.
                 ((Button)window.FindName("PlayAction")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -96,7 +107,7 @@ internal static class OnlinePlayerHostChecks
                 await player.PlayStreamAsync(server.Address,null,MpcHcPlaybackOptions.Default,token);
                 await Until(()=>player.Snapshot.VideoReady&&player.Snapshot.Position?.TotalSeconds>0.5);
                 player.Dispose();await Until(()=>!window.IsVisible);
-                await File.WriteAllTextAsync(Path.Combine(output,"result.json"),JsonSerializer.Serialize(new{embedded=true,first_frame=true,native_input=true,single_click_pause=true,double_click_preserves_pause=true,fullscreen_restore=true,seek=true,rapid_seek=true,mute=true,volume=true,autohide=true,checkpoint=true,reopen=true,layouts=8},new JsonSerializerOptions{WriteIndented=true}),token);
+                await File.WriteAllTextAsync(Path.Combine(output,"result.json"),JsonSerializer.Serialize(new{embedded=true,first_frame=true,native_input=true,single_click_pause=true,double_click_preserves_pause=true,index_prefetch_preserves_stream=true,fullscreen_restore=true,seek=true,rapid_seek=true,mute=true,volume=true,autohide=true,checkpoint=true,reopen=true,layouts=8},new JsonSerializerOptions{WriteIndented=true}),token);
                 Console.WriteLine("Online native host: embedding, first frame, native input, pause, double-click, fullscreen, seek, volume, mute, autohide, close/checkpoint, reopen and 8 layouts passed. "+output);
                 result=0;
             } catch(Exception error){Console.Error.WriteLine(error);}

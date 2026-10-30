@@ -15,8 +15,6 @@ public sealed class MpvVideoHost : HwndHost
         return new HandleRef(this, handle);
     }
     protected override void DestroyWindowCore(HandleRef handle) => DestroyWindow(handle.Handle);
-    internal static uint DoubleClickMilliseconds => GetDoubleClickTime();
-    [DllImport("user32.dll")] static extern uint GetDoubleClickTime();
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     static extern IntPtr CreateWindowEx(int extendedStyle, string className, string title, int style, int x, int y, int width, int height, IntPtr parent, IntPtr menu, IntPtr instance, IntPtr parameter);
     [DllImport("user32.dll")] static extern bool DestroyWindow(IntPtr handle);

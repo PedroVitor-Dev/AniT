@@ -73,3 +73,28 @@ antes/depois de um quadro confirmado. A suíte geral e as regressões do buffer
 adaptativo são verificadas separadamente. Este teste não mede descoberta de peers,
 velocidade de torrents públicos, nem substitui testes físicos em múltiplos monitores
 com DPI diferente. Nenhum instalador ou release é produzido nesta etapa.
+
+## Regressões de reprodução — 30/10/2026
+
+- O reconhecimento de duplo clique do vídeo incorporado pertence ao AniT, usando
+  tempo e área de tolerância do Windows. A detecção concorrente do mpv fica
+  desativada. Dois cliques alternam tela cheia sem alternar pausa; clique simples
+  continua pausando após a janela de reconhecimento.
+- A preparação especulativa dos cues não chama mais `loadfile`. Reabrir o vídeo
+  automaticamente descartava o cache e podia provocar outra espera de rede.
+  Os cues são preparados em segundo plano e aplicados no próximo seek explícito.
+- O teste nativo verifica uma única abertura durante a preparação do índice,
+  cliques reais enviados ao HWND do mpv, pausa preservada e restauração da janela.
+- `--check-player-host`: passou, incluindo oito layouts. `--check-player-tracks`:
+  passou, incluindo seleção de faixas, pausa durante recarga, doze layouts e
+  preferências. Os 18 testes de AniT.Player.Tests passaram.
+
+Os registros locais disponíveis distinguem a espera inicial dos engasgos: uma
+sessão sem cache levou aproximadamente 23 s até liberar o HTTP e 34,6 s até o
+sinal de imagem; outra, com trechos já presentes, chegou ao sinal em 0,91 s.
+Esses valores são diagnósticos anteriores à correção, não um benchmark antes/depois.
+A remoção da recarga evita um custo desnecessário, mas não demonstra redução do
+prazo para obter peças ainda ausentes de um swarm público. Nenhum novo instalador
+ou pacote Store foi gerado nesta correção.
+
+O fluxo completo --check-online-player --mkv também passou: reprodução com 13,3% do episódio presente, avanço para 65 s em 6,7 s sob limitação de rede, retorno, conclusão, reabertura e cancelamento durante início bloqueado (mídia sintética).

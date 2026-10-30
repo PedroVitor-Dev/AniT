@@ -22,7 +22,8 @@ internal partial class OnlinePlayerWindow : Window
     bool showError, keyboardNavigation;
     double pendingVolume = 100;
     double? pendingSeekPosition;
-    long lastDoubleClick;
+    long lastDoubleClick, lastClick;
+    System.Drawing.Point lastClickPoint;
     WindowStyle savedStyle;
     ResizeMode savedResize;
     WindowState savedState;
@@ -88,10 +89,21 @@ internal partial class OnlinePlayerWindow : Window
         if (!player.Snapshot.VideoReady && action is "pause" or "mute" or "volume-up" or "volume-down") return;
         switch (action) {
             case "click":
-                // mpv emits the second button-release click after its double-click signal.
+                // Ignore the trailing release of a recognized pair.
                 if (lastDoubleClick != 0 && Stopwatch.GetElapsedTime(lastDoubleClick).TotalMilliseconds <= System.Windows.Forms.SystemInformation.DoubleClickTime + 50) break;
+                // AniT owns click recognition; mpv's embedded double-click detector is disabled.
+                var point = System.Windows.Forms.Cursor.Position;
+                var size = System.Windows.Forms.SystemInformation.DoubleClickSize;
+                var pair = clickDelay.IsEnabled && lastClick != 0
+                    && Stopwatch.GetElapsedTime(lastClick).TotalMilliseconds <= System.Windows.Forms.SystemInformation.DoubleClickTime
+                    && Math.Abs(point.X - lastClickPoint.X) <= size.Width / 2
+                    && Math.Abs(point.Y - lastClickPoint.Y) <= size.Height / 2;
+                if (pair) { HandleInput("double-click"); break; }
+                lastClick = Stopwatch.GetTimestamp(); lastClickPoint = point;
                 clickDelay.Stop(); clickDelay.Start(); break;
-            case "double-click": lastDoubleClick = Stopwatch.GetTimestamp(); clickDelay.Stop(); SetFullscreen(!fullscreen); break;
+            case "double-click":
+                if (lastDoubleClick != 0 && Stopwatch.GetElapsedTime(lastDoubleClick).TotalMilliseconds < 100) break;
+                lastDoubleClick = Stopwatch.GetTimestamp(); clickDelay.Stop(); SetFullscreen(!fullscreen); break;
             case "pause": buildingReserve=false; Run(() => player.TogglePauseAsync(lifetime.Token)); break;
             case "fullscreen": SetFullscreen(!fullscreen); break;
             case "escape": if(activeMenu?.IsOpen==true)CloseMenus();else if (fullscreen) SetFullscreen(false); break;

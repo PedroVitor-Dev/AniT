@@ -37,6 +37,7 @@ public sealed partial class MpvOnlinePlayer : IDisposable
     }
     readonly Func<Uri, CancellationToken, Task<bool>>? prepareSeek;
     bool usingIndex;
+    bool indexPrepared;
     bool awaitingFileStart;
     public bool SeekIndexReady => usingIndex;
     CancellationTokenSource? fileLifetime;
@@ -89,7 +90,7 @@ public sealed partial class MpvOnlinePlayer : IDisposable
         lock(pauseSync) indexReloading=false;
         ResetBufferObservation(); playbackSpeed = options.Speed; ResetTracks();
         seeking = frameInfoReady = playbackRestarted = false; cacheSeconds = outputDrops = decoderDrops = avSync = null;
-        usingIndex = false; position = duration = null; videoReady = false; paused = true; buffering = false; CurrentFilePath = address.AbsoluteUri; PublishSnapshot();
+        usingIndex = indexPrepared = false; position = duration = null; videoReady = false; paused = true; buffering = false; CurrentFilePath = address.AbsoluteUri; PublishSnapshot();
         telemetry?.Mark("loadfile_requested");
         loaded = new(TaskCreationOptions.RunContinuationsAsynchronously); awaitingFileStart = true;
         await CommandAsync(["set_property", "pause", true], token);
@@ -121,7 +122,7 @@ public sealed partial class MpvOnlinePlayer : IDisposable
         foreach (var arg in new[] { "--no-config", "--no-terminal", "--idle=yes", "--force-window=immediate", "--title=Online Anime Player · AniT", "--pause=yes", "--cache=yes", "--cache-pause-initial=no", "--cache-pause-wait=1", "--demuxer-max-bytes=33554432", "--demuxer-max-back-bytes=8388608", "--cache-secs=10", "--demuxer-readahead-secs=10", "--network-timeout=120", "--demuxer-mkv-probe-video-duration=no", "--input-ipc-server=\\\\.\\pipe\\" + name }) start.ArgumentList.Add(arg);
         if (videoParent != IntPtr.Zero) {
             start.ArgumentList.Add("--wid=" + WindowId(videoParent));
-            start.ArgumentList.Add("--input-doubleclick-time=" + MpvVideoHost.DoubleClickMilliseconds);
+            start.ArgumentList.Add("--input-doubleclick-time=0");
             foreach (var option in new[] { "--drag-and-drop=no", "--osc=no", "--osd-level=0", "--input-builtin-bindings=no", "--input-default-bindings=no", "--window-dragging=no" }) start.ArgumentList.Add(option);
         }
         process = Process.Start(start) ?? throw new IOException("Não foi possível iniciar o motor de streaming.");
@@ -233,19 +234,18 @@ public sealed partial class MpvOnlinePlayer : IDisposable
             await indexing.WaitAsync(token);
             try
             {
-                if (usingIndex || prepareSeek is null) return;
+                if (usingIndex || indexPrepared || prepareSeek is null) return;
                 bool ready;
                 lock (warmingSync) indexFetching = true;
                 try { ready = await prepareSeek(address, token); }
                 finally { lock (warmingSync) indexFetching = false; }
                 token.ThrowIfCancellationRequested();
                 if (!ready) return;
-                // Reopen only after there is a playback cushion; native OSC/keyboard seeks
-                // then use the real cues too, without having to go through AniT's wrapper.
-                var current = await GetPositionAsync(token);
-                telemetry?.Event("index_reload_begin");
-                await ReloadIndexedAsync(address.AbsoluteUri,current,token);
-                Trace("Índice pronto também para os controles do player.");
+                // Preparing cues must not flush decoded packets and force another network
+                // startup. Activate them only when an explicit seek actually needs a reload.
+                indexPrepared = true;
+                telemetry?.Event("index_prefetched");
+                Trace("Índice preparado sem interromper a reprodução.");
             }
             finally { indexing.Release(); }
         }

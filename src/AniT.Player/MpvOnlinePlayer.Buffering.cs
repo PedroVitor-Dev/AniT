@@ -37,7 +37,7 @@ public sealed partial class MpvOnlinePlayer
         lock (warmingSync) {
             if (indexFetching && (sample.Buffering || sample.Seeking || sample.Seconds < Math.Max(2, plan.ResumeSeconds / 2)))
                 warmingIndex?.Cancel();
-            restart = plan.CanPrepareIndex && warmingIndex is null && !usingIndex && prepareSeek is not null;
+            restart = plan.CanPrepareIndex && warmingIndex is null && !usingIndex && !indexPrepared && prepareSeek is not null;
         }
         if (restart && CurrentFilePath is { } path && Uri.TryCreate(path, UriKind.Absolute, out var address))
             _ = WarmIndexAsync(address, token);
