@@ -78,6 +78,7 @@ public sealed partial class MpvOnlinePlayer : IDisposable
     {
         if (address.Scheme != "http" || address.Host != "127.0.0.1") throw new ArgumentException("O player aceita somente o streaming local do AniT.");
         if (!File.Exists(executable)) throw new FileNotFoundException("O motor de streaming do Beta não foi encontrado. Atualize o AniT.", executable);
+        WasClosedByUser=false;
         if (!ReferenceEquals(telemetry, trace)) telemetry?.Finish("replaced");
         trace?.Mark("player_requested");
         if (!IsRunning) { DisposeCore(false); telemetry = trace; trace?.Mark("process_start_requested"); await StartAsync(token); trace?.Mark("ipc_ready"); }

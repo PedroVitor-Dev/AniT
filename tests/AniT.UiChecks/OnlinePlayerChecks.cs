@@ -11,6 +11,15 @@ using MonoTorrent.Client;
 
 internal static class OnlinePlayerChecks
 {
+    sealed class BlockedVideo(Stream inner):Stream
+    {
+        public TaskCompletionSource Started=new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer,CancellationToken token=default){Started.TrySetResult();await Task.Delay(Timeout.Infinite,token);return 0;}
+        public override bool CanRead=>true;public override bool CanSeek=>true;public override bool CanWrite=>false;public override long Length=>inner.Length;
+        public override long Position{get=>inner.Position;set=>inner.Position=value;}public override long Seek(long offset,SeekOrigin origin)=>inner.Seek(offset,origin);
+        public override int Read(byte[] buffer,int offset,int count)=>throw new NotSupportedException();public override void Flush(){}public override void SetLength(long value)=>throw new NotSupportedException();public override void Write(byte[] b,int o,int c)=>throw new NotSupportedException();
+        protected override void Dispose(bool disposing){if(disposing)inner.Dispose();base.Dispose(disposing);}
+    }
     static async Task WaitForPosition(MpcHcPlayer player,double minimum,CancellationToken token,double maximum=double.PositiveInfinity)
     {
         while(true) {
@@ -60,6 +69,9 @@ internal static class OnlinePlayerChecks
                 var address=await Task.Run(()=>service.OpenStreamAsync(file,token));
                 statsCancellation.Cancel(); await stats;
                 using var player=new MpcHcPlayer(Path.Combine(AppContext.BaseDirectory,"Player","MPC-HC","mpc-hc64.exe"),true,onlineStreaming:Environment.GetEnvironmentVariable("ANIT_TEST_USE_MPV")=="1",prepareOnlineSeek:service.PrepareSeekIndexAsync);
+                if(Environment.GetEnvironmentVariable("ANIT_TEST_EMBEDDED")=="1")player.ConfigureOnlinePlayer=native=>{
+                    var surface=new AniT.App.OnlinePlayerWindow(native,"Validação de torrent local autorizado"){ShowActivated=false};surface.Show();native.AttachVideoWindow(surface.VideoHandle);
+                };
                 player.Diagnostic += (_, message) => Console.WriteLine(message);
                 var startup=System.Diagnostics.Stopwatch.StartNew();
                 var savedAtEnd=Environment.GetEnvironmentVariable("ANIT_TEST_RESUME_AT_END")=="1";
@@ -83,11 +95,7 @@ internal static class OnlinePlayerChecks
                     var seeking=System.Diagnostics.Stopwatch.StartNew();
                     var pulses=0;
                     Task seek;
-                    if(Environment.GetEnvironmentVariable("ANIT_TEST_USE_MPV")=="1") {
-                        var native=(MpvOnlinePlayer)typeof(MpcHcPlayer).GetField("onlinePlayer",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(player)!;
-                        while(!native.SeekIndexReady)await Task.Delay(100,token);
-                        seek=native.CommandAsync(["seek",target,"absolute+exact"],token);
-                    } else seek=player.SeekAsync(TimeSpan.FromSeconds(target),token);
+                    seek=player.SeekAsync(TimeSpan.FromSeconds(target),token);
                     while(!seek.IsCompleted) { await Task.WhenAny(seek,Task.Delay(50,token)); pulses++; token.ThrowIfCancellationRequested(); }
                     await seek;
                     if(pulses==0)throw new Exception("Seek should yield the UI while remote data is fetched");
@@ -116,6 +124,17 @@ internal static class OnlinePlayerChecks
                     await player.PlayStreamAsync(address,null,new MpcHcPlaybackOptions(1.25,false,"ja","off"),token);
                     await WaitForPosition(player,1.2,token,8);
                     Console.WriteLine("PASS mpv close preserves checkpoint and reopening starts a fresh working session.");
+                }
+                if(Environment.GetEnvironmentVariable("ANIT_TEST_EMBEDDED")=="1") {
+                    player.Dispose();var blocked=new BlockedVideo(File.OpenRead(path));await using var stalled=new OnlineStreamServer(blocked,"waiting.mkv");
+                    using var closingPlayer=new MpcHcPlayer(Path.Combine(AppContext.BaseDirectory,"Player","MPC-HC","mpc-hc64.exe"),independent:true,onlineStreaming:true);
+                    AniT.App.OnlinePlayerWindow? loadingWindow=null;MpvOnlinePlayer? loadingEngine=null;
+                    closingPlayer.ConfigureOnlinePlayer=native=>{loadingEngine=native;loadingWindow=new AniT.App.OnlinePlayerWindow(native,"Teste de cancelamento de abertura"){ShowActivated=false};loadingWindow.Show();native.AttachVideoWindow(loadingWindow.VideoHandle);};
+                    var opening=closingPlayer.PlayStreamAsync(stalled.Address,null,MpcHcPlaybackOptions.Default,token);
+                    await blocked.Started.Task.WaitAsync(TimeSpan.FromSeconds(10),token);loadingWindow!.Close();
+                    try{await opening;throw new Exception("A closed preparation must not report successful playback");}catch(PlaybackPreparationCancelledException){}
+                    if(loadingEngine!.IsRunning)throw new Exception("Canceled preparation left its owned player running");
+                    Console.WriteLine("PASS user-close during blocked startup cancels cleanly and terminates owned player.");
                 }
                 Console.WriteLine($"Online native player passed: play while downloading ({progressAtFirstPlayback:0.0}% of selected episode at first playback), pause, forward seek (MKV), backward seek to 12s under throttle, resume, finish download and keep playing at 20s. Synthetic media only.");
                 await seed.StopAsync(); result=0;

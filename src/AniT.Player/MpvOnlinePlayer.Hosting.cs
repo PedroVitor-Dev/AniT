@@ -16,6 +16,7 @@ public sealed partial class MpvOnlinePlayer
     bool muted;
     OnlinePlayerSnapshot snapshot = new(null, null, true, false, false, false, 0, 100, false);
     public double? SupplyRatio => bufferPlan.SupplyRatio;
+    public bool WasClosedByUser{get;private set;}
     public OnlinePlayerSnapshot Snapshot => Volatile.Read(ref snapshot);
     public event EventHandler<string>? UserInput;
     public event EventHandler? Disposed;
@@ -78,6 +79,7 @@ public sealed partial class MpvOnlinePlayer
     public void ClosePlayback()
     {
         if (closing) return;
+        WasClosedByUser=true;
         var progress = new PlaybackPositionChangedEventArgs(position ?? TimeSpan.Zero, duration, videoReady && position.HasValue);
         Dispose();
         PlaybackClosed?.Invoke(this, progress);

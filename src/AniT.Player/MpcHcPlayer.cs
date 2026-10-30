@@ -75,6 +75,9 @@ public sealed class MpcHcPlayer : IMediaPlayer, IDisposable
                 if (!onlinePlayer.IsRunning) ConfigureOnlinePlayer?.Invoke(onlinePlayer);
                 await onlinePlayer.PlayStreamAsync(address, position, options, cancellationToken, OnlineTrace);
             }
+            catch(Exception) when(onlinePlayer.WasClosedByUser) {
+                OnlineTrace?.Finish("player_closed");onlinePlayer.Dispose();onlinePlayer=null;onlineActive=false;throw new PlaybackPreparationCancelledException();
+            }
             catch { OnlineTrace?.Finish(cancellationToken.IsCancellationRequested ? "cancelled" : "player_failed"); onlinePlayer.Dispose(); onlinePlayer = null; onlineActive = false; throw; }
             return;
         }

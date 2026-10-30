@@ -925,6 +925,7 @@ public partial class App : Application
             onlinePlayerWindow?.SetEpisodeContext(episodeId);
             onlinePlayerWindow?.SetFullscreen(onlinePlayerFullscreen);
             try { await MediaPlayer.PlayStreamAsync(onlineAddress, resumeAt, options); }
+            catch(global::AniT.Player.PlaybackPreparationCancelledException) { await PauseOnlinePlaybackAsync(onlineAddress); return; }
             catch { onlineTrace?.Finish("player_failed"); await PauseOnlinePlaybackAsync(onlineAddress); throw; }
         }
         else await MediaPlayer!.PlayAsync(mediaFile, resumeAt, options);

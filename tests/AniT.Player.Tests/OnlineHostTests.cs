@@ -27,7 +27,7 @@ public sealed class OnlineHostTests
         player.PlaybackClosed += (_, progress) => { closes++; Assert.False(progress.IsPositionKnown); };
         player.Disposed += (_,_)=>disposals++;
         player.ClosePlayback();player.ClosePlayback();
-        Assert.Equal(1,closes);Assert.Equal(1,disposals);
+        Assert.Equal(1,closes);Assert.Equal(1,disposals);Assert.True(player.WasClosedByUser);
     }
     [Fact]
     public void UserClosePreservesTheLastConfirmedPositionBeforeDestroyingTheHost()
