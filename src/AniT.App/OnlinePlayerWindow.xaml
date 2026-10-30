@@ -12,7 +12,12 @@
         </Border>
         <Border x:Name="Chrome" DockPanel.Dock="Bottom" Background="{DynamicResource AniT.Brush.Surface}" Padding="18,8,18,12">
             <StackPanel>
-                <TextBlock x:Name="Status" Text="Abrindo seu episódio…" Style="{StaticResource PlayerCaption}" AutomationProperties.LiveSetting="Polite"/>
+                <DockPanel>
+                    <Image x:Name="AssistantFace" DockPanel.Dock="Left" Source="/AniT;component/Assets/Player/loading.png" Width="32" Height="36" Margin="0,0,8,0" Visibility="Collapsed"/>
+                    <Button x:Name="AssistantDismiss" DockPanel.Dock="Right" Content="×" Style="{StaticResource PlayerAction}" Padding="8,2" MinHeight="32" Margin="4,0,0,0" Visibility="Collapsed" ToolTip="Dispensar o Baki-Pi neste episódio" Click="DismissAssistant" AutomationProperties.Name="Dispensar assistência neste episódio"/>
+                    <Button x:Name="AssistantAction" DockPanel.Dock="Right" Style="{StaticResource PlayerAction}" Padding="10,2" MinHeight="32" Visibility="Collapsed" Click="AssistantClick"/>
+                    <TextBlock x:Name="Status" Text="Abrindo seu episódio…" Style="{StaticResource PlayerCaption}" VerticalAlignment="Center" AutomationProperties.LiveSetting="Polite"/>
+                </DockPanel>
                 <Grid>
                 <Canvas x:Name="CacheRail" Height="4" VerticalAlignment="Top" Margin="8,2" Background="{DynamicResource AniT.Brush.Border}" IsHitTestVisible="False" SizeChanged="CacheRailSizeChanged"/>
                 <Slider x:Name="Timeline" Margin="0,6,0,0" Style="{StaticResource PlayerTrack}" Minimum="0" Maximum="1" IsEnabled="False" IsMoveToPointEnabled="True" ToolTip="Posição do episódio" AutomationProperties.Name="Posição do episódio"

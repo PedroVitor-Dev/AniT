@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace AniT.Infrastructure;
 
 public sealed record OnlinePlayerPreferences(bool RememberLanguages=true,string? AudioLanguage=null,string? SubtitleLanguage=null,
-    double Volume=100,bool Muted=false,double? Speed=null)
+    double Volume=100,bool Muted=false,double? Speed=null,bool BakiAssistantEnabled=true,bool ProtectMomentSpoilers=true)
 {
     public static string? NormalizeLanguage(string? value)
     {

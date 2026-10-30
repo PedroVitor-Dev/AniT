@@ -138,6 +138,8 @@ internal partial class OnlinePlayerWindow
         remember.StaysOpenOnClick=true;
         remember.Click+=(_,args)=>{args.Handled=true;preferences=preferences with{RememberLanguages=remember.IsChecked};QueueSave();SavePreferences();};
         menu.Items.Add(remember);
+        var baki=Item("Assistência do Baki-Pi",check:true,selected:preferences.BakiAssistantEnabled);
+        baki.Click+=(_,args)=>{args.Handled=true;preferences=preferences with{BakiAssistantEnabled=baki.IsChecked};assistant.Reset();QueueSave();SavePreferences();UpdateAssistant(player.Snapshot);};menu.Items.Add(baki);
     }
     internal ContextMenu BuildContextMenu()
     {

@@ -43,5 +43,6 @@ public sealed partial class MpvOnlinePlayer
             } finally {pauseCommands.Release();}
         } finally {lock(pauseSync)if(pauseReloadGeneration==expected)indexReloading=false;}
     }
+    public Task ResumeAsync(CancellationToken token=default)=>ChangeUserPauseAsync(false,token);
     async void ResumeRequested(){try{await ChangeUserPauseAsync(false,CancellationToken.None);}catch(Exception error){Trace(error.Message);}}
 }

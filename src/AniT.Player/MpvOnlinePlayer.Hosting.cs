@@ -15,6 +15,7 @@ public sealed partial class MpvOnlinePlayer
     double volume = 100;
     bool muted;
     OnlinePlayerSnapshot snapshot = new(null, null, true, false, false, false, 0, 100, false);
+    public double? SupplyRatio => bufferPlan.SupplyRatio;
     public OnlinePlayerSnapshot Snapshot => Volatile.Read(ref snapshot);
     public event EventHandler<string>? UserInput;
     public event EventHandler? Disposed;

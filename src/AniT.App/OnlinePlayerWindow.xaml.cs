@@ -53,6 +53,7 @@ internal partial class OnlinePlayerWindow : Window
     }
     internal void SetEpisodeTitle(string title)
     {
+        assistant.Reset(); buildingReserve=false;
         CloseMenus();
         EpisodeTitle.Text = title; EpisodeTitle.ToolTip = title; Title = title + " · AniT Player";
         showError = false; ShowControls();
@@ -86,7 +87,7 @@ internal partial class OnlinePlayerWindow : Window
                 if (lastDoubleClick != 0 && Stopwatch.GetElapsedTime(lastDoubleClick).TotalMilliseconds <= System.Windows.Forms.SystemInformation.DoubleClickTime + 50) break;
                 clickDelay.Stop(); clickDelay.Start(); break;
             case "double-click": lastDoubleClick = Stopwatch.GetTimestamp(); clickDelay.Stop(); SetFullscreen(!fullscreen); break;
-            case "pause": Run(() => player.TogglePauseAsync(lifetime.Token)); break;
+            case "pause": buildingReserve=false; Run(() => player.TogglePauseAsync(lifetime.Token)); break;
             case "fullscreen": SetFullscreen(!fullscreen); break;
             case "escape": if(activeMenu?.IsOpen==true)CloseMenus();else if (fullscreen) SetFullscreen(false); break;
             case "back": SeekRelative(-10); break;
@@ -136,6 +137,7 @@ internal partial class OnlinePlayerWindow : Window
             if (state.Muted != lastMuted) { lastMuted = state.Muted; VolumeIcon.Source = Image(state.Muted ? "17_mudo" : "20_volume_alto"); }
             if (!showError) Status.Text = state.Seeking || pendingSeekPosition is not null ? "Buscando o trecho escolhido…" : state.Buffering ? "Repondo a reserva de vídeo…"
                 : !state.VideoReady ? "Abrindo seu episódio…" : state.Paused ? "Pausado" : $"Reproduzindo · {state.CacheSeconds:0} s de reserva";
+            UpdateAssistant(state);
             bool hide = state.VideoReady && !state.Paused && !state.Buffering && !state.Seeking && !showError
                 && activeMenu?.IsOpen != true && pendingSeekPosition is null && !dragging && !Chrome.IsMouseOver && !Chrome.IsMouseCaptureWithin && !(keyboardNavigation && (Chrome.IsKeyboardFocusWithin || Header.IsKeyboardFocusWithin)) && (idleSeconds ?? idle.Elapsed.TotalSeconds) >= 3;
             if (hide) Header.Visibility = Chrome.Visibility = Visibility.Collapsed;
