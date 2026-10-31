@@ -38,6 +38,9 @@ internal static class OnlinePlayerHostChecks
                 if((await player.CommandAsync(["get_property","osc"],token)).GetBoolean())throw new Exception("Native OSC must be disabled");
                 var native=GetWindow(window.VideoHandle,5);
                 if(native==IntPtr.Zero||GetParent(native)!=window.VideoHandle)throw new Exception("mpv did not attach a native video child");
+                var hitPoint=((MpvVideoHost)window.FindName("Video")).PointToScreen(new Point(40,40));
+                var screenPoint=new IntPtr(((int)hitPoint.X&0xffff)|(((int)hitPoint.Y&0xffff)<<16));
+                if(SendMessage(window.VideoHandle,0x84,IntPtr.Zero,screenPoint).ToInt64()!=1)throw new Exception("Video surface is transparent to real mouse input");
                 if((await player.CommandAsync(["get_property","input-doubleclick-time"],token)).GetInt32()!=0)throw new Exception("AniT must own embedded double-click recognition");
                 // Background cue preparation must not reopen the file or discard its packet cache.
                 allowIndex=true;
@@ -53,10 +56,10 @@ internal static class OnlinePlayerHostChecks
                 await Until(()=>player.Snapshot.Paused);
                 var pausedAt=player.Snapshot.Position!.Value.TotalSeconds;await Task.Delay(400,token);
                 if(Math.Abs(player.Snapshot.Position!.Value.TotalSeconds-pausedAt)>0.15)throw new Exception("Pause did not hold video");
-                PostMessage(native,0x201,new IntPtr(1),new IntPtr(40 | (40 << 16)));PostMessage(native,0x202,IntPtr.Zero,new IntPtr(40 | (40 << 16)));
+                PostMessage(window.VideoHandle,0x201,new IntPtr(1),new IntPtr(40 | (40 << 16)));PostMessage(window.VideoHandle,0x202,IntPtr.Zero,new IntPtr(40 | (40 << 16)));
                 await Until(()=>!player.Snapshot.Paused);
-                PostMessage(native,0x201,new IntPtr(1),new IntPtr(40 | (40 << 16)));PostMessage(native,0x202,IntPtr.Zero,new IntPtr(40 | (40 << 16)));
-                PostMessage(native,0x201,new IntPtr(1),new IntPtr(40 | (40 << 16)));PostMessage(native,0x202,IntPtr.Zero,new IntPtr(40 | (40 << 16)));
+                PostMessage(window.VideoHandle,0x201,new IntPtr(1),new IntPtr(40 | (40 << 16)));PostMessage(window.VideoHandle,0x202,IntPtr.Zero,new IntPtr(40 | (40 << 16)));
+                PostMessage(window.VideoHandle,0x201,new IntPtr(1),new IntPtr(40 | (40 << 16)));PostMessage(window.VideoHandle,0x202,IntPtr.Zero,new IntPtr(40 | (40 << 16)));
                 await Until(()=>window.IsFullscreen);
                 await Task.Delay(System.Windows.Forms.SystemInformation.DoubleClickTime+150,token);
                 if(player.Snapshot.Paused)throw new Exception("Double-click also paused playback");
@@ -118,6 +121,7 @@ internal static class OnlinePlayerHostChecks
         app.Run(runner);return result;
     }
     static IEnumerable<DependencyObject> Descendants(DependencyObject root){for(int i=0;i<VisualTreeHelper.GetChildrenCount(root);i++){var child=VisualTreeHelper.GetChild(root,i);yield return child;foreach(var item in Descendants(child))yield return item;}}
+    [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr window,uint message,IntPtr wParam,IntPtr lParam);
     [DllImport("user32.dll")] static extern bool PostMessage(IntPtr window,uint message,IntPtr wParam,IntPtr lParam);
     [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr parent,uint command);
     [DllImport("user32.dll")] static extern IntPtr GetParent(IntPtr child);

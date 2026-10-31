@@ -27,6 +27,7 @@ internal static class Program
         }
         if (args.Contains("--check-player-extras")) return OnlinePlayerExtrasChecks.Run(application);
         if (args.Contains("--check-player-tracks")) return OnlinePlayerTrackChecks.Run(application);
+        if (args.Contains("--interactive-player-mouse")) return OnlinePlayerMouseChecks.Run(application);
         if (args.Contains("--check-player-host")) return OnlinePlayerHostChecks.Run(application);
         if (args.Contains("--check-player-design"))
         {

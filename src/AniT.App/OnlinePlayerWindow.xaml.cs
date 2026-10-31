@@ -22,8 +22,7 @@ internal partial class OnlinePlayerWindow : Window
     bool showError, keyboardNavigation;
     double pendingVolume = 100;
     double? pendingSeekPosition;
-    long lastDoubleClick, lastClick;
-    System.Drawing.Point lastClickPoint;
+    readonly VideoClickTracker videoClicks = new();
     WindowStyle savedStyle;
     ResizeMode savedResize;
     WindowState savedState;
@@ -40,10 +39,12 @@ internal partial class OnlinePlayerWindow : Window
         Height = Math.Min(Height, Math.Max(MinHeight, SystemParameters.WorkArea.Height * 0.9));
         SetEpisodeTitle(title);
         player.UserInput += OnInput;
+        Video.PointerInput += OnVideoPointer;
+        Deactivated += (_, _) => Video.SetPointerHidden(false);
         player.PlaybackClosed += OnPlayerClosed;
         player.Disposed += OnPlayerDisposed;
         refresh.Tick += (_, _) => UpdateView(player.Snapshot);
-        clickDelay.Tick += (_, _) => { clickDelay.Stop(); Run(() => player.TogglePauseAsync(lifetime.Token)); };
+        clickDelay.Tick += (_, _) => { clickDelay.Stop(); videoClicks.Reset(); buildingReserve=false; Run(() => player.TogglePauseAsync(lifetime.Token)); };
         SizeChanged += (_, _) => UpdateChromeDensity();
         Loaded += (_, _) => { UpdateChromeDensity(); refresh.Start(); UpdateView(player.Snapshot); };
         Closing += (_, _) => {
@@ -79,6 +80,7 @@ internal partial class OnlinePlayerWindow : Window
         CloseMoments();
         CloseMenus(); CaptureVolumePreferences(player.Snapshot); preferenceSave.Stop(); SavePreferences();
         refresh.Stop(); clickDelay.Stop(); lifetime.Cancel(); seek?.Cancel(); seek?.Dispose(); lifetime.Dispose();
+        Video.SetPointerHidden(false); Video.PointerInput -= OnVideoPointer;
         player.UserInput -= OnInput; player.PlaybackClosed -= OnPlayerClosed; player.Disposed -= OnPlayerDisposed;
     }
     void OnPlayerClosed(object? sender, global::AniT.Core.PlaybackPositionChangedEventArgs args) => CloseFromPlayer();
@@ -89,30 +91,26 @@ internal partial class OnlinePlayerWindow : Window
         if (closing) return;
         closing = true; Stop(); Close();
     }
+    internal bool VideoPointerHidden => Video.PointerHidden;
+    void OnVideoPointer(object? sender, VideoPointerEventArgs input)
+    {
+        if (closing) return;
+        keyboardNavigation=false; ShowControls();
+        if (input.Action != "press") { if(input.Action=="menu") HandleInput("menu"); return; }
+        var size = System.Windows.Forms.SystemInformation.DoubleClickSize;
+        if (videoClicks.Press(input.Timestamp,input.X,input.Y,(uint)System.Windows.Forms.SystemInformation.DoubleClickTime,size.Width,size.Height)) {
+            clickDelay.Stop(); SetFullscreen(!fullscreen);
+        } else { clickDelay.Stop(); clickDelay.Start(); }
+    }
     void OnInput(object? sender, string action) => HandleInput(action);
     internal void HandleInput(string action)
     {
         if (closing) return;
-        if (action is "pointer" or "click" or "double-click") keyboardNavigation = false;
+        if (action is "pointer") keyboardNavigation = false;
         ShowControls();
+        if (action != "pointer") { clickDelay.Stop(); videoClicks.Reset(); }
         if (!player.Snapshot.VideoReady && action is "pause" or "mute" or "volume-up" or "volume-down") return;
         switch (action) {
-            case "click":
-                // Ignore the trailing release of a recognized pair.
-                if (lastDoubleClick != 0 && Stopwatch.GetElapsedTime(lastDoubleClick).TotalMilliseconds <= System.Windows.Forms.SystemInformation.DoubleClickTime + 50) break;
-                // AniT owns click recognition; mpv's embedded double-click detector is disabled.
-                var point = System.Windows.Forms.Cursor.Position;
-                var size = System.Windows.Forms.SystemInformation.DoubleClickSize;
-                var pair = clickDelay.IsEnabled && lastClick != 0
-                    && Stopwatch.GetElapsedTime(lastClick).TotalMilliseconds <= System.Windows.Forms.SystemInformation.DoubleClickTime
-                    && Math.Abs(point.X - lastClickPoint.X) <= size.Width / 2
-                    && Math.Abs(point.Y - lastClickPoint.Y) <= size.Height / 2;
-                if (pair) { HandleInput("double-click"); break; }
-                lastClick = Stopwatch.GetTimestamp(); lastClickPoint = point;
-                clickDelay.Stop(); clickDelay.Start(); break;
-            case "double-click":
-                if (lastDoubleClick != 0 && Stopwatch.GetElapsedTime(lastDoubleClick).TotalMilliseconds < 100) break;
-                lastDoubleClick = Stopwatch.GetTimestamp(); clickDelay.Stop(); SetFullscreen(!fullscreen); break;
             case "pause": buildingReserve=false; Run(() => player.TogglePauseAsync(lifetime.Token)); break;
             case "fullscreen": SetFullscreen(!fullscreen); break;
             case "escape": if(activeMenu?.IsOpen==true)CloseMenus();else if (fullscreen) SetFullscreen(false); break;
@@ -146,7 +144,7 @@ internal partial class OnlinePlayerWindow : Window
     }
     internal bool IsFullscreen => fullscreen;
     internal bool ControlsVisible => Chrome.Visibility == Visibility.Visible;
-    void ShowControls() { idle.Restart(); Header.Visibility = Chrome.Visibility = Visibility.Visible; }
+    void ShowControls() { Video.SetPointerHidden(false); idle.Restart(); Header.Visibility = Chrome.Visibility = Visibility.Visible; }
     internal void UpdateView(OnlinePlayerSnapshot state, double? idleSeconds = null)
     {
         if (closing) return;
@@ -167,6 +165,7 @@ internal partial class OnlinePlayerWindow : Window
             UpdateAssistant(state);
             bool hide = state.VideoReady && !state.Paused && !state.Buffering && !state.Seeking && !showError
                 && activeMenu?.IsOpen != true && pendingSeekPosition is null && !dragging && !Chrome.IsMouseOver && !Chrome.IsMouseCaptureWithin && !(keyboardNavigation && (Chrome.IsKeyboardFocusWithin || Header.IsKeyboardFocusWithin)) && (idleSeconds ?? idle.Elapsed.TotalSeconds) >= 3;
+            Video.SetPointerHidden(hide && IsActive && Video.IsPointerOver);
             if (hide) Header.Visibility = Chrome.Visibility = Visibility.Collapsed;
             else Header.Visibility = Chrome.Visibility = Visibility.Visible;
         } finally { syncing = false; }

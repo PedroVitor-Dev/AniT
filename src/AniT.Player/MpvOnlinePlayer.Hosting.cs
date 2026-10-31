@@ -30,14 +30,14 @@ public sealed partial class MpvOnlinePlayer
     }
     internal static string WindowId(IntPtr parent) => unchecked((uint)parent.ToInt64()).ToString(CultureInfo.InvariantCulture);
     internal const string HostBindings = """
-        MBTN_RIGHT script-message anit-ui menu
+        MBTN_RIGHT ignore
         b script-message anit-ui moments
         a script-message anit-ui audio
         s script-message anit-ui subtitles
         MENU script-message anit-ui menu
         Shift+F10 script-message anit-ui menu
-        MBTN_LEFT script-message anit-ui click
-        MBTN_LEFT_DBL script-message anit-ui double-click
+        MBTN_LEFT ignore
+        MBTN_LEFT_DBL ignore
         MOUSE_MOVE script-message anit-ui pointer
         MOUSE_ENTER script-message anit-ui pointer
         SPACE script-message anit-ui pause
@@ -63,7 +63,7 @@ public sealed partial class MpvOnlinePlayer
             if (Stopwatch.GetElapsedTime(Interlocked.Read(ref lastPointer), now).TotalMilliseconds < 33) return;
             Interlocked.Exchange(ref lastPointer, now);
         }
-        if (action is "click" or "double-click" or "pointer" or "pause" or "fullscreen" or "escape" or "back" or "forward" or "volume-up" or "volume-down" or "mute" or "close" or "menu" or "audio" or "subtitles" or "moments")
+        if (action is "pointer" or "pause" or "fullscreen" or "escape" or "back" or "forward" or "volume-up" or "volume-down" or "mute" or "close" or "menu" or "audio" or "subtitles" or "moments")
             Dispatch(() => UserInput?.Invoke(this, action));
     }
     void PublishSnapshot() => Volatile.Write(ref snapshot, new(position, duration, UserPaused, buffering, seeking, videoReady,

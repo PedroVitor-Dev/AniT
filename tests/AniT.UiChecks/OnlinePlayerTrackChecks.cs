@@ -68,7 +68,7 @@ internal static class OnlinePlayerTrackChecks
                 await Until(()=>Math.Abs(player.Tracks.Speed-1.25)<.001);
                 await player.SetSubtitleDelayAsync(-.2,token);await Until(()=>Math.Abs(player.Tracks.SubtitleDelay+.2)<.001);
                 // Native right-click routes to a WPF popup above the embedded video.
-                var native=GetWindow(window.VideoHandle,5);PostMessage(native,0x204,new IntPtr(2),new IntPtr(30|(30<<16)));PostMessage(native,0x205,IntPtr.Zero,new IntPtr(30|(30<<16)));
+                var native=GetWindow(window.VideoHandle,5);PostMessage(window.VideoHandle,0x204,new IntPtr(2),new IntPtr(30|(30<<16)));PostMessage(window.VideoHandle,0x205,IntPtr.Zero,new IntPtr(30|(30<<16)));
                 await Until(()=>window.ActiveMenu?.IsOpen==true);await player.CommandAsync(["keypress","ESC"],token);await Until(()=>window.ActiveMenu is null);
                 player.Resume();await Until(()=>!player.Snapshot.Paused);
                 var layouts=0;
