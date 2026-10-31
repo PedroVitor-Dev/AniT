@@ -98,10 +98,19 @@ english.FinishedTitle=Ready for your next story!
 english.FinishedBody=Click Finish with Start AniT checked to open the app. On first use, set up your profile and anime folder.
 
 [Code]
-var FinishLaunchInitialized: Boolean;
+var
+  FinishLaunchInitialized: Boolean;
+  WizardForegroundRequested: Boolean;
 
 procedure CurPageChanged(CurPageID: Integer);
 begin
+  { Request foreground only once, after the first page is shown. }
+  if not WizardSilent and not WizardForegroundRequested then
+  begin
+    WizardForegroundRequested := True;
+    BringToFrontAndRestore;
+  end;
+
   if (CurPageID = wpFinished) and not FinishLaunchInitialized and (WizardForm.RunList.Items.Count > 0) then
   begin
     WizardForm.RunList.Checked[0] := True;
