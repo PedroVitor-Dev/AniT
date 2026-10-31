@@ -574,3 +574,15 @@ footer > div a:hover { color: var(--accent); }
   .hero-archive { transform: none !important; }
   .reveal { opacity: 1; transform: none; }
 }
+
+/* Official Store badge is kept intact; the surrounding card follows AniT. */
+.store-availability { display: flex; align-items: center; gap: .55rem; margin-top: 1.4rem; color: var(--text); font-size: .82rem; font-weight: 700; }
+.store-availability > span { width: .5rem; height: .5rem; flex: 0 0 auto; border-radius: 50%; background: #54dfb0; box-shadow: 0 0 .8rem #54dfb044; }
+.store-action { display: inline-flex; justify-content: center; align-items: center; min-height: 4.7rem; padding: .4rem .8rem; border: 1px solid var(--line-strong); border-radius: 1.05rem; background: var(--surface-solid); box-shadow: 0 .65rem 2rem #0080ff1f; transition: border-color .2s ease, transform .2s ease; }
+.store-action img { display: block; width: 220px; max-width: 100%; height: auto; }
+.store-action:hover { transform: translateY(-3px); border-color: var(--accent); }
+.store-action:focus-visible { outline: 3px solid var(--accent); outline-offset: 5px; }
+.store-action-final { margin-top: 1.5rem; }
+.final-copy .store-action-final + .primary-action { margin-top: 1rem; }
+@media (max-width: 760px) { .store-availability { justify-content: center; } .hero-actions .store-action { width: min(100%, 24rem); } }
+@media (prefers-reduced-motion: reduce) { .store-action { transition: none; } .store-action:hover { transform: none; } }
