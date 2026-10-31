@@ -22,7 +22,7 @@ public partial class ProfileAvatarButton : UserControl
         var configuredPath = ProfileSettingsStore.Load().AvatarPath;
         var path = !string.IsNullOrWhiteSpace(configuredPath) && File.Exists(configuredPath)
             ? configuredPath
-            : "pack://application:,,,/Assets/Profile/1.png";
+            : ProfileSettingsStore.DefaultAvatarPath;
         if (string.Equals(displayedPath, path, StringComparison.OrdinalIgnoreCase)) return;
 
         try
@@ -35,7 +35,7 @@ public partial class ProfileAvatarButton : UserControl
         catch
         {
             displayedPath = null;
-            AvatarBrush.ImageSource = ComfortableImageSource.Load("Assets/Profile/1.png", 128);
+            AvatarBrush.ImageSource = ComfortableImageSource.Load(ProfileSettingsStore.DefaultAvatarPath, 128);
         }
     }
 

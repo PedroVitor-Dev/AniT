@@ -88,18 +88,18 @@ public partial class ProfileEditWindow : Window
             : fallbackAvatarPath;
 
         AvatarFileText.Text = selectedAvatarPath is null
-            ? "Avatar automático"
+            ? "Foto padrão do AniT"
             : "Foto personalizada selecionada";
 
         try
         {
             AvatarPreviewBrush.ImageSource = ComfortableImageSource.Load(
-                File.Exists(path) ? Path.GetFullPath(path) : "Assets/Profile/1.png",
+                File.Exists(path) ? Path.GetFullPath(path) : ProfileSettingsStore.DefaultAvatarPath,
                 360);
         }
         catch
         {
-            AvatarPreviewBrush.ImageSource = ComfortableImageSource.Load("Assets/Profile/1.png", 360);
+            AvatarPreviewBrush.ImageSource = ComfortableImageSource.Load(ProfileSettingsStore.DefaultAvatarPath, 360);
         }
     }
 

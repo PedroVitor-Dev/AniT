@@ -76,6 +76,7 @@
     <Resource Include="..\..\assets\histórico\2.png" Link="Assets\History\2.png" />
     <Resource Include="..\..\assets\histórico\3.png" Link="Assets\History\3.png" />
     <Resource Include="..\..\assets\histórico\4.png" Link="Assets\History\4.png" />
+    <Resource Include="..\..\assets\profile.png" Link="Assets\Profile\default.png" />
     <Resource Include="..\..\assets\perfil\1.png" Link="Assets\Profile\1.png" />
     <Resource Include="..\..\assets\perfil\2.png" Link="Assets\Profile\2.png" />
     <Resource Include="..\..\assets\badges\**\*" Link="Assets\Badges\%(RecursiveDir)%(Filename)%(Extension)" />
@@ -89,6 +90,21 @@
     <Resource Include="..\..\assets\baki-pi\boring-sf.png" Link="Assets\boring-sf.png" />
     <Resource Include="..\..\assets\baki-pi\happy2-sf.png" Link="Assets\happy2-sf.png" />
     <Resource Include="..\..\assets\baki-pi\happy-sf.png" Link="Assets\happy-sf.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="..\..\assets\player\optimized\ornament-1.png" Link="Assets\Player\ornament-1.png" />
+    <Resource Include="..\..\assets\player\baki_pi_player_assets\01_play.png" Link="Assets\Player\01_play.png" />
+    <Resource Include="..\..\assets\player\baki_pi_player_assets\02_pause.png" Link="Assets\Player\02_pause.png" />
+    <Resource Include="..\..\assets\player\baki_pi_player_assets\17_mudo.png" Link="Assets\Player\17_mudo.png" />
+    <Resource Include="..\..\assets\player\baki_pi_player_assets\20_volume_alto.png" Link="Assets\Player\20_volume_alto.png" />
+    <Resource Include="..\..\assets\player\baki_pi_player_assets\21_voltar_10s.png" Link="Assets\Player\21_voltar_10s.png" />
+    <Resource Include="..\..\assets\player\baki_pi_player_assets\22_avancar_10s.png" Link="Assets\Player\22_avancar_10s.png" />
+    <Resource Include="..\..\assets\player\baki_pi_player_assets\23_tela_cheia.png" Link="Assets\Player\23_tela_cheia.png" />
+    <Resource Include="..\..\assets\player\player_mascote\player10.png" Link="Assets\Player\loading.png" />
+    <Resource Include="..\..\assets\player\player_mascote\player8.png" Link="Assets\Player\offline.png" />
+    <Resource Include="..\..\assets\player\player_mascote\player5.png" Link="Assets\Player\error.png" />
+    <Resource Include="..\..\assets\player\player_mascote\player9.png" Link="Assets\Player\idle.png" />
   </ItemGroup>
 
 </Project>

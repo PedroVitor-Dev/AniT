@@ -190,7 +190,7 @@ public partial class OnboardingWindow : Window
 
     private void RefreshAvatar()
     {
-        const string fallback = "pack://application:,,,/AniT;component/Assets/Profile/1.png";
+        const string fallback = ProfileSettingsStore.DefaultAvatarPath;
         try { AvatarBrush.ImageSource = ComfortableImageSource.Load(avatarPath ?? fallback, 320); }
         catch { avatarPath = null; AvatarBrush.ImageSource = ComfortableImageSource.Load(fallback, 320); }
     }

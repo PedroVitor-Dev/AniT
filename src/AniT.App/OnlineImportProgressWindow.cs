@@ -44,12 +44,12 @@ internal sealed class OnlineImportProgressWindow : Window
     public void Report(OnlineImportProgress progress)
     {
         if (!IsLoaded || complete) return;
-        heading.Text = progress.Title; detail.Text = progress.Detail; bar.Value = Math.Max(bar.Value, progress.Percent);
+        heading.Text = progress.Title; detail.Text = progress.Detail; bar.IsIndeterminate = progress.IsIndeterminate; bar.Value = Math.Max(bar.Value, progress.Percent);
         if (progress.Percent >= 65) { action.Content = "Concluir agora"; phase.Text = "Episódios já adicionados · identificando nome e capa"; }
     }
     public void Complete(string title, int episodes, bool artworkPending)
     {
-        complete = true; bar.BeginAnimation(OpacityProperty, null); bar.Opacity = 1; bar.Value = 100;
+        complete = true; bar.IsIndeterminate = false; bar.BeginAnimation(OpacityProperty, null); bar.Opacity = 1; bar.Value = 100;
         heading.Text = "Carregado!"; detail.Text = $"{title}\n{episodes} episódios adicionados à sua biblioteca.";
         phase.Text = artworkPending ? "Pronto para abrir no Início. As capas poderão ser completadas quando houver conexão." : "Nome, episódios e informações preparados. Abra pelo Início.";
         action.Content = "Ir para o Início";

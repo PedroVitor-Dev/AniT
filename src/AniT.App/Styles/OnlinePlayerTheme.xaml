@@ -1,0 +1,150 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Local to the online player. All text and surfaces follow AppearanceManager. -->
+    <Style x:Key="PlayerInput" TargetType="TextBox"><Setter Property="Background" Value="{DynamicResource AniT.Brush.SurfaceAlt}"/><Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/><Setter Property="CaretBrush" Value="{DynamicResource AniT.Brush.TextPrimary}"/><Setter Property="BorderBrush" Value="{DynamicResource AniT.Brush.Border}"/><Setter Property="Padding" Value="8"/><Setter Property="FontSize" Value="14"/></Style>
+    <Style x:Key="PlayerNoteInput" TargetType="TextBox" BasedOn="{StaticResource PlayerInput}">
+        <Setter Property="HorizontalAlignment" Value="Stretch"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="VerticalContentAlignment" Value="Top"/><Setter Property="Padding" Value="14"/>
+        <Setter Property="FontFamily" Value="Bahnschrift, Segoe UI"/><Setter Property="FontSize" Value="16"/>
+        <Setter Property="TextAlignment" Value="Left"/><Setter Property="MinHeight" Value="112"/><Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CaretBrush" Value="{DynamicResource AniT.Brush.AccentCyan}"/>
+        <Setter Property="SelectionBrush" Value="{DynamicResource AniT.Brush.AccentBlue}"/><Setter Property="SelectionOpacity" Value="0.3"/>
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TextBox">
+            <Border x:Name="Field" CornerRadius="12" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                <Grid Margin="{TemplateBinding Padding}">
+                    <ScrollViewer x:Name="PART_ContentHost" Focusable="False" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"/>
+                    <TextBlock x:Name="Hint" Text="Escreva sua anotação sobre esta cena…" Tag="ThemeManaged" Foreground="{DynamicResource AniT.Brush.TextSecondary}" FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}" TextWrapping="Wrap" VerticalAlignment="Top" Visibility="Collapsed" IsHitTestVisible="False"/>
+                </Grid>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="Text" Value=""><Setter TargetName="Hint" Property="Visibility" Value="Visible"/></Trigger>
+                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Field" Property="BorderBrush" Value="{DynamicResource AniT.Brush.TextSecondary}"/></Trigger>
+                <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Hint" Property="Visibility" Value="Collapsed"/><Setter TargetName="Field" Property="BorderBrush" Value="{DynamicResource AniT.Brush.AccentCyan}"/><Setter TargetName="Field" Property="BorderThickness" Value="2"/></Trigger>
+                <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.6"/></Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style x:Key="PlayerText" TargetType="TextBlock">
+        <Setter Property="Tag" Value="ThemeManaged"/>
+        <Setter Property="FontFamily" Value="Bahnschrift, Segoe UI"/><Setter Property="FontSize" Value="14"/>
+        <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/><Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <Style x:Key="PlayerCaption" TargetType="TextBlock" BasedOn="{StaticResource PlayerText}">
+        <Setter Property="FontSize" Value="12"/><Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextSecondary}"/>
+    </Style>
+    <Style x:Key="PlayerAction" TargetType="Button">
+        <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/>
+        <Setter Property="Background" Value="{DynamicResource AniT.Brush.SurfaceAlt}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AniT.Brush.Border}"/>
+        <Setter Property="Padding" Value="16,10"/><Setter Property="MinHeight" Value="44"/>
+        <Setter Property="FontSize" Value="14"/><Setter Property="FontFamily" Value="Bahnschrift, Segoe UI"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+            <Border x:Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="{TemplateBinding Padding}">
+                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource AniT.Brush.SurfaceHover}"/></Trigger>
+                <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource AniT.Brush.TextPrimary}"/><Setter TargetName="Surface" Property="BorderThickness" Value="2"/></Trigger>
+                <Trigger Property="IsPressed" Value="True"><Setter TargetName="Surface" Property="Opacity" Value="0.75"/></Trigger>
+                <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.55"/><Setter Property="Cursor" Value="Arrow"/></Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style x:Key="PlayerIcon" TargetType="Button" BasedOn="{StaticResource PlayerAction}">
+        <Setter Property="Width" Value="48"/><Setter Property="Height" Value="48"/><Setter Property="Padding" Value="4"/>
+        <Setter Property="Margin" Value="3"/>
+    </Style>
+    <Style x:Key="PlayerTransport" TargetType="Button" BasedOn="{StaticResource PlayerIcon}">
+        <Setter Property="Width" Value="48"/><Setter Property="Height" Value="48"/>
+        <Setter Property="Background" Value="Transparent"/><Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Padding" Value="2"/><Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style x:Key="PlayerTool" TargetType="Button" BasedOn="{StaticResource PlayerAction}">
+        <Setter Property="Padding" Value="10,7"/><Setter Property="MinHeight" Value="38"/>
+        <Setter Property="Margin" Value="3,0"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    </Style>
+    <Style x:Key="PlayerGlyph" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/><Setter Property="FontSize" Value="15"/>
+        <Setter Property="Tag" Value="ThemeManaged"/><Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style x:Key="PlayerTrack" TargetType="Slider">
+        <Setter Property="MinHeight" Value="32"/><Setter Property="Foreground" Value="{DynamicResource AniT.Brush.AccentCyan}"/>
+        <Setter Property="Background" Value="{DynamicResource AniT.Brush.Border}"/>
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Slider">
+            <Grid VerticalAlignment="Center" Height="32">
+                <Border Height="4" CornerRadius="2" Background="{TemplateBinding Background}" VerticalAlignment="Center"/>
+                <Track x:Name="PART_Track" Height="32">
+                    <Track.DecreaseRepeatButton><RepeatButton Command="Slider.DecreaseLarge" Focusable="False"><RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Background="{DynamicResource AniT.Brush.AccentCyan}" Height="4" CornerRadius="2"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.DecreaseRepeatButton>
+                    <Track.Thumb><Thumb Width="16" Height="32"><Thumb.Template><ControlTemplate TargetType="Thumb"><Ellipse Width="12" Height="12" Fill="{DynamicResource AniT.Brush.TextPrimary}" Stroke="{DynamicResource AniT.Brush.AccentCyan}" StrokeThickness="2"/></ControlTemplate></Thumb.Template></Thumb></Track.Thumb>
+                    <Track.IncreaseRepeatButton><RepeatButton Command="Slider.IncreaseLarge" Focusable="False" Opacity="0"/></Track.IncreaseRepeatButton>
+                </Track>
+                <Border x:Name="Focus" BorderBrush="{DynamicResource AniT.Brush.TextPrimary}" BorderThickness="1" CornerRadius="6" Visibility="Collapsed" IsHitTestVisible="False"/>
+            </Grid>
+            <ControlTemplate.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Focus" Property="Visibility" Value="Visible"/></Trigger></ControlTemplate.Triggers>
+        </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style x:Key="PlayerMenuItem" TargetType="MenuItem">
+        <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/><Setter Property="Background" Value="Transparent"/>
+        <Setter Property="MinHeight" Value="40"/>
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="MenuItem">
+            <Grid>
+                <Border x:Name="Row" Background="{TemplateBinding Background}" Padding="10,8" CornerRadius="6">
+                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="22"/><ColumnDefinition Width="*"/><ColumnDefinition Width="18"/></Grid.ColumnDefinitions>
+                        <TextBlock x:Name="Check" Text="✓" Visibility="Collapsed" Foreground="{DynamicResource AniT.Brush.TextPrimary}"/>
+                        <ContentPresenter Grid.Column="1" ContentSource="Header" RecognizesAccessKey="False" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="Arrow" Grid.Column="2" Text="›" Visibility="Collapsed" HorizontalAlignment="Right" Foreground="{DynamicResource AniT.Brush.TextPrimary}"/>
+                    </Grid>
+                </Border>
+                <Popup x:Name="PART_Popup" Placement="Right" IsOpen="{TemplateBinding IsSubmenuOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="None">
+                    <Border Background="{DynamicResource AniT.Brush.Surface}" BorderBrush="{DynamicResource AniT.Brush.Border}" BorderThickness="1" CornerRadius="10" Padding="6" MinWidth="250" MaxWidth="420">
+                        <ScrollViewer MaxHeight="400" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" CanContentScroll="True"><ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/></ScrollViewer>
+                    </Border>
+                </Popup>
+            </Grid>
+            <ControlTemplate.Triggers>
+                <Trigger Property="HasItems" Value="True"><Setter TargetName="Arrow" Property="Visibility" Value="Visible"/></Trigger>
+                <Trigger Property="IsChecked" Value="True"><Setter TargetName="Check" Property="Visibility" Value="Visible"/></Trigger>
+                <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="Row" Property="Background" Value="{DynamicResource AniT.Brush.SurfaceHover}"/></Trigger>
+                <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.6"/></Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate></Setter.Value></Setter>
+        <Setter Property="ItemContainerStyle" Value="{DynamicResource PlayerMenuItem}"/>
+    </Style>
+    <Style x:Key="PlayerPopup" TargetType="ContextMenu">
+        <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/><Setter Property="Background" Value="{DynamicResource AniT.Brush.Surface}"/>
+        <Setter Property="ItemContainerStyle" Value="{StaticResource PlayerMenuItem}"/><Setter Property="MaxWidth" Value="420"/>
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ContextMenu">
+            <Border Background="{TemplateBinding Background}" BorderBrush="{DynamicResource AniT.Brush.Border}" BorderThickness="1" CornerRadius="12" Padding="6" MinWidth="260">
+                <ScrollViewer MaxHeight="400" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" CanContentScroll="True"><ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/></ScrollViewer>
+            </Border>
+        </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style TargetType="ScrollBar">
+        <Setter Property="Width" Value="10"/><Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ScrollBar">
+            <Grid Background="Transparent" Margin="2,0">
+                <Track x:Name="PART_Track" Orientation="Vertical" IsDirectionReversed="True" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" Value="{TemplateBinding Value}" ViewportSize="{TemplateBinding ViewportSize}">
+                    <Track.DecreaseRepeatButton><RepeatButton Command="{x:Static ScrollBar.PageUpCommand}" Focusable="False" Opacity="0"/></Track.DecreaseRepeatButton>
+                    <Track.Thumb><Thumb MinHeight="28"><Thumb.Template><ControlTemplate TargetType="Thumb"><Border Background="{DynamicResource AniT.Brush.Border}" CornerRadius="3"/></ControlTemplate></Thumb.Template></Thumb></Track.Thumb>
+                    <Track.IncreaseRepeatButton><RepeatButton Command="{x:Static ScrollBar.PageDownCommand}" Focusable="False" Opacity="0"/></Track.IncreaseRepeatButton>
+                </Track>
+            </Grid>
+        </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style x:Key="PlayerComboItem" TargetType="ComboBoxItem">
+        <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/><Setter Property="Background" Value="{DynamicResource AniT.Brush.Surface}"/>
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBoxItem"><Border x:Name="Row" Background="{TemplateBinding Background}" Padding="10,8"><TextBlock Text="{TemplateBinding Content}" Tag="ThemeManaged" Foreground="{TemplateBinding Foreground}" TextTrimming="CharacterEllipsis"/></Border><ControlTemplate.Triggers><Trigger Property="IsHighlighted" Value="True"><Setter TargetName="Row" Property="Background" Value="{DynamicResource AniT.Brush.SurfaceHover}"/></Trigger><Trigger Property="IsSelected" Value="True"><Setter TargetName="Row" Property="Background" Value="{DynamicResource AniT.Brush.SurfaceSelected}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style x:Key="PlayerSelect" TargetType="ComboBox">
+        <Setter Property="BorderBrush" Value="{DynamicResource AniT.Brush.Border}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AniT.Brush.TextPrimary}"/><Setter Property="Background" Value="{DynamicResource AniT.Brush.SurfaceAlt}"/><Setter Property="FontSize" Value="14"/>
+        <Setter Property="ItemContainerStyle" Value="{StaticResource PlayerComboItem}"/>
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBox"><Grid>
+            <ToggleButton Focusable="False" ClickMode="Press" IsChecked="{Binding IsDropDownOpen,Mode=TwoWay,RelativeSource={RelativeSource TemplatedParent}}">
+                <ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border Background="{DynamicResource AniT.Brush.SurfaceAlt}" BorderBrush="{Binding BorderBrush,RelativeSource={RelativeSource AncestorType=ComboBox}}" BorderThickness="1" CornerRadius="8" Padding="10,8"><DockPanel><TextBlock DockPanel.Dock="Right" Text="▾" Tag="ThemeManaged" Foreground="{DynamicResource AniT.Brush.TextPrimary}" Margin="8,0,0,0"/><TextBlock Text="{Binding SelectionBoxItem,RelativeSource={RelativeSource AncestorType=ComboBox}}" Tag="ThemeManaged" Foreground="{DynamicResource AniT.Brush.TextPrimary}" TextTrimming="CharacterEllipsis"/></DockPanel></Border></ControlTemplate></ToggleButton.Template>
+            </ToggleButton>
+            <Popup x:Name="PART_Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="None"><Border Background="{DynamicResource AniT.Brush.Surface}" BorderBrush="{DynamicResource AniT.Brush.Border}" BorderThickness="1" MinWidth="{TemplateBinding ActualWidth}"><ScrollViewer MaxHeight="250" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><ItemsPresenter/></ScrollViewer></Border></Popup>
+        </Grid><ControlTemplate.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter Property="BorderBrush" Value="{DynamicResource AniT.Brush.TextPrimary}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+    </Style>
+</ResourceDictionary>

@@ -6,6 +6,27 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Não publicado]
 
+## [2.0.3] - 2026-10-31
+
+### Adicionado
+
+- Player próprio do Online Anime Player sobre mpv, com Baki-Pi, registro de momentos com proteção contra spoilers e central de legendas.
+- Seleção de faixas, velocidade, preferências por perfil, importação de legendas locais e ajustes de aparência/sincronização.
+- Nova imagem padrão do Baki-Pi para perfis sem foto personalizada.
+- Diagnóstico local do streaming e procedimentos de validação com vídeo e torrent sintéticos.
+
+### Melhorado
+
+- Carregamento somente do torrent selecionado; prioridade das peças necessárias, buffer adaptativo e preparação de cues sem descartar o buffer de reprodução.
+- Importação de magnets com motor de metadados isolado, prazos de consulta, cancelamento e progresso de descoberta.
+- Visual dos controles, campo de anotações, temas claro/escuro e navegação com ícone de nuvem.
+
+### Corrigido
+
+- Duplo clique real no vídeo, clique simples para pausa e ocultação/restauração do cursor.
+- Cancelamento durante preparação do player e esperas por trackers na importação.
+- Solicitação de foco do instalador ao abrir.
+
 ## [2.0.2] - 2026-10-29
 
 ### Adicionado

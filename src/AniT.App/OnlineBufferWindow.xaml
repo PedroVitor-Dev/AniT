@@ -1,0 +1,28 @@
+<Window x:Class="AniT.App.OnlineBufferWindow" x:ClassModifier="internal" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Abrindo episódio · AniT" Width="560" Height="540" MinWidth="360" MinHeight="330" WindowStartupLocation="CenterScreen"
+    Background="{DynamicResource AniT.Brush.Background}" Foreground="{DynamicResource AniT.Brush.TextPrimary}" FontFamily="Segoe UI">
+    <Window.Resources><ResourceDictionary><ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Styles/OnlinePlayerTheme.xaml"/></ResourceDictionary.MergedDictionaries></ResourceDictionary></Window.Resources>
+    <DockPanel Margin="24">
+        <Button x:Name="CancelAction" DockPanel.Dock="Bottom" Content="Cancelar" Style="{StaticResource PlayerAction}" Margin="0,18,0,0" Click="CancelClick"/>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+                <TextBlock Text="ANIT / ONLINE ANIME PLAYER" Style="{StaticResource PlayerCaption}" FontWeight="SemiBold"/>
+                <Grid Margin="0,16,0,18"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                        <TextBlock x:Name="Heading" Text="Preparando seu episódio" FontSize="24" FontWeight="SemiBold" Style="{StaticResource PlayerText}"/>
+                        <TextBlock Text="Somente o episódio escolhido será baixado." Style="{StaticResource PlayerCaption}" Margin="0,8,0,0"/>
+                    </StackPanel>
+                    <Image x:Name="Mascot" Grid.Column="1" Height="110" Stretch="Uniform" Source="/AniT;component/Assets/Player/loading.png" AutomationProperties.Name="Baki-Pi preparando o episódio"/>
+                </Grid>
+                <Border Background="{DynamicResource AniT.Brush.Surface}" BorderBrush="{DynamicResource AniT.Brush.Border}" BorderThickness="1" CornerRadius="16" Padding="18">
+                    <StackPanel>
+                        <TextBlock x:Name="StageText" Text="Organizando a abertura do seu episódio…" Style="{StaticResource PlayerText}" FontWeight="SemiBold"/>
+                        <ProgressBar x:Name="TransferBar" Height="5" IsIndeterminate="True" Margin="0,16,0,16" Foreground="{DynamicResource AniT.Brush.AccentCyan}" Background="{DynamicResource AniT.Brush.Border}" AutomationProperties.Name="Preparação em andamento; sem estimativa de conclusão"/>
+                        <TextBlock x:Name="TransferStatus" Style="{StaticResource PlayerCaption}"/>
+                    </StackPanel>
+                </Border>
+                <TextBlock x:Name="HintText" Text="O vídeo abre assim que os trechos necessários estiverem disponíveis." Style="{StaticResource PlayerCaption}" Margin="2,16,2,0"/>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

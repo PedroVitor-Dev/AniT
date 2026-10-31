@@ -1,0 +1,34 @@
+BAKI-PI PLAYER — Kit de assets PNG com transparência
+Os arquivos são componentes visuais para interfaces de player, sem textos de interface.
+Painéis e barras são imagens estáticas. Controle de tempo, volume e seleção devem ser implementados na interface.
+O menu de faixas de áudio foi adaptado visualmente do seletor de legendas.
+
+01_play.png
+02_pause.png
+03_anterior.png
+04_proximo.png
+05_barra_progresso.png
+06_barra_capitulos.png
+07_timeline_episodio.png
+08_volume_slider.png
+09_brilho_slider.png
+10_menu_legendas.png
+11_menu_configuracoes.png
+12_mascote_audio.png
+13_mascote_pronto.png
+14_mascote_carregando.png
+15_mascote_sem_conexao.png
+16_mascote_erro.png
+17_mudo.png
+18_volume_baixo.png
+19_volume_medio.png
+20_volume_alto.png
+21_voltar_10s.png
+22_avancar_10s.png
+23_tela_cheia.png
+24_picture_in_picture.png
+25_repetir.png
+26_aleatorio.png
+27_favorito.png
+28_estrela.png
+29_menu_faixas_audio.png

@@ -9,12 +9,10 @@ namespace AniT.Infrastructure;
 public sealed class OnlineStreamServer : IAsyncDisposable
 {
     readonly Stream source;
-    readonly Func<long, int, bool>? isAvailable;
-    readonly System.Collections.Concurrent.ConcurrentDictionary<long,long> readers = new();
-    long nextReader;
+    readonly OnlineReadScheduler scheduler;
     readonly TcpListener listener = new(IPAddress.Loopback, 0);
     readonly CancellationTokenSource lifetime = new();
-    readonly SemaphoreSlim reading = new(1, 1);
+    readonly SemaphoreSlim indexing = new(1, 1);
     readonly SemaphoreSlim connections = new(8, 8);
     readonly List<Task> requests = [];
     readonly string route;
@@ -22,10 +20,17 @@ public sealed class OnlineStreamServer : IAsyncDisposable
     readonly Task accepting;
     public Uri Address { get; }
     public Action<string>? Diagnostic { get; set; }
+    public Action<string, long, double>? ReadDiagnostic { get; set; }
+    bool disposing;
+    void Log(string message) { try { Diagnostic?.Invoke(message); } catch { } }
+    void ReadEvent(string name, long id, double value) { try { ReadDiagnostic?.Invoke(name, id, value); } catch { } }
 
     public OnlineStreamServer(Stream source, string fileName, Func<long, int, bool>? isAvailable = null)
     {
-        this.source = source; this.isAvailable = isAvailable;
+        this.source = source;
+        scheduler = new OnlineReadScheduler(source, isAvailable, lifetime.Token) {
+            Observe = (name, id, elapsed) => ReadEvent(name, id, elapsed)
+        };
         contentType = Path.GetExtension(fileName).ToLowerInvariant() switch {
             ".mkv" => "video/x-matroska", ".mp4" or ".m4v" => "video/mp4",
             ".webm" => "video/webm", ".avi" => "video/x-msvideo", _ => "application/octet-stream"
@@ -52,10 +57,11 @@ public sealed class OnlineStreamServer : IAsyncDisposable
     async Task ServeAsync(TcpClient client)
     {
         using (client) {
-            long readerId = 0;
+            OnlineReadScheduler.Demand? demand = null;
+            Task? watching = null;
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
             try {
                 client.NoDelay = true;
-                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
                 timeout.CancelAfter(TimeSpan.FromSeconds(15));
                 var token = timeout.Token;
                 await using var network = client.GetStream();
@@ -75,43 +81,26 @@ public sealed class OnlineStreamServer : IAsyncDisposable
                 // The header is bounded, but waiting for verified pieces is buffering, not EOF.
                 // Client disconnect and the server lifetime still cancel every pending read.
                 timeout.CancelAfter(Timeout.InfiniteTimeSpan);
-                Diagnostic?.Invoke($"HTTP {request[0]} bytes={start}-{end}");
+                Log($"HTTP {request[0]} bytes={start}-{end}");
                 await RespondAsync(network, range is null ? "200 OK" : "206 Partial Content", end - start + 1,
                     "Accept-Ranges: bytes\r\n" + (range is null ? "" : $"Content-Range: bytes {start}-{end}/{length}\r\n"), token);
                 if (request[0] == "HEAD") return;
-                readerId = Interlocked.Increment(ref nextReader); readers[readerId] = start;
+                demand = scheduler.Add(start);
+                watching = WatchDisconnectAsync(client, timeout);
+                ReadEvent("http_demand_started", demand.Id, start);
                 var buffer = new byte[64 * 1024];
                 while (start <= end) {
-                    // A container can probe its index while its video response is still pending.
-                    // Yield a stalled verified read so the probe gets its own turn, without closing either response.
-                    if (client.Client.Poll(0, SelectMode.SelectRead) && client.Client.Available == 0) return;
-                    int count;
-                    await reading.WaitAsync(token);
-                    try {
-                        var requested = (int)Math.Min(buffer.Length, end - start + 1);
-                        var newest = readers.Keys.DefaultIfEmpty(readerId).Max();
-                        // An old HTTP read-ahead must not keep seeking the torrent picker away
-                        // from a newer container/index/seek request that is waiting for pieces.
-                        if (isAvailable is not null && readerId != newest && !isAvailable(start, requested)) {
-                            count = -1;
-                        } else {
-                        source.Position = start;
-                        using var turn = CancellationTokenSource.CreateLinkedTokenSource(token);
-                        turn.CancelAfter(TimeSpan.FromMilliseconds(300));
-                        try { count = await source.ReadAsync(buffer.AsMemory(0, (int)Math.Min(buffer.Length, end - start + 1)), turn.Token); }
-                        catch (OperationCanceledException) when (!token.IsCancellationRequested) { count = -1; }
-                        }
-                        if (isAvailable is not null && readerId != newest && readers.TryGetValue(newest, out var pending))
-                            source.Position = pending;
-                    } finally { reading.Release(); }
-                    if (count < 0) { await Task.Delay(25, token); continue; }
+                    var requested = (int)Math.Min(buffer.Length, end - start + 1);
+                    var count = await scheduler.ReadAsync(demand, start, buffer.AsMemory(0, requested), token);
                     if (count == 0) break;
                     await network.WriteAsync(buffer.AsMemory(0, count), token);
-                    start += count; readers[readerId] = start;
+                    start += count;
                 }
-            } catch (Exception ex) when (ex is IOException or SocketException or OperationCanceledException or ObjectDisposedException or InvalidOperationException) { Diagnostic?.Invoke($"HTTP interrompido: {ex.GetType().Name}: {ex.Message}"); }
+            } catch (Exception ex) when (ex is IOException or SocketException or OperationCanceledException or ObjectDisposedException or InvalidOperationException) { Log($"HTTP interrompido: {ex.GetType().Name}: {ex.Message}"); }
             finally {
-                if (readerId != 0) readers.TryRemove(readerId, out _);
+                timeout.Cancel();
+                if (demand is not null) scheduler.Remove(demand);
+                if (watching is not null) await watching;
                 connections.Release();
             }
         }
@@ -120,11 +109,46 @@ public sealed class OnlineStreamServer : IAsyncDisposable
     Task RespondAsync(Stream stream, string status, long length, string extra, CancellationToken token) =>
         stream.WriteAsync(Encoding.ASCII.GetBytes($"HTTP/1.1 {status}\r\nContent-Length: {length}\r\nContent-Type: {contentType}\r\nCache-Control: no-store\r\nConnection: close\r\n{extra}\r\n"), token).AsTask();
 
-    public async Task<bool> PrepareIndexAsync(CancellationToken token)
+    static async Task WatchDisconnectAsync(TcpClient client, CancellationTokenSource operation)
     {
-        if(source is not MatroskaStreamingView view)return false;
-        await reading.WaitAsync(token);
-        try{return await view.PrepareIndexAsync(token);}finally{reading.Release();}
+        try {
+            while (true) {
+                await Task.Delay(100, operation.Token);
+                if (client.Client.Poll(0, SelectMode.SelectRead) && client.Client.Available == 0) { operation.Cancel(); return; }
+            }
+        } catch (OperationCanceledException) { }
+        catch (Exception error) when (error is SocketException or ObjectDisposedException) { operation.Cancel(); }
+    }
+
+    public Task<bool> PrepareIndexAsync(CancellationToken token)
+    {
+        lock (requests) {
+            if (disposing) return Task.FromResult(false);
+            var task = PrepareIndexCoreAsync(token);
+            requests.RemoveAll(t => t.IsCompleted); requests.Add(task);
+            return task;
+        }
+    }
+    async Task<bool> PrepareIndexCoreAsync(CancellationToken token)
+    {
+        if (source is not MatroskaStreamingView view || view.CuesOffset <= 0) return false;
+        using var operation = CancellationTokenSource.CreateLinkedTokenSource(token, lifetime.Token);
+        token = operation.Token;
+        await indexing.WaitAsync(token);
+        OnlineReadScheduler.Demand? demand = null;
+        try {
+            demand = scheduler.Add(view.CuesOffset);
+            ReadEvent("index_demand_started", demand.Id, view.CuesOffset);
+            var result = await view.PrepareIndexAsync(async (offset, bytes, cancellation) => {
+                while (bytes.Length > 0) {
+                    var count = await scheduler.ReadAsync(demand, offset, bytes, cancellation, indexBytes: true);
+                    if (count == 0) throw new EndOfStreamException();
+                    bytes = bytes[count..]; offset += count;
+                }
+            }, token);
+            if (result) ReadEvent("index_demand_ready", demand.Id, 0);
+            return result;
+        } finally { if (demand is not null) scheduler.Remove(demand); indexing.Release(); }
     }
 
     public static bool TryRange(string value, long length, out long start, out long end)
@@ -144,11 +168,13 @@ public sealed class OnlineStreamServer : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        lock (requests) { disposing = true; }
         lifetime.Cancel(); listener.Stop();
         await accepting;
         Task[] pending; lock (requests) pending = requests.ToArray();
-        await Task.WhenAll(pending);
-        await source.DisposeAsync();
-        lifetime.Dispose(); reading.Dispose(); connections.Dispose();
+        try { await Task.WhenAll(pending); }
+        catch (Exception error) { Log("Preparação encerrada: " + error.GetType().Name); }
+        try { await source.DisposeAsync(); }
+        finally { lifetime.Dispose(); indexing.Dispose(); connections.Dispose(); }
     }
 }

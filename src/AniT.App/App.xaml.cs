@@ -848,17 +848,18 @@ public partial class App : Application
     public static async Task PlayEpisodeAsync(Guid episodeId)
     {
         if (!await playbackStartLock.WaitAsync(0)) return;
-        try { await StartEpisodeCoreAsync(episodeId); }
+        try { await StartEpisodeCoreAsync(episodeId, TimeProvider.System.GetTimestamp()); }
         finally { playbackStartLock.Release(); }
     }
 
-    private static async Task StartEpisodeCoreAsync(Guid episodeId)
+    private static async Task StartEpisodeCoreAsync(Guid episodeId, long clickedAt)
     {
         var playbackSettings = global::AniT.Infrastructure.AniTSystemSettingsStore.Load();
         if (playbackSettings.PlaybackPlayerMode == global::AniT.Infrastructure.PlaybackPlayerMode.IntegratedMpcHc && MediaPlayer is null)
             throw new InvalidOperationException("O MPC-HC integrado não foi encontrado. Reinstale o AniT ou escolha o aplicativo padrão do Windows nas configurações.");
         await using var context = OpenFreshDatabase();
         var episode = await context.Episodes
+            .Include(item => item.Season).ThenInclude(item => item!.Anime)
             .Include(item => item.MediaFiles)
             .ThenInclude(file => file.LibraryRoot)
             .Include(item => item.PlaybackProgress)
@@ -876,11 +877,13 @@ public partial class App : Application
         MediaPlayer?.CancelOnlinePreparation();
         var mediaPath = global::System.IO.Path.Combine(mediaFile.LibraryRoot!.Path, mediaFile.RelativePath);
         Uri? onlineAddress = null;
+        global::AniT.Core.OnlinePlaybackTrace? onlineTrace = null;
         if (!mediaFile.IsCloud) await PauseOnlinePlaybackAsync();
         if (mediaFile.IsCloud)
         {
             if (MediaPlayer is null) throw new InvalidOperationException("O streaming exige o MPC-HC integrado. Ative-o nas configurações de reprodução.");
-            onlineAddress = await PrepareOnlineStreamAsync(mediaFile);
+            onlineTrace = BeginOnlineTrace(clickedAt);
+            onlineAddress = await PrepareOnlineStreamAsync(mediaFile, onlineTrace);
         }
         activeEpisodeId = episodeId;
         activePlaybackIsOnlineStream = onlineAddress is not null;
@@ -908,8 +911,22 @@ public partial class App : Application
             playbackSettings.DefaultPlaybackSpeed, playbackSettings.StartPlaybackFullscreen,
             playbackSettings.PreferredAudioLanguage, playbackSettings.PreferredSubtitleLanguage);
         if (onlineAddress is not null) {
-            try { await MediaPlayer!.PlayStreamAsync(onlineAddress, resumeAt, options); }
-            catch { await PauseOnlinePlaybackAsync(onlineAddress); throw; }
+            var preferences = OnlinePlayerPreferences().Load();
+            options = options with {
+                Speed = preferences.Speed ?? options.Speed,
+                PreferredAudioLanguage = preferences.RememberLanguages ? preferences.AudioLanguage ?? options.PreferredAudioLanguage : options.PreferredAudioLanguage,
+                PreferredSubtitleLanguage = preferences.RememberLanguages ? preferences.SubtitleLanguage ?? options.PreferredSubtitleLanguage : options.PreferredSubtitleLanguage
+            };
+            MediaPlayer!.OnlineTrace = onlineTrace;
+            onlinePlayerTitle = (episode.Season?.Anime?.EnglishTitle ?? episode.Season?.Anime?.Title ?? global::System.IO.Path.GetFileNameWithoutExtension(mediaPath)) + $" · Episódio {episode.Number:00}";
+            onlinePlayerFullscreen = options.StartFullscreen;
+            onlinePlayerEpisode = episodeId;
+            onlinePlayerWindow?.SetEpisodeTitle(onlinePlayerTitle);
+            onlinePlayerWindow?.SetEpisodeContext(episodeId);
+            onlinePlayerWindow?.SetFullscreen(onlinePlayerFullscreen);
+            try { await MediaPlayer.PlayStreamAsync(onlineAddress, resumeAt, options); }
+            catch(global::AniT.Player.PlaybackPreparationCancelledException) { await PauseOnlinePlaybackAsync(onlineAddress); return; }
+            catch { onlineTrace?.Finish("player_failed"); await PauseOnlinePlaybackAsync(onlineAddress); throw; }
         }
         else await MediaPlayer!.PlayAsync(mediaFile, resumeAt, options);
         lastProgressWrite = DateTimeOffset.UtcNow;
@@ -1105,6 +1122,7 @@ public partial class App : Application
         var playerPath = ResolveBundledPlayerPath();
         if (!global::System.IO.File.Exists(playerPath)) return;
         MediaPlayer = new global::AniT.Player.MpcHcPlayer(playerPath, onlineStreaming: true, prepareOnlineSeek: (address, token) => online is { } service ? service.PrepareSeekIndexAsync(address, token) : Task.FromResult(false));
+        MediaPlayer.ConfigureOnlinePlayer = ShowOnlinePlayer;
         MediaPlayer.PositionChanged += async (_, progress) => await PersistProgressAsync(progress);
         MediaPlayer.PlaybackEnded += async (_, _) => await CompleteActiveEpisodeAsync();
         MediaPlayer.PlaybackClosed += async (_, progress) =>

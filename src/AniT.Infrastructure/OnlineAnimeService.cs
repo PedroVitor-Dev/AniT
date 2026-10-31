@@ -17,12 +17,15 @@ public sealed class OnlineAnimeService : IAsyncDisposable
     readonly string databasePath;
     readonly string statePath;
     readonly ClientEngine engine;
+    readonly OnlinePeerCache recentPeers;
     readonly SemaphoreSlim gate = new(1, 1);
     readonly SemaphoreSlim streamGate = new(1, 1);
     readonly List<Task> peerDiscovery = [];
     readonly Dictionary<string, (OnlineJob Job, TorrentManager Manager)> downloads = new();
     readonly CancellationTokenSource lifetime = new();
     OnlineStreamServer? stream;
+    CancellationTokenSource? telemetrySampling;
+    readonly List<Task> telemetryTasks = [];
     CancellationTokenSource? discoveryCancellation;
     bool restored;
     readonly Dictionary<string, OnlineJob> savedJobs = new();
@@ -35,6 +38,7 @@ public sealed class OnlineAnimeService : IAsyncDisposable
         this.databasePath = databasePath;
         Directory.CreateDirectory(stateDirectory);
         statePath = Path.Combine(stateDirectory, "downloads.json");
+        recentPeers = new OnlinePeerCache(Path.Combine(stateDirectory, "recent-peers.json"));
         engine = new ClientEngine(settings ?? new EngineSettingsBuilder {
             CacheDirectory = Path.Combine(stateDirectory, "engine"),
             AutoSaveLoadFastResume = true, AutoSaveLoadMagnetLinkMetadata = true, AutoSaveLoadDhtCache = true,
@@ -57,24 +61,38 @@ public sealed class OnlineAnimeService : IAsyncDisposable
         return full;
     }
 
+    // Restore only the manifest. Inactive jobs never create engines or fetch metadata.
     public async Task RestoreAsync(CancellationToken token = default)
     {
         await gate.WaitAsync(token);
         try {
             if (restored) return;
             var jobs = File.Exists(statePath) ? JsonSerializer.Deserialize<List<OnlineJob>>(await File.ReadAllTextAsync(statePath, token)) ?? [] : [];
-            restored = true;
-            foreach (var job in jobs) savedJobs[job.Id] = job;
+            token.ThrowIfCancellationRequested();
+            var manifest = new Dictionary<string, OnlineJob>();
             foreach (var job in jobs) {
-                try {
-                    var manager = await AddManagerAsync(job, token);
-                    // Opening the app never restarts an entire season, including legacy manifests.
-                    var waiting = job with { Paused = true, SelectedFileIndex = null };
-                    downloads.Add(job.Id, (waiting, manager));
-                    savedJobs[job.Id] = waiting;
-                } catch (Exception ex) when (ex is not OperationCanceledException) { LastError = $"Não foi possível retomar {job.Title}: {ex.Message}"; }
+                token.ThrowIfCancellationRequested();
+                manifest[job.Id] = job with { Paused = true, SelectedFileIndex = null };
             }
+            foreach (var item in manifest) savedJobs[item.Key] = item.Value;
+            restored = true; // Publish only after successful, uncancelled loading.
         } finally { gate.Release(); }
+    }
+
+    // Caller owns gate; create only the requested manager and retain the catalog on failure.
+    async Task<(OnlineJob Job, TorrentManager Manager)> LoadSelectedAsync(string id, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        if (downloads.TryGetValue(id, out var loaded)) return loaded;
+        if (!savedJobs.TryGetValue(id, out var job)) throw new InvalidOperationException("O download não foi encontrado neste perfil.");
+        try {
+            var manager = await AddManagerAsync(job, token);
+            downloads.Add(id, (job, manager)); LastError = null;
+            return (job, manager);
+        } catch (Exception error) when (error is not OperationCanceledException) {
+            LastError = $"Não foi possível abrir {job.Title}: {error.Message}";
+            throw;
+        }
     }
 
     public static string NormalizeMagnet(string source)
@@ -93,35 +111,63 @@ public sealed class OnlineAnimeService : IAsyncDisposable
         return normalized;
     }
 
-    async Task<TorrentManager> AddManagerAsync(OnlineJob job, CancellationToken token)
+    async Task<TorrentManager> AddManagerAsync(OnlineJob job, CancellationToken token, IProgress<OnlineImportProgress>? progress = null)
     {
         token.ThrowIfCancellationRequested();
-        TorrentManager manager;
-        if (job.Source.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase)) {
-            var magnet = MagnetLink.Parse(NormalizeMagnet(job.Source));
-            manager = await engine.AddStreamingAsync(magnet, job.SavePath);
-            if (!manager.HasMetadata) {
-                await engine.RemoveAsync(manager);
-                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token, lifetime.Token);
-                timeout.CancelAfter(TimeSpan.FromMinutes(2));
-                // This API explicitly runs metadata-only mode: no episode pieces are requested.
-                var metadata = await engine.DownloadMetadataAsync(magnet, timeout.Token);
-                var path = Path.Combine(Path.GetDirectoryName(statePath)!, "sources", job.Id + ".torrent");
-                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-                await File.WriteAllBytesAsync(path, metadata.ToArray(), token);
-                manager = await engine.AddStreamingAsync(await Torrent.LoadAsync(path), job.SavePath);
-            }
-        } else manager = await engine.AddStreamingAsync(await Torrent.LoadAsync(job.Source), job.SavePath);
-        await SelectSafeFilesAsync(manager, job.SavePath, null);
-        return manager;
+        TorrentManager? manager = null;
+        try {
+            if (job.Source.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase)) {
+                var cached = Path.Combine(Path.GetDirectoryName(statePath)!, "sources", job.Id + ".torrent");
+                if (File.Exists(cached)) manager = await engine.AddStreamingAsync(await Torrent.LoadAsync(cached), job.SavePath);
+                else {
+                    var magnet = MagnetLink.Parse(NormalizeMagnet(job.Source));
+                    manager = await engine.AddStreamingAsync(magnet, job.SavePath);
+                    if (!manager.HasMetadata) {
+                        await engine.RemoveAsync(manager); manager = null;
+                        using var request = CancellationTokenSource.CreateLinkedTokenSource(token, lifetime.Token);
+                        var settings = new EngineSettingsBuilder(engine.Settings) {
+                            CacheDirectory = Path.Combine(Path.GetDirectoryName(statePath)!, "metadata-engine"),
+                            ListenEndPoints = engine.Settings.ListenEndPoints.ToDictionary(pair => pair.Key, pair => new IPEndPoint(pair.Value.Address, 0))
+                        }.ToSettings();
+                        var metadata = await OnlineMetadataResolver.ResolveAsync(magnet, settings, progress, request.Token);
+                        Directory.CreateDirectory(Path.GetDirectoryName(cached)!);
+                        await File.WriteAllBytesAsync(cached, metadata.ToArray(), token);
+                        manager = await engine.AddStreamingAsync(await Torrent.LoadAsync(cached), job.SavePath);
+                    }
+                }
+            } else manager = await engine.AddStreamingAsync(await Torrent.LoadAsync(job.Source), job.SavePath);
+            await SelectSafeFilesAsync(manager, job.SavePath, null, token);
+            token.ThrowIfCancellationRequested();
+            if (!manager.TrackerManager.Private)
+                manager.PeerConnected += (_, e) => recentPeers.Remember(PeerCacheKey(manager.InfoHashes), e.Peer.Uri);
+            return manager;
+        } catch {
+            if (manager is not null) { await manager.StopAsync(); await engine.RemoveAsync(manager); }
+            throw;
+        }
     }
 
-    static async Task SelectSafeFilesAsync(TorrentManager manager, string savePath, int? selected)
+    async Task<bool> IsAlreadySavedAsync(InfoHashes hashes, CancellationToken token)
+    {
+        if (downloads.Values.Any(entry => entry.Manager.InfoHashes.Equals(hashes))) return true;
+        foreach (var job in savedJobs.Values.Where(job => !downloads.ContainsKey(job.Id))) {
+            token.ThrowIfCancellationRequested();
+            try {
+                var existing = job.Source.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase)
+                    ? MagnetLink.Parse(NormalizeMagnet(job.Source)).InfoHashes : (await Torrent.LoadAsync(job.Source)).InfoHashes;
+                if (existing.Equals(hashes)) return true;
+            } catch (Exception ex) when (ex is not OperationCanceledException) { /* Inactive broken metadata does not block a new import. */ }
+        }
+        return false;
+    }
+
+    static async Task SelectSafeFilesAsync(TorrentManager manager, string savePath, int? selected, CancellationToken token = default)
     {
         if (selected is { } index && (index < 0 || index >= manager.Files.Count || !IsVideo(manager.Files[index].Path)))
             throw new InvalidDataException("O episódio não corresponde a um vídeo válido do torrent.");
         var selectedFile = selected is { } fileIndex ? manager.Files[fileIndex] : null;
         foreach (var file in manager.Files) {
+            token.ThrowIfCancellationRequested();
             ContainedPath(savePath, Path.GetRelativePath(savePath, file.DownloadCompleteFullPath));
             var subtitle = false;
             if (selectedFile is not null && Path.GetDirectoryName(file.Path) == Path.GetDirectoryName(selectedFile.Path)) {
@@ -131,7 +177,8 @@ public sealed class OnlineAnimeService : IAsyncDisposable
                 subtitle = ext is ".srt" or ".ass" or ".ssa" or ".vtt"
                     && (subtitleStem.Equals(stem, StringComparison.OrdinalIgnoreCase) || subtitleStem.StartsWith(stem + ".", StringComparison.OrdinalIgnoreCase));
             }
-            await manager.SetFilePriorityAsync(file, ReferenceEquals(file, selectedFile) || subtitle ? Priority.Normal : Priority.DoNotDownload);
+            var priority = ReferenceEquals(file, selectedFile) || subtitle ? Priority.Normal : Priority.DoNotDownload;
+            if (file.Priority != priority) await manager.SetFilePriorityAsync(file, priority);
         }
     }
 
@@ -174,8 +221,10 @@ public sealed class OnlineAnimeService : IAsyncDisposable
             }
             var job = new OnlineJob(id, source, Path.Combine(Path.GetFullPath(destination), "AniT Online", id), title.Trim(), true, DateTimeOffset.UtcNow);
             Directory.CreateDirectory(job.SavePath);
-            manager = await AddManagerAsync(job, token);
-            if (downloads.Values.Any(d => d.Manager.InfoHashes.Equals(manager.InfoHashes))) throw new InvalidOperationException("Este torrent já foi adicionado.");
+            var requestedHashes = source.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase)
+                ? MagnetLink.Parse(source).InfoHashes : (await Torrent.LoadAsync(source)).InfoHashes;
+            if (await IsAlreadySavedAsync(requestedHashes, token)) throw new InvalidOperationException("Este torrent já foi adicionado.");
+            manager = await AddManagerAsync(job, token, progress);
             // The catalog is imported before any video download starts.
             var durableMetadata = Path.Combine(jobDirectory, id + ".torrent");
             if (!File.Exists(durableMetadata) && File.Exists(manager.MetadataPath)) File.Copy(manager.MetadataPath, durableMetadata);
@@ -247,10 +296,19 @@ public sealed class OnlineAnimeService : IAsyncDisposable
             await using var db = AniTDatabase.Create(databasePath);
             var files = await db.MediaFiles.Where(f => f.OnlineTorrentId != null).Include(f => f.Episode)!.ThenInclude(e => e!.Season).ToListAsync(token);
             var result = new List<OnlineTransfer>();
-            foreach (var (id, (job, manager)) in downloads) {
+            foreach (var job in savedJobs.Values) {
+                var id = job.Id;
+                if (!downloads.TryGetValue(id, out var active)) {
+                    var waitingEpisodes = files.Where(file => file.OnlineTorrentId == id)
+                        .OrderBy(file => file.Episode!.Season!.Number).ThenBy(file => file.Episode!.Number).ThenBy(file => file.FileName, StringComparer.OrdinalIgnoreCase)
+                        .Select(file => new OnlineEpisode(file.EpisodeId, $"S{file.Episode!.Season!.Number:00}E{file.Episode.Number:00}", file.FileName, file.IsCloud ? 0 : 100, file.SizeInBytes, file.IsCloud)).ToArray();
+                    result.Add(new(id, job.Title, "Abra um episódio para começar · nenhum vídeo baixando", 0, 0, 0, true, waitingEpisodes, true));
+                    continue;
+                }
+                var manager = active.Manager;
                 if (!manager.HasMetadata) { result.Add(new(id, job.Title, "Buscando metadados e participantes…", 0, 0, manager.OpenConnections, job.Paused, [])); continue; }
                 if (!prepared.Contains(id)) {
-                    await SelectSafeFilesAsync(manager, job.SavePath, job.SelectedFileIndex);
+                    await SelectSafeFilesAsync(manager, job.SavePath, job.SelectedFileIndex, token);
                     await ImportAsync(job, manager, token);
                     prepared.Add(id);
                 }
@@ -281,9 +339,15 @@ public sealed class OnlineAnimeService : IAsyncDisposable
 
     public async Task SetPausedAsync(string id, bool paused, CancellationToken token = default)
     {
+        await RestoreAsync(token);
         await gate.WaitAsync(token);
         try {
-            var (job, manager) = downloads[id];
+            if (!downloads.TryGetValue(id, out var entry)) {
+                if (!savedJobs.ContainsKey(id)) throw new InvalidOperationException("O download não foi encontrado neste perfil.");
+                if (!paused) throw new InvalidOperationException("Abra um episódio para iniciar o download.");
+                return;
+            }
+            var (job, manager) = entry;
             if (!paused && job.SelectedFileIndex is null) throw new InvalidOperationException("Abra um episódio para iniciar o download.");
             if (paused) { if (manager.State is not TorrentState.Stopped) await manager.PauseAsync(); } else await manager.StartAsync();
             downloads[id] = (job with { Paused = paused }, manager);
@@ -292,37 +356,64 @@ public sealed class OnlineAnimeService : IAsyncDisposable
         } finally { gate.Release(); }
     }
 
-    public async Task<Uri> OpenStreamAsync(MediaFile file, CancellationToken token = default, IProgress<OnlinePreparationProgress>? progress = null)
+    public async Task<Uri> OpenStreamAsync(MediaFile file, CancellationToken token = default, IProgress<OnlinePreparationProgress>? progress = null, OnlinePlaybackTrace? trace = null)
     {
+        progress?.Report(new(0, 0, 0, 0, null, Stage: "Lendo sua lista de episódios…", TransferStarted: false));
+        trace?.Mark("restore_begin");
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, lifetime.Token);
         token = linked.Token;
         await RestoreAsync(token);
+        trace?.Mark("restore_complete");
+        progress?.Report(new(0, 0, 0, 0, null, Stage: "Preparando a abertura do episódio selecionado…", TransferStarted: false));
         await streamGate.WaitAsync(token);
+        var activationStarted = false;
         try {
             TorrentManager manager;
+            trace?.Mark("stream_lock_acquired");
             await gate.WaitAsync(token);
             try {
-                if (!downloads.TryGetValue(file.OnlineTorrentId!, out var entry)) throw new InvalidOperationException("O download não foi encontrado neste perfil.");
+                progress?.Report(new(0, 0, 0, 0, null, Stage: "Carregando o torrent selecionado…", TransferStarted: false));
+                trace?.Mark("selected_manager_load_begin");
+                var entry = await LoadSelectedAsync(file.OnlineTorrentId!, token);
+                trace?.Mark("selected_manager_loaded");
+                token.ThrowIfCancellationRequested();
+                activationStarted = true;
                 if (stream is not null) { await stream.DisposeAsync(); stream = null; }
                 discoveryCancellation?.Cancel();
+                telemetrySampling?.Cancel();
                 foreach (var (id, other) in downloads.ToArray()) {
-                    if (ReferenceEquals(other.Manager, entry.Manager)) continue;
+                    token.ThrowIfCancellationRequested();
+                    if (ReferenceEquals(other.Manager, entry.Manager) || other.Job.Paused && other.Job.SelectedFileIndex is null) continue;
                     if (other.Manager.State is not (TorrentState.Stopped or TorrentState.Paused)) await other.Manager.PauseAsync();
-                    await SelectSafeFilesAsync(other.Manager, other.Job.SavePath, null);
+                    await SelectSafeFilesAsync(other.Manager, other.Job.SavePath, null, token);
                     var inactive = other.Job with { Paused = true, SelectedFileIndex = null };
                     downloads[id] = (inactive, other.Manager); savedJobs[id] = inactive;
                 }
                 manager = entry.Manager;
-                await SelectSafeFilesAsync(manager, entry.Job.SavePath, file.OnlineFileIndex);
+                trace?.BeginNetwork(manager.Monitor.DataBytesReceived);
+                trace?.Mark("file_selection_begin");
+                progress?.Report(new(0, 0, 0, 0, null, Stage: "Selecionando somente este episódio…", TransferStarted: false));
+                await SelectSafeFilesAsync(manager, entry.Job.SavePath, file.OnlineFileIndex, token);
                 var selected = entry.Job with { Paused = false, SelectedFileIndex = file.OnlineFileIndex };
                 downloads[selected.Id] = (selected, manager); savedJobs[selected.Id] = selected;
                 await SaveAsync(token);
+                token.ThrowIfCancellationRequested();
+                trace?.Mark("file_selected", ("cached_percent", manager.Files[file.OnlineFileIndex].BitField.PercentComplete), ("piece_bytes", manager.Torrent!.PieceLength));
+                trace?.Mark("engine_start_requested");
+                progress?.Report(new(0, 0, 0, 0, null, Stage: "Iniciando a conexão do episódio…", TransferStarted: false));
                 if (manager.State is not (TorrentState.Downloading or TorrentState.Seeding or TorrentState.Starting)) await manager.StartAsync();
             } finally { gate.Release(); }
+            trace?.Mark("engine_started");
+            if (trace is not null) {
+                telemetrySampling?.Dispose(); telemetrySampling = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
+                telemetryTasks.RemoveAll(task => task.IsCompleted);
+                telemetryTasks.Add(SampleNetworkAsync(manager, trace, telemetrySampling.Token));
+            }
             peerDiscovery.RemoveAll(task => task.IsCompleted);
             discoveryCancellation?.Dispose();
             discoveryCancellation = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
-            peerDiscovery.Add(DiscoverPeersAsync(manager, discoveryCancellation.Token));
+            peerDiscovery.Add(DiscoverPeersAsync(manager, discoveryCancellation.Token, trace));
+            trace?.Mark("peer_discovery_requested");
             var media = manager.Files[file.OnlineFileIndex];
             var initialReceived = manager.Monitor.DataBytesReceived;
             var initialPiece = media.StartPieceIndex;
@@ -341,85 +432,114 @@ public sealed class OnlineAnimeService : IAsyncDisposable
             try {
                 // MonoTorrent's default prebuffer fetches the tail before the beginning.
                 // Let the container request its index on demand instead of blocking startup on it.
+                trace?.Mark("stream_provider_requested");
                 Stream input = await manager.StreamProvider!.CreateStreamAsync(media, false, token);
                 try {
                     // A fresh LocalStream starts at zero without informing its streaming picker.
                     input.Seek(1, SeekOrigin.Begin); input.Seek(0, SeekOrigin.Begin);
                     await input.ReadExactlyAsync(new byte[1], token);
+                    ObserveNetwork(manager, trace);
+                    trace?.Mark("header_verified");
                     input.Seek(0, SeekOrigin.Begin);
                     if (Path.GetExtension(media.Path).ToLowerInvariant() is ".mkv" or ".webm") {
                         stage="Localizando a imagem e pulando anexos opcionais…";
+                        trace?.Mark("container_probe_begin");
                         var view = await MatroskaStreamingView.CreateAsync(input, token);
+                        trace?.Mark("container_probe_complete", ("skipped_attachment_bytes", view.SkippedAttachmentBytes), ("first_media_offset", view.FirstMediaOffset));
                         input = view;
                         Diagnostic?.Invoke($"Vista MKV: {view.SkippedAttachmentBytes} bytes de anexos opcionais ignorados; primeiro cluster em {view.FirstMediaOffset}.");
                         if (view.FirstMediaOffset > 0) {
                             stage="Baixando o primeiro trecho de imagem…";
                             input.Position = view.FirstMediaOffset;
                             await input.ReadExactlyAsync(new byte[1], token);
+                            trace?.Mark("first_media_piece_verified");
                             input.Position = 0;
                         }
                     }
                 } catch { await input.DisposeAsync(); throw; }
                 Diagnostic?.Invoke($"Início verificado; liberando player para episódio {file.OnlineFileIndex} com {media.BitField.PercentComplete:0.0}% baixado.");
-                stream = new OnlineStreamServer(input, Path.GetFileName(media.Path), (offset, count) => {
-                    var first = manager.Torrent!.ByteOffsetToPieceIndex(media.OffsetInTorrent + offset);
-                    var last = offset + count == media.Length ? media.EndPieceIndex
-                        : manager.Torrent.ByteOffsetToPieceIndex(media.OffsetInTorrent + offset + count);
-                    for (var piece = first; piece <= last; piece++) if (!manager.Bitfield[piece]) return false;
-                    return true;
-                }) { Diagnostic = message => Diagnostic?.Invoke(message) };
+                bool PhysicalAvailable(long offset, int count) => OnlinePieceRange.IsAvailable(
+                    media.OffsetInTorrent, media.Length, manager.Torrent!.PieceLength, offset, count, piece => manager.Bitfield[piece]);
+                bool Available(long offset, int count) => input is MatroskaStreamingView view
+                    ? view.IsRangeAvailable(offset, count, PhysicalAvailable) : PhysicalAvailable(offset, count);
+                stream = new OnlineStreamServer(input, Path.GetFileName(media.Path), Available) {
+                    Diagnostic = message => Diagnostic?.Invoke(message),
+                    ReadDiagnostic = (name, id, value) => trace?.Event(name, ("request_id", id),
+                        (name is "http_demand_started" or "index_demand_started" or "read_wait_started" ? "offset_bytes" : "elapsed_ms", value))
+                };
+                trace?.Mark("http_stream_ready");
                 return stream.Address;
-            } catch {
-                await manager.PauseAsync();
+            } finally { reporting.Cancel(); await reportTask; }
+        } catch {
+            if (activationStarted) {
+                discoveryCancellation?.Cancel(); telemetrySampling?.Cancel();
                 await gate.WaitAsync(CancellationToken.None);
                 try {
-                    var entry = downloads[file.OnlineTorrentId!];
-                    downloads[entry.Job.Id] = (entry.Job with { Paused = true }, manager);
-                    savedJobs[entry.Job.Id] = entry.Job with { Paused = true }; await SaveAsync(CancellationToken.None);
-                } finally { gate.Release(); }
-                throw;
-            } finally { reporting.Cancel(); await reportTask; }
+                    if (downloads.TryGetValue(file.OnlineTorrentId!, out var entry)) {
+                        await SelectSafeFilesAsync(entry.Manager, entry.Job.SavePath, null);
+                        if (entry.Manager.State is not TorrentState.Stopped) await entry.Manager.StopAsync(TimeSpan.FromSeconds(2));
+                        var waiting = entry.Job with { Paused = true, SelectedFileIndex = null };
+                        downloads[waiting.Id] = (waiting, entry.Manager); savedJobs[waiting.Id] = waiting;
+                        await SaveAsync(CancellationToken.None);
+                    }
+                } catch (Exception cleanup) { Diagnostic?.Invoke("Limpeza da preparação: " + cleanup.GetType().Name); }
+                finally { gate.Release(); }
+            }
+            throw;
         } finally { streamGate.Release(); }
     }
 
-    public async Task<bool> PrepareSeekIndexAsync(Uri address,CancellationToken token)
+    static void ObserveNetwork(TorrentManager manager, OnlinePlaybackTrace? trace)
+        => trace?.ObserveNetwork(manager.Monitor.DataBytesReceived, manager.OpenConnections, manager.Monitor.DownloadRate);
+    static async Task SampleNetworkAsync(TorrentManager manager, OnlinePlaybackTrace trace, CancellationToken token)
     {
-        using var operation=CancellationTokenSource.CreateLinkedTokenSource(token,lifetime.Token);token=operation.Token;
-        await streamGate.WaitAsync(token);
-        try {
-            if(stream?.Address!=address)return false;
-            Diagnostic?.Invoke("Preparando índice verificado para busca precisa, sem baixar os anexos de fontes.");
-            return await stream.PrepareIndexAsync(token);
-        } finally {streamGate.Release();}
+        try { while (!token.IsCancellationRequested) { ObserveNetwork(manager, trace); await Task.Delay(500, token); } }
+        catch (OperationCanceledException) { }
+        catch { trace.Event("network_sampling_unavailable"); }
     }
 
-    async Task DiscoverPeersAsync(TorrentManager manager, CancellationToken token)
+    public async Task<bool> PrepareSeekIndexAsync(Uri address, CancellationToken token)
     {
+        using var operation = CancellationTokenSource.CreateLinkedTokenSource(token, lifetime.Token);
+        token = operation.Token;
+        OnlineStreamServer? target;
+        await streamGate.WaitAsync(token);
+        try { target = stream?.Address == address ? stream : null; }
+        finally { streamGate.Release(); }
+        if (target is null) return false;
+        Diagnostic?.Invoke("Preparando índice sob demanda, sem bloquear a troca ou o fechamento do episódio.");
+        // The server owns cancellation/draining. Never hold streamGate while network pieces are missing.
+        return await target.PrepareIndexAsync(token);
+    }
+
+    internal static string PeerCacheKey(InfoHashes hashes) => "v1:" + hashes.V1?.ToHex() + ";v2:" + hashes.V2?.ToHex();
+
+    async Task DiscoverPeersAsync(TorrentManager manager, CancellationToken token, OnlinePlaybackTrace? trace = null)
+    {
+        // Private swarms use only the engine's tracker policy. Never inject cached peers.
         if (manager.TrackerManager.Private) return;
-        var trackers = manager.TrackerManager.Tiers.SelectMany(tier => tier.Trackers).Distinct().Take(16).ToArray();
         try {
-            // A dead UDP tracker must not consume the entire discovery window and
-            // prevent later alternatives from ever being queried.
-            for (var round = 0; round < 3; round++) {
-                if (round > 0) await Task.Delay(TimeSpan.FromSeconds(round == 1 ? 8 : 16), token);
-                token.ThrowIfCancellationRequested();
-                if (manager.State is TorrentState.Stopped or TorrentState.Paused) return;
-                await manager.DhtAnnounceAsync(); // MonoTorrent enforces its minimum announce interval.
-                Diagnostic?.Invoke($"Descoberta de fontes: rodada {round + 1}, {trackers.Length} trackers, {manager.OpenConnections} conexões.");
-                var queries = trackers.Select(tracker => (Func<CancellationToken, Task>)(async cancellation => await manager.TrackerManager.AnnounceAsync(tracker, cancellation))).ToArray();
-                await QueryTrackersAsync(queries, message => Diagnostic?.Invoke(message), token);
-                if (manager.OpenConnections > 0) return;
-            }
+            var cached = await recentPeers.ReadAsync(PeerCacheKey(manager.InfoHashes), token);
+            token.ThrowIfCancellationRequested();
+            if (cached.Count > 0) await manager.AddPeersAsync(cached.Select(uri => new PeerInfo(uri)));
+            trace?.Mark("recent_peers_loaded");
+            Diagnostic?.Invoke($"Fontes recentes disponíveis: {cached.Count}.");
+            await manager.DhtAnnounceAsync(); // Library enforces its minimum interval.
+            var trackers = manager.TrackerManager.Tiers.SelectMany(tier => tier.Trackers).Distinct().Take(16).ToArray();
+            var queries = trackers.Select(tracker => (Func<CancellationToken, Task>)(async cancellation => await manager.TrackerManager.AnnounceAsync(tracker, cancellation))).ToArray();
+            // One supplemental pass only. Automatic engine announces own subsequent retries
+            // and tracker minimum intervals; no application-level announce loop.
+            await QueryTrackersAsync(queries, message => Diagnostic?.Invoke(message), token, TimeSpan.FromSeconds(45));
         } catch (OperationCanceledException) { }
         catch (Exception ex) { Diagnostic?.Invoke($"Consulta de fontes interrompida: {ex.GetType().Name}."); }
     }
 
-    static Task QueryTrackersAsync(IReadOnlyList<Func<CancellationToken, Task>> queries, Action<string> diagnostic, CancellationToken token)
-        => Parallel.ForEachAsync(queries, new ParallelOptions { MaxDegreeOfParallelism = 8, CancellationToken = token }, async (query, cancellation) => {
+    static Task QueryTrackersAsync(IReadOnlyList<Func<CancellationToken, Task>> queries, Action<string> diagnostic, CancellationToken token, TimeSpan timeout)
+        => Parallel.ForEachAsync(queries, new ParallelOptions { MaxDegreeOfParallelism = 16, CancellationToken = token }, async (query, cancellation) => {
             using var attempt = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
-            attempt.CancelAfter(TimeSpan.FromSeconds(4));
+            attempt.CancelAfter(timeout);
             try { await query(attempt.Token); }
-            catch (OperationCanceledException) when (!cancellation.IsCancellationRequested) { diagnostic("Um tracker excedeu 4 s; as outras fontes continuam sendo consultadas."); }
+            catch (OperationCanceledException) when (!cancellation.IsCancellationRequested) { diagnostic("Um tracker excedeu o prazo; as outras fontes continuam disponíveis."); }
             catch (Exception ex) when (ex is not OperationCanceledException) { diagnostic($"Consulta de fontes: {ex.GetType().Name}."); }
         });
 
@@ -429,6 +549,8 @@ public sealed class OnlineAnimeService : IAsyncDisposable
         try {
             if (expectedAddress is not null && stream?.Address != expectedAddress) return;
             discoveryCancellation?.Cancel();
+            telemetrySampling?.Cancel();
+            await recentPeers.FlushAsync();
             await gate.WaitAsync();
             try {
                 if (stream is not null) { await stream.DisposeAsync(); stream = null; }
@@ -456,12 +578,14 @@ public sealed class OnlineAnimeService : IAsyncDisposable
         await gate.WaitAsync();
         try {
             await Task.WhenAll(peerDiscovery);
+            await Task.WhenAll(telemetryTasks);
+            await recentPeers.FlushAsync();
             if (stream is not null) await stream.DisposeAsync();
             foreach (var (_, manager) in downloads.Values) await manager.StopAsync();
-        } finally { discoveryCancellation?.Dispose(); engine.Dispose(); gate.Release(); streamGate.Release(); lifetime.Dispose(); }
+        } finally { telemetrySampling?.Dispose(); discoveryCancellation?.Dispose(); engine.Dispose(); gate.Release(); streamGate.Release(); lifetime.Dispose(); }
     }
 }
 
-public sealed record OnlinePreparationProgress(long ReceivedBytes, long BytesPerSecond, int Peers, double Percent, string? Error, long InitialPieceBytes = 0, bool InitialPieceReady = false, string? Stage = null);
+public sealed record OnlinePreparationProgress(long ReceivedBytes, long BytesPerSecond, int Peers, double Percent, string? Error, long InitialPieceBytes = 0, bool InitialPieceReady = false, string? Stage = null, bool TransferStarted = true);
 
-public sealed record OnlineImportProgress(double Percent, string Title, string Detail);
+public sealed record OnlineImportProgress(double Percent, string Title, string Detail, bool IsIndeterminate = false);

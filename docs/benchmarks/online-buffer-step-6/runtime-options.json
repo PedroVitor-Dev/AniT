@@ -1,0 +1,27 @@
+[
+  {
+    "option": "cache-pause-wait",
+    "value": 4.5,
+    "set": "success"
+  },
+  {
+    "option": "cache-secs",
+    "value": 24.0,
+    "set": "success"
+  },
+  {
+    "option": "demuxer-readahead-secs",
+    "value": 24.0,
+    "set": "success"
+  },
+  {
+    "option": "demuxer-max-bytes",
+    "value": 67108864,
+    "set": "success"
+  },
+  {
+    "option": "demuxer-max-back-bytes",
+    "value": 8388608,
+    "set": "success"
+  }
+]

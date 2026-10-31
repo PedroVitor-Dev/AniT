@@ -1,0 +1,16 @@
+{
+  "baki_contextual": true,
+  "no_auto_resume": true,
+  "moment_capture": true,
+  "spoiler_note_hidden": true,
+  "spoiler_thumbnail_not_loaded": true,
+  "explicit_reveal": true,
+  "reveal_session_scoped": true,
+  "subtitle_import": true,
+  "duplicate_avoided": true,
+  "style_applied": true,
+  "external_survives_seek": true,
+  "original_ass_restored": true,
+  "source_preserved": true,
+  "layouts": 8
+}

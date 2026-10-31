@@ -1,0 +1,13 @@
+{
+  "audio_selection": true,
+  "subtitle_selection": true,
+  "subtitles_off_survive_index_reload": true,
+  "user_pause_during_reload": true,
+  "context_menu": true,
+  "profile_preferences": true,
+  "speed": true,
+  "subtitle_delay": true,
+  "next_episode": true,
+  "next_episode_remapped": true,
+  "layouts": 12
+}

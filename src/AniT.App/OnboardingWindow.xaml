@@ -137,7 +137,7 @@
                             <StackPanel>
                                 <Border Width="106" Height="106" CornerRadius="53" HorizontalAlignment="Left" Margin="0,0,0,14">
                                     <Border.Background>
-                                        <ImageBrush x:Name="AvatarBrush" Stretch="UniformToFill" ImageSource="/AniT;component/Assets/Profile/1.png" />
+                                        <ImageBrush x:Name="AvatarBrush" Stretch="UniformToFill" ImageSource="/AniT;component/Assets/Profile/default.png" />
                                     </Border.Background>
                                 </Border>
                                 <WrapPanel>

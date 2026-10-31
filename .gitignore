@@ -20,3 +20,6 @@ Player/MPV/
 work/
 TestResults/
 artifacts/
+
+# Python report tooling
+__pycache__/

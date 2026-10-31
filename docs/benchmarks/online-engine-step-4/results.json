@@ -1,0 +1,1010 @@
+{
+  "schema": 1,
+  "utc": "2026-10-29T19:51:37.596581+00:00",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "python": "3.12.14",
+  "results": [
+    {
+      "engine": "MonoTorrent",
+      "piece_bytes": 65536,
+      "condition": "cold",
+      "trial": 0,
+      "ok": true,
+      "version": "3.0.2",
+      "warm": false,
+      "peer_ms": 562,
+      "first_data_ms": 648.3673,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 818.2826,
+          "wait_ms": 747.1876000000001,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 1134.3165,
+          "wait_ms": 315.79269999999997,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 1452.6124,
+          "wait_ms": 318.26379999999995,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 1452.8349,
+          "wait_ms": 0.18810000000007676,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 737280,
+      "selected_percent": 4.296875,
+      "unselected_pieces": 0,
+      "total_ms": 1453.4309
+    },
+    {
+      "engine": "libtorrent",
+      "piece_bytes": 65536,
+      "condition": "cold",
+      "trial": 0,
+      "ok": true,
+      "version": "2.1.1.0",
+      "warm": false,
+      "peer_ms": 524.4013000010455,
+      "first_data_ms": 607.8324000009161,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 834.2889999985346,
+          "wait_ms": 815.7783999995445,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 1133.2794000009017,
+          "wait_ms": 298.98660000253585,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 1637.9263999988325,
+          "wait_ms": 504.6440999976767,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 1648.3407999985502,
+          "wait_ms": 10.412200001155725,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 867923,
+      "selected_percent": 5.173224210739136,
+      "unselected_pieces": 0,
+      "total_ms": 1650.8401999999478
+    },
+    {
+      "engine": "libtorrent",
+      "piece_bytes": 65536,
+      "condition": "cold",
+      "trial": 1,
+      "ok": true,
+      "version": "2.1.1.0",
+      "warm": false,
+      "peer_ms": 513.9906000003975,
+      "first_data_ms": 586.8824999997742,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 740.9346999993431,
+          "wait_ms": 722.7941999990435,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 1070.6415999993624,
+          "wait_ms": 329.70299999942654,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 2573.851099998137,
+          "wait_ms": 1503.2064000006358,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 2584.8255999990215,
+          "wait_ms": 10.97250000020722,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 802777,
+      "selected_percent": 4.784923791885376,
+      "unselected_pieces": 0,
+      "total_ms": 2587.988999999652
+    },
+    {
+      "engine": "MonoTorrent",
+      "piece_bytes": 65536,
+      "condition": "cold",
+      "trial": 1,
+      "ok": true,
+      "version": "3.0.2",
+      "warm": false,
+      "peer_ms": 566,
+      "first_data_ms": 667.3952,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 820.9892,
+          "wait_ms": 751.0878,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 1024.1178,
+          "wait_ms": 202.88289999999984,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 1330.602,
+          "wait_ms": 306.44529999999986,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 1330.8157,
+          "wait_ms": 0.1792000000000371,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 589824,
+      "selected_percent": 3.125,
+      "unselected_pieces": 0,
+      "total_ms": 1331.4982
+    },
+    {
+      "engine": "MonoTorrent",
+      "piece_bytes": 65536,
+      "condition": "cold",
+      "trial": 2,
+      "ok": true,
+      "version": "3.0.2",
+      "warm": false,
+      "peer_ms": 572,
+      "first_data_ms": 668.517,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 845.6336,
+          "wait_ms": 775.3383,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 1063.3662,
+          "wait_ms": 217.45810000000006,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 1369.1334,
+          "wait_ms": 305.72980000000007,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 1369.3793,
+          "wait_ms": 0.20489999999995234,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 638976,
+      "selected_percent": 3.515625,
+      "unselected_pieces": 0,
+      "total_ms": 1369.9968
+    },
+    {
+      "engine": "libtorrent",
+      "piece_bytes": 65536,
+      "condition": "cold",
+      "trial": 2,
+      "ok": true,
+      "version": "2.1.1.0",
+      "warm": false,
+      "peer_ms": 514.0721999996458,
+      "first_data_ms": 597.3129999983939,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 845.9621000001789,
+          "wait_ms": 827.2770999974455,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 1281.0387999998056,
+          "wait_ms": 435.07229999886476,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 2588.0633999986458,
+          "wait_ms": 1307.0217999993474,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 2598.897500000021,
+          "wait_ms": 10.83210000069812,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 999385,
+      "selected_percent": 5.956798791885376,
+      "unselected_pieces": 0,
+      "total_ms": 2602.00409999743
+    },
+    {
+      "engine": "MonoTorrent",
+      "piece_bytes": 65536,
+      "condition": "warm",
+      "trial": 0,
+      "ok": true,
+      "version": "3.0.2",
+      "warm": true,
+      "peer_ms": null,
+      "first_data_ms": null,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 148.3996,
+          "wait_ms": 6.717399999999998,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 149.0899,
+          "wait_ms": 0.41390000000001237,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 149.3321,
+          "wait_ms": 0.2091000000000065,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 149.534,
+          "wait_ms": 0.18099999999998317,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 0,
+      "selected_percent": 100,
+      "unselected_pieces": 0,
+      "total_ms": 150.1538
+    },
+    {
+      "engine": "libtorrent",
+      "piece_bytes": 65536,
+      "condition": "warm",
+      "trial": 0,
+      "ok": true,
+      "version": "2.1.1.0",
+      "warm": true,
+      "peer_ms": null,
+      "first_data_ms": null,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 39.95430000213673,
+          "wait_ms": 10.866500000702217,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 50.297699999646284,
+          "wait_ms": 10.340499997255392,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 60.81439999979921,
+          "wait_ms": 10.514699999475852,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 71.5520000012475,
+          "wait_ms": 10.736200001701945,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 0,
+      "selected_percent": 100.0,
+      "unselected_pieces": 0,
+      "total_ms": 74.27889999962645
+    },
+    {
+      "engine": "libtorrent",
+      "piece_bytes": 65536,
+      "condition": "warm",
+      "trial": 1,
+      "ok": true,
+      "version": "2.1.1.0",
+      "warm": true,
+      "peer_ms": null,
+      "first_data_ms": null,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 39.54580000208807,
+          "wait_ms": 10.706599998229649,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 50.18430000200169,
+          "wait_ms": 10.634800000843825,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 60.83980000039446,
+          "wait_ms": 10.653500001353677,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 71.17479999942589,
+          "wait_ms": 10.333099999115802,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 0,
+      "selected_percent": 100.0,
+      "unselected_pieces": 0,
+      "total_ms": 74.30640000166022
+    },
+    {
+      "engine": "MonoTorrent",
+      "piece_bytes": 65536,
+      "condition": "warm",
+      "trial": 1,
+      "ok": true,
+      "version": "3.0.2",
+      "warm": true,
+      "peer_ms": null,
+      "first_data_ms": null,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 148.2177,
+          "wait_ms": 7.249200000000002,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 148.8479,
+          "wait_ms": 0.36939999999998463,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 149.0624,
+          "wait_ms": 0.18710000000001514,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 149.2741,
+          "wait_ms": 0.19130000000001246,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 0,
+      "selected_percent": 100,
+      "unselected_pieces": 0,
+      "total_ms": 149.988
+    },
+    {
+      "engine": "MonoTorrent",
+      "piece_bytes": 65536,
+      "condition": "warm",
+      "trial": 2,
+      "ok": true,
+      "version": "3.0.2",
+      "warm": true,
+      "peer_ms": null,
+      "first_data_ms": null,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 147.9091,
+          "wait_ms": 6.5149000000000115,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 149.1711,
+          "wait_ms": 0.9966000000000008,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 149.3686,
+          "wait_ms": 0.17019999999999413,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 149.5345,
+          "wait_ms": 0.14570000000000505,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 0,
+      "selected_percent": 100,
+      "unselected_pieces": 0,
+      "total_ms": 150.2188
+    },
+    {
+      "engine": "libtorrent",
+      "piece_bytes": 65536,
+      "condition": "warm",
+      "trial": 2,
+      "ok": true,
+      "version": "2.1.1.0",
+      "warm": true,
+      "peer_ms": null,
+      "first_data_ms": null,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 39.10649999670568,
+          "wait_ms": 10.416199998871889,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 49.917399999685585,
+          "wait_ms": 10.8077000004414,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 60.686499997245846,
+          "wait_ms": 10.767199997644639,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 70.96329999694717,
+          "wait_ms": 10.275499997078441,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 0,
+      "selected_percent": 100.0,
+      "unselected_pieces": 0,
+      "total_ms": 73.57829999818932
+    },
+    {
+      "engine": "MonoTorrent",
+      "piece_bytes": 4194304,
+      "condition": "cold",
+      "trial": 0,
+      "ok": true,
+      "version": "3.0.2",
+      "warm": false,
+      "peer_ms": 568,
+      "first_data_ms": 640.7735,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 5417.5967,
+          "wait_ms": 5272.202799999999,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 10566.3894,
+          "wait_ms": 5148.5628,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 15175.9291,
+          "wait_ms": 4609.502699999999,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 15176.1778,
+          "wait_ms": 0.21349999999983993,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 12664832,
+      "selected_percent": 75,
+      "unselected_pieces": 0,
+      "total_ms": 15176.7701
+    },
+    {
+      "engine": "libtorrent",
+      "piece_bytes": 4194304,
+      "condition": "cold",
+      "trial": 0,
+      "ok": false,
+      "error": "Timeout de 60 s ao aguardar intervalo verificado.",
+      "stderr": "<USER>\\Documents\\Programação\\AniT\\tools\\TorrentEngineBench\\libtorrent_probe.py:11: DeprecationWarning: orig_files() is deprecated\n  fs = ti.orig_files()\n{\"ms\": 5010.039199998573, \"offset\": 0, \"wanted\": [4], \"have\": [false], \"peers\": 1, \"bytes\": 3814443, \"state\": \"downloading\", \"download_rate\": 499565, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"4\": 7}, \"queue\": 2}\n{\"ms\": 10016.890700000658, \"offset\": 12582912, \"wanted\": [7], \"have\": [false], \"peers\": 1, \"bytes\": 4472832, \"state\": \"downloading\", \"download_rate\": 255344, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"7\": 7}, \"queue\": 1}\n{\"ms\": 15021.303199999238, \"offset\": 12582912, \"wanted\": [7], \"have\": [false], \"peers\": 1, \"bytes\": 4472832, \"state\": \"downloading\", \"download_rate\": 83670, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"7\": 7}, \"queue\": 1}\n{\"ms\": 20028.854899999715, \"offset\": 12582912, \"wanted\": [7], \"have\": [false], \"peers\": 1, \"bytes\": 4472832, \"state\": \"downloading\", \"download_rate\": 27416, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"7\": 7}, \"queue\": 1}\n{\"ms\": 25031.893699997454, \"offset\": 12582912, \"wanted\": [7], \"have\": [false], \"peers\": 1, \"bytes\": 4472832, \"state\": \"downloading\", \"download_rate\": 8982, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"7\": 7}, \"queue\": 1}\n{\"ms\": 30041.604399997595, \"offset\": 12582912, \"wanted\": [7], \"have\": [false], \"peers\": 1, \"bytes\": 4472832, \"state\": \"downloading\", \"download_rate\": 2942, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"7\": 7}, \"queue\": 1}\n{\"ms\": 35043.35419999916, \"offset\": 12582912, \"wanted\": [7], \"have\": [false], \"peers\": 1, \"bytes\": 4472832, \"state\": \"downloading\", \"download_rate\": 963, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"7\": 7}, \"queue\": 1}\n{\"ms\": 40053.271900000254, \"offset\": 12582912, \"wanted\": [7], \"have\": [false], \"peers\": 1, \"bytes\": 4472832, \"state\": \"downloading\", \"download_rate\": 314, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"7\": 7}, \"queue\": 1}\n{\"ms\": 45059.3263999981, \"offset\": 12582912, \"wanted\": [7], \"have\": [false], \"peers\": 1, \"bytes\": 4472832, \"state\": \"downloading\", \"download_rate\": 102, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"7\": 7}, \"queue\": 1}\n{\"ms\": 50065.97509999847, \"offset\": 12582912, \"wanted\": [7], \"have\": [false], \"peers\": 1, \"bytes\": 4472832, \"state\": \"downloading\", \"download_rate\": 32, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"7\": 7}, \"queue\": 1}\n{\"ms\": 55074.51339999898, \"offset\": 12582912, \"wanted\": [7], \"have\": [false], \"peers\": 1, \"bytes\": 4472832, \"state\": \"downloading\", \"download_rate\": 9, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"7\": 7}, \"queue\": 1}\nTraceback (most recent call last):\n  File \"<USER>\\Documents\\Programação\\AniT\\tools\\TorrentEngineBench\\libtorrent_probe.py\", line 128, in <module>\n    print(json.dumps(run(args.root, args.destination, args.port, args.condition == \"warm\")))\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<USER>\\Documents\\Programação\\AniT\\tools\\TorrentEngineBench\\libtorrent_probe.py\", line 78, in run\n    status = tick()\n             ^^^^^^\n  File \"<USER>\\Documents\\Programação\\AniT\\tools\\TorrentEngineBench\\libtorrent_probe.py\", line 42, in tick\n    raise TimeoutError(\"Trial exceeded 60 seconds: \" + str(handle.status()) + \" reads=\" + repr(reads))\nTimeoutError: Trial exceeded 60 seconds: <libtorrent.torrent_status object at 0x000001519BF31EB0> reads=[{'offset': 0, 'ready_ms': 5486.163099998521, 'wait_ms': 5467.7635000007285, 'bytes': 65536, 'verified': True}]\n"
+    },
+    {
+      "engine": "libtorrent",
+      "piece_bytes": 4194304,
+      "condition": "cold",
+      "trial": 1,
+      "ok": false,
+      "error": "Timeout de 60 s ao aguardar intervalo verificado.",
+      "stderr": "<USER>\\Documents\\Programação\\AniT\\tools\\TorrentEngineBench\\libtorrent_probe.py:11: DeprecationWarning: orig_files() is deprecated\n  fs = ti.orig_files()\n{\"ms\": 5010.024400002294, \"offset\": 0, \"wanted\": [4], \"have\": [false], \"peers\": 1, \"bytes\": 3879927, \"state\": \"downloading\", \"download_rate\": 511074, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"4\": 7}, \"queue\": 2}\n{\"ms\": 10016.215100000409, \"offset\": 12582912, \"wanted\": [7], \"have\": [false], \"peers\": 1, \"bytes\": 8283726, \"state\": \"downloading\", \"download_rate\": 749329, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"7\": 7}, \"queue\": 2}\n{\"ms\": 15020.329099999799, \"offset\": 4194304, \"wanted\": [5], \"have\": [false], \"peers\": 1, \"bytes\": 12514321, \"state\": \"downloading\", \"download_rate\": 826456, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"5\": 7}, \"queue\": 2}\n{\"ms\": 20028.41400000034, \"offset\": 4194304, \"wanted\": [5], \"have\": [false], \"peers\": 1, \"bytes\": 12861440, \"state\": \"downloading\", \"download_rate\": 326069, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"5\": 7}, \"queue\": 1}\n{\"ms\": 25032.39989999929, \"offset\": 4194304, \"wanted\": [5], \"have\": [false], \"peers\": 1, \"bytes\": 12861440, \"state\": \"downloading\", \"download_rate\": 106845, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"5\": 7}, \"queue\": 1}\n{\"ms\": 30033.222800000658, \"offset\": 4194304, \"wanted\": [5], \"have\": [false], \"peers\": 1, \"bytes\": 12861440, \"state\": \"downloading\", \"download_rate\": 35010, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"5\": 7}, \"queue\": 1}\n{\"ms\": 35043.73770000166, \"offset\": 4194304, \"wanted\": [5], \"have\": [false], \"peers\": 1, \"bytes\": 12861440, \"state\": \"downloading\", \"download_rate\": 11471, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"5\": 7}, \"queue\": 1}\n{\"ms\": 40045.28439999922, \"offset\": 4194304, \"wanted\": [5], \"have\": [false], \"peers\": 1, \"bytes\": 12861440, \"state\": \"downloading\", \"download_rate\": 3757, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"5\": 7}, \"queue\": 1}\n{\"ms\": 45055.77170000106, \"offset\": 4194304, \"wanted\": [5], \"have\": [false], \"peers\": 1, \"bytes\": 12861440, \"state\": \"downloading\", \"download_rate\": 1230, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"5\": 7}, \"queue\": 1}\n{\"ms\": 50066.259200000786, \"offset\": 4194304, \"wanted\": [5], \"have\": [false], \"peers\": 1, \"bytes\": 12861440, \"state\": \"downloading\", \"download_rate\": 402, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"5\": 7}, \"queue\": 1}\n{\"ms\": 55072.11649999954, \"offset\": 4194304, \"wanted\": [5], \"have\": [false], \"peers\": 1, \"bytes\": 12861440, \"state\": \"downloading\", \"download_rate\": 130, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"5\": 7}, \"queue\": 1}\nTraceback (most recent call last):\n  File \"<USER>\\Documents\\Programação\\AniT\\tools\\TorrentEngineBench\\libtorrent_probe.py\", line 128, in <module>\n    print(json.dumps(run(args.root, args.destination, args.port, args.condition == \"warm\")))\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<USER>\\Documents\\Programação\\AniT\\tools\\TorrentEngineBench\\libtorrent_probe.py\", line 78, in run\n    status = tick()\n             ^^^^^^\n  File \"<USER>\\Documents\\Programação\\AniT\\tools\\TorrentEngineBench\\libtorrent_probe.py\", line 42, in tick\n    raise TimeoutError(\"Trial exceeded 60 seconds: \" + str(handle.status()) + \" reads=\" + repr(reads))\nTimeoutError: Trial exceeded 60 seconds: <libtorrent.torrent_status object at 0x000001C34AB588F0> reads=[{'offset': 0, 'ready_ms': 5382.736999999906, 'wait_ms': 5364.440400000603, 'bytes': 65536, 'verified': True}, {'offset': 12582912, 'ready_ms': 10441.314499999862, 'wait_ms': 5058.461699998588, 'bytes': 65536, 'verified': True}]\n"
+    },
+    {
+      "engine": "MonoTorrent",
+      "piece_bytes": 4194304,
+      "condition": "cold",
+      "trial": 1,
+      "ok": true,
+      "version": "3.0.2",
+      "warm": false,
+      "peer_ms": 571,
+      "first_data_ms": 646.9505,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 5473.6638,
+          "wait_ms": 5403.044,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 10337.3084,
+          "wait_ms": 4863.4092,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 15200.8664,
+          "wait_ms": 4863.515600000001,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 15201.125,
+          "wait_ms": 0.22449999999844295,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 12681216,
+      "selected_percent": 75,
+      "unselected_pieces": 0,
+      "total_ms": 15201.7989
+    },
+    {
+      "engine": "MonoTorrent",
+      "piece_bytes": 4194304,
+      "condition": "cold",
+      "trial": 2,
+      "ok": true,
+      "version": "3.0.2",
+      "warm": false,
+      "peer_ms": 575,
+      "first_data_ms": 646.2568,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 5391.2821,
+          "wait_ms": 5321.5196,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 10302.6641,
+          "wait_ms": 4911.1374,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 14950.1047,
+          "wait_ms": 4647.3991000000005,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 14950.3644,
+          "wait_ms": 0.22439999999915017,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 12713984,
+      "selected_percent": 75,
+      "unselected_pieces": 0,
+      "total_ms": 14951.0374
+    },
+    {
+      "engine": "libtorrent",
+      "piece_bytes": 4194304,
+      "condition": "cold",
+      "trial": 2,
+      "ok": false,
+      "error": "Timeout de 60 s ao aguardar intervalo verificado.",
+      "stderr": "<USER>\\Documents\\Programação\\AniT\\tools\\TorrentEngineBench\\libtorrent_probe.py:11: DeprecationWarning: orig_files() is deprecated\n  fs = ti.orig_files()\n{\"ms\": 5002.089099998557, \"offset\": 0, \"wanted\": [4], \"have\": [false], \"peers\": 1, \"bytes\": 3896298, \"state\": \"downloading\", \"download_rate\": 514010, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"4\": 7}, \"queue\": 3}\n{\"ms\": 10012.237300001289, \"offset\": 12582912, \"wanted\": [7], \"have\": [false], \"peers\": 1, \"bytes\": 8349210, \"state\": \"downloading\", \"download_rate\": 771242, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"7\": 7}, \"queue\": 1}\n{\"ms\": 15021.037599999545, \"offset\": 4194304, \"wanted\": [5], \"have\": [false], \"peers\": 1, \"bytes\": 12137567, \"state\": \"downloading\", \"download_rate\": 783648, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"5\": 7}, \"queue\": 1}\n{\"ms\": 20024.35239999977, \"offset\": 4194304, \"wanted\": [5], \"have\": [false], \"peers\": 1, \"bytes\": 12582912, \"state\": \"downloading\", \"download_rate\": 322574, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"5\": 7}, \"queue\": 0}\n{\"ms\": 25030.453499999567, \"offset\": 4194304, \"wanted\": [5], \"have\": [false], \"peers\": 1, \"bytes\": 12582912, \"state\": \"downloading\", \"download_rate\": 105700, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"5\": 7}, \"queue\": 0}\n{\"ms\": 30032.561600000918, \"offset\": 4194304, \"wanted\": [5], \"have\": [false], \"peers\": 1, \"bytes\": 12582912, \"state\": \"downloading\", \"download_rate\": 34635, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"5\": 7}, \"queue\": 0}\n{\"ms\": 35034.634200001165, \"offset\": 4194304, \"wanted\": [5], \"have\": [false], \"peers\": 1, \"bytes\": 12582912, \"state\": \"downloading\", \"download_rate\": 11348, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"5\": 7}, \"queue\": 0}\n{\"ms\": 40040.31820000091, \"offset\": 4194304, \"wanted\": [5], \"have\": [false], \"peers\": 1, \"bytes\": 12582912, \"state\": \"downloading\", \"download_rate\": 3717, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"5\": 7}, \"queue\": 0}\n{\"ms\": 45048.0306999998, \"offset\": 4194304, \"wanted\": [5], \"have\": [false], \"peers\": 1, \"bytes\": 12582912, \"state\": \"downloading\", \"download_rate\": 1216, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"5\": 7}, \"queue\": 0}\n{\"ms\": 50051.88139999882, \"offset\": 4194304, \"wanted\": [5], \"have\": [false], \"peers\": 1, \"bytes\": 12582912, \"state\": \"downloading\", \"download_rate\": 496, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"5\": 7}, \"queue\": 0}\n{\"ms\": 55061.89760000052, \"offset\": 4194304, \"wanted\": [5], \"have\": [false], \"peers\": 1, \"bytes\": 12582912, \"state\": \"downloading\", \"download_rate\": 160, \"error\": \"A opera\\u00e7\\u00e3o foi conclu\\u00edda com \\u00eaxito\", \"requested_priorities\": {\"5\": 7}, \"queue\": 0}\nTraceback (most recent call last):\n  File \"<USER>\\Documents\\Programação\\AniT\\tools\\TorrentEngineBench\\libtorrent_probe.py\", line 128, in <module>\n    print(json.dumps(run(args.root, args.destination, args.port, args.condition == \"warm\")))\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<USER>\\Documents\\Programação\\AniT\\tools\\TorrentEngineBench\\libtorrent_probe.py\", line 78, in run\n    status = tick()\n             ^^^^^^\n  File \"<USER>\\Documents\\Programação\\AniT\\tools\\TorrentEngineBench\\libtorrent_probe.py\", line 42, in tick\n    raise TimeoutError(\"Trial exceeded 60 seconds: \" + str(handle.status()) + \" reads=\" + repr(reads))\nTimeoutError: Trial exceeded 60 seconds: <libtorrent.torrent_status object at 0x000001356010D890> reads=[{'offset': 0, 'ready_ms': 5394.072499999311, 'wait_ms': 5375.657199998386, 'bytes': 65536, 'verified': True}, {'offset': 12582912, 'ready_ms': 10075.584199999867, 'wait_ms': 4681.4082999990205, 'bytes': 65536, 'verified': True}]\n"
+    },
+    {
+      "engine": "MonoTorrent",
+      "piece_bytes": 4194304,
+      "condition": "warm",
+      "trial": 0,
+      "ok": true,
+      "version": "3.0.2",
+      "warm": true,
+      "peer_ms": null,
+      "first_data_ms": null,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 137.6632,
+          "wait_ms": 6.976599999999991,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 138.8515,
+          "wait_ms": 0.9510999999999967,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 139.1004,
+          "wait_ms": 0.21980000000002065,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 139.3153,
+          "wait_ms": 0.19470000000001164,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 0,
+      "selected_percent": 100,
+      "unselected_pieces": 0,
+      "total_ms": 140.0278
+    },
+    {
+      "engine": "libtorrent",
+      "piece_bytes": 4194304,
+      "condition": "warm",
+      "trial": 0,
+      "ok": true,
+      "version": "2.1.1.0",
+      "warm": true,
+      "peer_ms": null,
+      "first_data_ms": null,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 41.00030000336119,
+          "wait_ms": 12.260699997568736,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 53.27190000025439,
+          "wait_ms": 12.1774999970512,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 65.05060000199592,
+          "wait_ms": 11.679100000037579,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 77.0620000002964,
+          "wait_ms": 11.920099997951183,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 0,
+      "selected_percent": 100.0,
+      "unselected_pieces": 0,
+      "total_ms": 77.253200000996
+    },
+    {
+      "engine": "libtorrent",
+      "piece_bytes": 4194304,
+      "condition": "warm",
+      "trial": 1,
+      "ok": true,
+      "version": "2.1.1.0",
+      "warm": true,
+      "peer_ms": null,
+      "first_data_ms": null,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 40.179200001148274,
+          "wait_ms": 11.791099997935817,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 52.20060000283411,
+          "wait_ms": 11.924900001758942,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 64.3359000023338,
+          "wait_ms": 12.037300002702978,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 76.08780000009574,
+          "wait_ms": 11.640599997917889,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 0,
+      "selected_percent": 100.0,
+      "unselected_pieces": 0,
+      "total_ms": 76.30990000325255
+    },
+    {
+      "engine": "MonoTorrent",
+      "piece_bytes": 4194304,
+      "condition": "warm",
+      "trial": 1,
+      "ok": true,
+      "version": "3.0.2",
+      "warm": true,
+      "peer_ms": null,
+      "first_data_ms": null,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 138.3315,
+          "wait_ms": 6.990800000000007,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 139.4536,
+          "wait_ms": 0.8868999999999971,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 139.644,
+          "wait_ms": 0.16380000000000905,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 139.7849,
+          "wait_ms": 0.12379999999998859,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 0,
+      "selected_percent": 100,
+      "unselected_pieces": 0,
+      "total_ms": 140.5353
+    },
+    {
+      "engine": "MonoTorrent",
+      "piece_bytes": 4194304,
+      "condition": "warm",
+      "trial": 2,
+      "ok": true,
+      "version": "3.0.2",
+      "warm": true,
+      "peer_ms": null,
+      "first_data_ms": null,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 140.3784,
+          "wait_ms": 7.593100000000021,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 141.4214,
+          "wait_ms": 0.805499999999995,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 141.6157,
+          "wait_ms": 0.168200000000013,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 141.7665,
+          "wait_ms": 0.13320000000001642,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 0,
+      "selected_percent": 100,
+      "unselected_pieces": 0,
+      "total_ms": 142.3542
+    },
+    {
+      "engine": "libtorrent",
+      "piece_bytes": 4194304,
+      "condition": "warm",
+      "trial": 2,
+      "ok": true,
+      "version": "2.1.1.0",
+      "warm": true,
+      "peer_ms": null,
+      "first_data_ms": null,
+      "reads": [
+        {
+          "offset": 0,
+          "ready_ms": 40.737800001807045,
+          "wait_ms": 11.727799999789568,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 12582912,
+          "ready_ms": 52.815500002907356,
+          "wait_ms": 11.98570000269683,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 4194304,
+          "ready_ms": 64.60040000092704,
+          "wait_ms": 11.676099999021972,
+          "bytes": 65536,
+          "verified": true
+        },
+        {
+          "offset": 0,
+          "ready_ms": 76.79490000009537,
+          "wait_ms": 12.104499997803941,
+          "bytes": 65536,
+          "verified": true
+        }
+      ],
+      "received_bytes": 0,
+      "selected_percent": 100.0,
+      "unselected_pieces": 0,
+      "total_ms": 77.01620000079856
+    }
+  ],
+  "method": {
+    "transport": "TCP loopback",
+    "external_wire_limit_bytes_per_second": 1048576,
+    "internal_limits": 0,
+    "public_network": false,
+    "player": false,
+    "repetitions_per_condition": 3,
+    "selected_file_bytes": 16777216,
+    "read_bytes": 65536,
+    "timeout_seconds": 60,
+    "engine_versions": {
+      "MonoTorrent": "3.0.2",
+      "libtorrent": "2.1.1.0"
+    },
+    "results_by_engine": {
+      "MonoTorrent": {
+        "successful": 12,
+        "attempted": 12
+      },
+      "libtorrent": {
+        "successful": 9,
+        "attempted": 12
+      }
+    },
+    "wheel_sha256": "493954405d15f14b9d9f9b1762ae78e7fecc5a44699f74cb433a9800fa3a7b45"
+  },
+  "fixture_sha256": {
+    "65536": "da73e797eedfc044e6ad39c172a38207f72aa8f60232735c3cbe61c29c95d556",
+    "4194304": "747e2f5e79d0cb149035f6923acb78920d1d9492c1e7b738b1febd028df86cdc"
+  }
+}

@@ -2,7 +2,7 @@
 
 ## Resumo
 
-O AniT é local-first. Não existe conta AniT, servidor próprio, telemetria obrigatória ou sincronização automática em nuvem. Biblioteca, perfis, histórico e preferências permanecem no computador.
+O AniT é local-first. Não existe conta AniT, servidor próprio, envio automático de telemetria ao projeto ou sincronização automática em nuvem. Biblioteca, perfis, histórico e preferências permanecem no computador.
 
 ## Dados armazenados
 
@@ -29,6 +29,8 @@ Locais principais:
 ```
 
 Arquivos `.bak`, logs e arquivos `-wal`/`-shm` podem existir durante recuperação e uso normal do SQLite.
+
+Os diagnósticos estruturados do Online Anime Player ficam em `%LOCALAPPDATA%/AniT/Diagnostics/Online/`. Registram horários, etapas, contagem de conexões, velocidade, cache e sinais do player, com identificador aleatório por tentativa. Esses registros não incluem magnet, URL, título, caminho do vídeo, hash do torrent ou endereços dos peers. A retenção é limitada a dez arquivos de aproximadamente 8 MiB; não há envio automático. Os logs tradicionais do aplicativo podem conter outras informações técnicas: revise qualquer arquivo antes de compartilhá-lo. Consulte [Diagnóstico do streaming](ONLINE_DIAGNOSTICS.md).
 
 ## PIN dos perfis
 
@@ -89,3 +91,7 @@ Apagar dados do AniT não remove seus vídeos originais.
 ## Futuras integrações
 
 Conta, sincronização, atualização automática ou telemetria deverão ser opcionais, documentadas e discutidas publicamente antes de qualquer implementação.
+
+### Cache local de fontes recentes
+
+O Online Anime Player guarda, na pasta do perfil, `Online/<identificador-do-perfil>/recent-peers.json` com endereços IP, portas, identificadores de torrents públicos e a data da conexão. Esses dados servem exclusivamente para tentar reconectar fontes já utilizadas. O cache permanece neste computador, expira em 24 horas e limita-se a 64 torrents e 32 fontes por torrent. Torrents privados não são registrados nem recebem fontes desse cache. Apagar esse arquivo remove as dicas salvas; conexões futuras podem gerar novas entradas. Esse cache é separado dos logs de diagnóstico, que continuam sem endereços de peers ou hashes de torrents.

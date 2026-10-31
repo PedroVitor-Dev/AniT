@@ -4,7 +4,7 @@ param(
     [Parameter(Mandatory=$true)][string] $Publisher,
     [Parameter(Mandatory=$true)][string] $PublisherDisplayName,
     [Parameter(Mandatory=$true)][string] $MakeAppxPath,
-    [string] $Version = '2.0.2',
+    [string] $Version = '2.0.3',
     [string] $PublishDirectory,
     [string] $OutputDirectory,
     [string] $DotNetPath = 'dotnet',

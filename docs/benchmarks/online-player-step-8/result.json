@@ -1,0 +1,16 @@
+{
+  "embedded": true,
+  "first_frame": true,
+  "native_input": true,
+  "single_click_pause": true,
+  "double_click_preserves_pause": true,
+  "fullscreen_restore": true,
+  "seek": true,
+  "rapid_seek": true,
+  "mute": true,
+  "volume": true,
+  "autohide": true,
+  "checkpoint": true,
+  "reopen": true,
+  "layouts": 8
+}
