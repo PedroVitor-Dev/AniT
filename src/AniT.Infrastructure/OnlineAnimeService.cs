@@ -111,7 +111,7 @@ public sealed class OnlineAnimeService : IAsyncDisposable
         return normalized;
     }
 
-    async Task<TorrentManager> AddManagerAsync(OnlineJob job, CancellationToken token)
+    async Task<TorrentManager> AddManagerAsync(OnlineJob job, CancellationToken token, IProgress<OnlineImportProgress>? progress = null)
     {
         token.ThrowIfCancellationRequested();
         TorrentManager? manager = null;
@@ -124,9 +124,12 @@ public sealed class OnlineAnimeService : IAsyncDisposable
                     manager = await engine.AddStreamingAsync(magnet, job.SavePath);
                     if (!manager.HasMetadata) {
                         await engine.RemoveAsync(manager); manager = null;
-                        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token, lifetime.Token);
-                        timeout.CancelAfter(TimeSpan.FromMinutes(2));
-                        var metadata = await engine.DownloadMetadataAsync(magnet, timeout.Token);
+                        using var request = CancellationTokenSource.CreateLinkedTokenSource(token, lifetime.Token);
+                        var settings = new EngineSettingsBuilder(engine.Settings) {
+                            CacheDirectory = Path.Combine(Path.GetDirectoryName(statePath)!, "metadata-engine"),
+                            ListenEndPoints = engine.Settings.ListenEndPoints.ToDictionary(pair => pair.Key, pair => new IPEndPoint(pair.Value.Address, 0))
+                        }.ToSettings();
+                        var metadata = await OnlineMetadataResolver.ResolveAsync(magnet, settings, progress, request.Token);
                         Directory.CreateDirectory(Path.GetDirectoryName(cached)!);
                         await File.WriteAllBytesAsync(cached, metadata.ToArray(), token);
                         manager = await engine.AddStreamingAsync(await Torrent.LoadAsync(cached), job.SavePath);
@@ -221,7 +224,7 @@ public sealed class OnlineAnimeService : IAsyncDisposable
             var requestedHashes = source.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase)
                 ? MagnetLink.Parse(source).InfoHashes : (await Torrent.LoadAsync(source)).InfoHashes;
             if (await IsAlreadySavedAsync(requestedHashes, token)) throw new InvalidOperationException("Este torrent já foi adicionado.");
-            manager = await AddManagerAsync(job, token);
+            manager = await AddManagerAsync(job, token, progress);
             // The catalog is imported before any video download starts.
             var durableMetadata = Path.Combine(jobDirectory, id + ".torrent");
             if (!File.Exists(durableMetadata) && File.Exists(manager.MetadataPath)) File.Copy(manager.MetadataPath, durableMetadata);
@@ -585,4 +588,4 @@ public sealed class OnlineAnimeService : IAsyncDisposable
 
 public sealed record OnlinePreparationProgress(long ReceivedBytes, long BytesPerSecond, int Peers, double Percent, string? Error, long InitialPieceBytes = 0, bool InitialPieceReady = false, string? Stage = null, bool TransferStarted = true);
 
-public sealed record OnlineImportProgress(double Percent, string Title, string Detail);
+public sealed record OnlineImportProgress(double Percent, string Title, string Detail, bool IsIndeterminate = false);

@@ -46,7 +46,11 @@ internal static class OnlineAnimeVisualChecks
             AppearanceManager.Apply(AniTSystemSettings.Default with { ThemeMode=theme,TextScalePercent=scale });
             using var cancellation=new CancellationTokenSource();
             var popup=new OnlineImportProgressWindow(cancellation,true){WindowStartupLocation=WindowStartupLocation.Manual,Left=-20000,Top=-20000,ShowActivated=false};
-            popup.Show();Flush();popup.Report(new(72,"Identificando o anime","Uma temporada autorizada com um nome que pode ocupar mais de uma linha"));
+            popup.Show();Flush();
+            popup.Report(new(8,"Buscando a lista de episódios","0 conexões · 00:12 de espera\nBuscando participantes via DHT e trackers do link.\nSomente os metadados; nenhum episódio está sendo baixado.",true));
+            if(!Descendants(popup).OfType<ProgressBar>().Single().IsIndeterminate)throw new Exception("Metadata discovery must not show a fake completion percentage");
+            popup.Report(new(72,"Identificando o anime","Uma temporada autorizada com um nome que pode ocupar mais de uma linha"));
+            if(Descendants(popup).OfType<ProgressBar>().Single().IsIndeterminate)throw new Exception("Catalog progress must return to measured stages");
             if(complete)popup.Complete("Minha temporada autorizada",12,false);
             popup.UpdateLayout();
             var action=Descendants(popup).OfType<Button>().Single();
