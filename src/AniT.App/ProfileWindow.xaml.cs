@@ -17,7 +17,7 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
     private Guid? latestEpisodeId;
     private ProfileSettings settings = ProfileSettingsStore.Load();
     private global::AniT.Infrastructure.AniTSystemSettings organizationSettings = global::AniT.Infrastructure.AniTSystemSettingsStore.Load();
-    private string automaticAvatarPath = "Assets/Profile/1.png";
+    private readonly string automaticAvatarPath = ProfileSettingsStore.DefaultAvatarPath;
     private bool isLoading;
 
     public ObservableCollection<ProfileHighlight> Highlights { get; } = [];
@@ -30,7 +30,7 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
     public string DisplayName { get; private set; } = "Pet-S";
     public string Bio { get; private set; } = string.Empty;
     public string DisplayTitle { get; private set; } = "Explorador de Mundos";
-    public string AvatarPath { get; private set; } = "Assets/Profile/1.png";
+    public string AvatarPath { get; private set; } = ProfileSettingsStore.DefaultAvatarPath;
     public double AvatarSize { get; private set; } = 142;
     public Rect AvatarViewbox { get; private set; } = new(0, 0, 1, 1);
     public string BannerPath { get; private set; } = "Assets/History/2.png";
@@ -116,7 +116,6 @@ public partial class ProfileWindow : Window, INotifyPropertyChanged
             var watchingAnime = anime.Count(item => item.Seasons.SelectMany(season => season.Episodes).Any(episode => episode.Status == global::AniT.Core.WatchStatus.Watching));
             var latest = activities.FirstOrDefault();
             latestEpisodeId = latest?.EpisodeId;
-            automaticAvatarPath = latest?.CoverPath ?? anime.Select(item => item.CoverPath).FirstOrDefault(IsUsableCover) ?? "Assets/Profile/1.png";
             AvatarPath = IsUsableCover(settings.AvatarPath) ? settings.AvatarPath! : automaticAvatarPath;
             DaysWatchedLabel = watchedDates.Count.ToString("N0", Portuguese);
             EpisodesWatchedLabel = activities.Count.ToString("N0", Portuguese);

@@ -29,6 +29,7 @@ public sealed record LocalProfileCollection(Guid ActiveProfileId, IReadOnlyList<
 
 internal static class ProfileSettingsStore
 {
+    public const string DefaultAvatarPath = "pack://application:,,,/AniT;component/Assets/Profile/default.png";
     private static readonly object Sync = new();
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private static readonly string DataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AniT", "Data");

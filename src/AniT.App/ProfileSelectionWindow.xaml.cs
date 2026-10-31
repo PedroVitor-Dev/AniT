@@ -28,7 +28,7 @@ public partial class ProfileSelectionWindow : Window
         {
             var avatar = !string.IsNullOrWhiteSpace(profile.AvatarPath) && File.Exists(profile.AvatarPath)
                 ? profile.AvatarPath
-                : "Assets/Profile/1.png";
+                : ProfileSettingsStore.DefaultAvatarPath;
             profiles.Add(new ProfileEntryItem(
                 profile.ProfileId,
                 profile.DisplayName,
