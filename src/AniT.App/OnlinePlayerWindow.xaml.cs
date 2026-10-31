@@ -58,9 +58,9 @@ internal partial class OnlinePlayerWindow : Window
     {
         var expanded = ActualWidth >= 1000;
         SubtitleToolLabel.Visibility = MomentsToolLabel.Visibility = OptionsToolLabel.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
-        BrandPlate.Width = ActualWidth < 800 ? 132 : 198;
-        BrandPlate.Height = ActualWidth < 800 ? 48 : 70;
-        BrandWordmark.Width = ActualWidth < 800 ? 76 : 108;
+        BrandPlate.Width = ActualWidth < 800 ? 198 : 218;
+        BrandPlate.Height = 70;
+        BrandWordmark.Width = ActualWidth < 800 ? 172 : 190;
     }
     internal void SetEpisodeTitle(string title)
     {

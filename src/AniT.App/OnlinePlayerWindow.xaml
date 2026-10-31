@@ -5,10 +5,14 @@
     <DockPanel x:Name="Layout">
         <Border x:Name="Header" DockPanel.Dock="Top" Padding="16,4,18,4" Background="{DynamicResource AniT.Brush.Surface}" BorderBrush="{DynamicResource AniT.Brush.Border}" BorderThickness="0,0,0,1">
             <Grid MinHeight="78"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                <Grid x:Name="BrandPlate" Width="198" Height="70" Margin="0,0,18,0" IsHitTestVisible="False">
-                    <Image Source="/AniT;component/Assets/Player/ornament-1.png" Stretch="Uniform" Tag="PlayerFrame"/>
-                    <Viewbox x:Name="BrandWordmark" Width="108" Height="18" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0"><TextBlock Text="AniT Player" Tag="ThemeManaged" Foreground="#072D52" FontFamily="Segoe UI Semibold" FontSize="15" FontWeight="Bold"/></Viewbox>
-                </Grid>
+                <Border x:Name="BrandPlate" Width="218" Height="70" Margin="0,0,18,0" Background="#081F39" CornerRadius="14" BorderBrush="#356F96" BorderThickness="1" IsHitTestVisible="False">
+                    <Grid ClipToBounds="True">
+                        <Image Source="/AniT;component/Assets/Player/ornament-1.png" Stretch="Uniform" Opacity="0.16" Margin="2" Tag="PlayerFrame"/>
+                        <Viewbox x:Name="BrandWordmark" Width="190" Height="40" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="AniT Player" Tag="ThemeManaged" Foreground="#F5FCFF" FontFamily="Bahnschrift, Segoe UI" FontSize="32" FontWeight="Bold"/>
+                        </Viewbox>
+                    </Grid>
+                </Border>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,4,12,4">
                     <TextBlock Text="AGORA ASSISTINDO" Style="{StaticResource PlayerCaption}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource AniT.Brush.TextSecondary}" Margin="0,0,0,5"/>
                     <TextBlock x:Name="EpisodeTitle" Style="{StaticResource PlayerText}" FontSize="19" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>

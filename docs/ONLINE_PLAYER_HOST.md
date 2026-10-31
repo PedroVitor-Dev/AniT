@@ -117,3 +117,12 @@ Validação: --check-player-host passou em 12 combinações (1100×700, 640×540
 640×420; temas claro/escuro; texto 100/140%), além de clique/duplo clique, atalhos,
 pausa, seek, volume, ocultação e reabertura. --check-player-extras passou para
 assistência/reserva, momentos e legendas com oito layouts. Não foi gerado instalador.
+
+### Legibilidade da marca e tipografia
+
+A marca foi ampliada: área de texto de 190×40 DIP (172×40 na janela compacta),
+texto branco #F5FCFF sobre placa #081F39 e ornamento do Baki-Pi a 16% de opacidade.
+A fonte do player passa a Bahnschrift, com Segoe UI como alternativa disponível.
+A marca não é mais reduzida a uma inscrição de 76 px na janela compacta.
+Validação visual nos dois temas, texto 100/140%, e --check-player-host aprovado
+nos 12 layouts, incluindo clique/duplo clique, reprodução e reabertura.
