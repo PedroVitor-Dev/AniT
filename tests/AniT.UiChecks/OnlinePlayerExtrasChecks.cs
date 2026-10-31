@@ -41,12 +41,21 @@ internal static class OnlinePlayerExtrasChecks
                 if(!player.Snapshot.Paused)throw new Exception("Reserve assistance must never auto-resume");
                 ((Button)window.FindName("AssistantAction")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Until(()=>!player.Snapshot.Paused);
                 window.UpdateView(player.Snapshot);if(((Image)window.FindName("AssistantFace")).Visibility!=Visibility.Collapsed)throw new Exception("Baki-Pi did not leave healthy playback quiet");
-                ticker.Start();await window.SaveMomentAsync("Minha cena guardada",token);var moment=store.ForEpisode(episode).Single();
+                ticker.Start();window.UpdateView(player.Snapshot);
+                var register=(Button)window.FindName("RegisterMomentAction");if(!register.IsEnabled)throw new Exception("Ready playback must expose an enabled register button");
+                register.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                await Until(()=>store.ForEpisode(episode).Count==1&&app.Windows.OfType<OnlineMomentsWindow>().Any());
+                var captureWindow=app.Windows.OfType<OnlineMomentsWindow>().Single();var noteField=Descendants(captureWindow).OfType<TextBox>().Single();
+                noteField.Text="Minha cena guardada";
+                Descendants(captureWindow).OfType<Button>().Single(b=>Equals(b.Content,"Registrar momento")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                await Until(()=>store.ForEpisode(episode).Count==2&&noteField.Text.Length==0);
+                if(!store.ForEpisode(episode).Any(m=>m.Note=="Minha cena guardada"))throw new Exception("Register button did not save the annotation");
+                captureWindow.Close();var moment=store.ForEpisode(episode).First();
                 if(!File.Exists(store.ThumbnailPath(moment.Id)))throw new Exception("Moment thumbnail missing");
                 var future=new PlaybackMoment(Guid.NewGuid(),episode,70,"SPOILER FUTURO SECRETO");store.Add(future);File.Copy(store.ThumbnailPath(moment.Id),store.ThumbnailPath(future.Id));
                 window.HandleInput("moments");await Until(()=>app.Windows.OfType<OnlineMomentsWindow>().Any());var moments=app.Windows.OfType<OnlineMomentsWindow>().Single();Flush();
                 if(Descendants(moments).OfType<TextBlock>().Any(t=>t.Text.Contains("SPOILER FUTURO")))throw new Exception("Future note leaked into the visual tree");
-                if(Descendants(moments).OfType<Image>().Count(i=>i.Source is not null)!=1)throw new Exception("Protected thumbnail was loaded");
+                if(Descendants(moments).OfType<Image>().Count(i=>i.Source is not null)!=2)throw new Exception("Protected thumbnail was loaded");
                 Descendants(moments).OfType<Button>().Single(b=>Equals(b.Content,"Revelar")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));Flush();
                 if(!Descendants(moments).OfType<TextBlock>().Any(t=>t.Text.Contains("SPOILER FUTURO")))throw new Exception("Explicit reveal failed");moments.Close();
                 int layouts=0;
@@ -57,6 +66,9 @@ internal static class OnlinePlayerExtrasChecks
                     if(Descendants(moments).OfType<TextBlock>().Any(t=>t.Text.Contains("SPOILER FUTURO")))throw new Exception("Reveal leaked into another window session");
                     var label=(TextBlock)Descendants(moments).OfType<CheckBox>().Single().Content;
                     if(((SolidColorBrush)label.Foreground).Color!=((SolidColorBrush)moments.FindResource("AniT.Brush.TextPrimary")).Color)throw new Exception("Moment spoiler label has incorrect theme contrast");
+                    var notes=Descendants(moments).OfType<TextBox>().Single();notes.Text="Uma anotação longa para verificar que a linha ocupa toda a largura disponível e permite continuar escrevendo.";moments.UpdateLayout();
+                    var host=(ScrollViewer)notes.Template.FindName("PART_ContentHost",notes);
+                    if(host.ActualWidth<notes.ActualWidth-40||notes.ActualWidth<moments.ActualWidth-110)throw new Exception("Moment annotation does not fill the card width");
                     CheckButtons(moments);Save(moments,Path.Combine(output,$"moments-{theme}-{scale}.png"));moments.Close();layouts++;
                 }
                 window.OpenSubtitleCenter();Flush();var center=app.Windows.OfType<OnlineSubtitleWindow>().Single();center.ImportFiles(new[]{subtitle});
@@ -101,7 +113,7 @@ internal static class OnlinePlayerExtrasChecks
                 foreach(var id in player.Tracks.Tracks.Where(t=>t.External).Select(t=>t.Id).ToArray())await player.RemoveSubtitleAsync(id,token);
                 if(player.Tracks.Tracks.Any(t=>t.External)||!File.Exists(subtitle)||!File.Exists(ass))throw new Exception("External removal deleted source or left track behind");
                 center.Close();player.Dispose();
-                await File.WriteAllTextAsync(Path.Combine(output,"result.json"),JsonSerializer.Serialize(new{baki_contextual=true,no_auto_resume=true,moment_capture=true,spoiler_note_hidden=true,spoiler_thumbnail_not_loaded=true,explicit_reveal=true,reveal_session_scoped=true,subtitle_import=true,duplicate_avoided=true,style_applied=true,external_survives_seek=true,original_ass_restored=true,source_preserved=true,layouts},new JsonSerializerOptions{WriteIndented=true}),token);
+                await File.WriteAllTextAsync(Path.Combine(output,"result.json"),JsonSerializer.Serialize(new{baki_contextual=true,no_auto_resume=true,moment_capture=true,direct_register_button=true,annotated_register_button=true,full_width_note=true,spoiler_note_hidden=true,spoiler_thumbnail_not_loaded=true,explicit_reveal=true,reveal_session_scoped=true,subtitle_import=true,duplicate_avoided=true,style_applied=true,external_survives_seek=true,original_ass_restored=true,source_preserved=true,layouts},new JsonSerializerOptions{WriteIndented=true}),token);
                 Console.WriteLine($"Player extras: Baki-Pi, reserve, capture, spoiler protection, subtitle import/style/seek/restore and {layouts} layouts passed. {output}");result=0;
             }catch(Exception error){Console.Error.WriteLine(error);}
             finally{window?.CloseFromPlayer();runner.Close();app.Shutdown();}

@@ -58,3 +58,24 @@ os controles de aparência rolados e o quadro renderizado com ASS original.
 
 Os testes de unidade cobrem o relógio do assistente, isolamento/limites/backup dos
 momentos, proteção de spoilers e normalização/persistência da aparência.
+
+## Registro e anotação dos momentos
+
+O player possui um botão de câmera para registrar a cena atual e abrir a lista;
+o botão Momentos continua abrindo a consulta sem criar um registro. A captura
+direta impede cliques repetidos enquanto salva e mostra confirmação na janela.
+O registro com nota continua disponível por Registrar momento no rodapé.
+Durante buffering/seek/início, a janela informa por que a captura deve aguardar.
+
+A anotação tem template local PlayerNoteInput: largura integral do cartão,
+altura mínima de 112 DIP, várias linhas, alinhamento à esquerda, padding de 14,
+cantos arredondados, placeholder e contorno de foco. O contador de 500 caracteres
+fica fora do texto. O mesmo campo é usado ao editar uma anotação existente.
+O formulário/lista rola em janelas pequenas; a ação Registrar momento permanece
+no rodapé. Nenhuma linha decorativa atravessa o interior do editor.
+
+Validação com mpv real: botão de câmera registrou e abriu Momentos; o botão do
+formulário salvou uma segunda cena com nota e limpou o editor. Spoilers continuam
+sem texto ou miniatura antecipados. A largura real de PART_ContentHost foi
+verificada nos temas claro/escuro e texto 100/140%. Oito layouts dos recursos
+extras e doze layouts do player passaram. Nenhum instalador foi gerado.

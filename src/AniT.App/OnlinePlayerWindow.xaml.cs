@@ -58,6 +58,7 @@ internal partial class OnlinePlayerWindow : Window
     void UpdateChromeDensity()
     {
         var expanded = ActualWidth >= 1000;
+        RegisterMomentLabel.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
         SubtitleToolLabel.Visibility = MomentsToolLabel.Visibility = OptionsToolLabel.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
         BrandPlate.Width = ActualWidth < 800 ? 198 : 218;
         BrandPlate.Height = 70;
@@ -150,6 +151,7 @@ internal partial class OnlinePlayerWindow : Window
         if (closing) return;
         syncing = true;
         try {
+            RegisterMomentAction.IsEnabled = !registeringMoment && momentStore is not null && momentEpisode is not null && state.VideoReady && !state.Buffering && !state.Seeking;
             PlayAction.IsEnabled = MuteAction.IsEnabled = Volume.IsEnabled = state.VideoReady;
             Timeline.IsEnabled = state.VideoReady && state.Duration is { TotalSeconds: > 0 };
             Timeline.Maximum = Math.Max(1, state.Duration?.TotalSeconds ?? 1);

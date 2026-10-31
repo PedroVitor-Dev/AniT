@@ -40,5 +40,15 @@ internal partial class OnlinePlayerWindow
             try{File.Delete(temporary);if(!saved)File.Delete(final);}catch(IOException){}catch(UnauthorizedAccessException){}
         }
     }
+    bool registeringMoment;
+    void RegisterMomentClick(object sender,RoutedEventArgs args)
+    {
+        if(registeringMoment)return;
+        Run(async()=>{
+            registeringMoment=true;RegisterMomentAction.IsEnabled=false;
+            try{await SaveMomentAsync("",lifetime.Token);OpenMoments();momentsWindow?.ConfirmRegistered();}
+            finally{registeringMoment=false;UpdateView(player.Snapshot);}
+        });
+    }
     void MomentsClick(object sender,RoutedEventArgs args)=>OpenMoments();
 }
