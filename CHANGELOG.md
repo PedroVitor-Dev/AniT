@@ -6,17 +6,26 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Não publicado]
 
-### Melhorado
-
-- Online Anime Player: restauração inicial lê somente o catálogo salvo; listagem e monitor não criam motores nem buscam metadados de torrents inativos. Apenas o torrent escolhido é carregado para reproduzir.
-- Preparação informa as etapas iniciais com tempo decorrido, cria o serviço fora da interface e aceita cancelamento antes de iniciar a conexão. Cancelar a ativação remove prioridades e interrompe o torrent, preservando arquivos para tentar novamente.
-- Prioridades já corretas e torrents inativos deixam de ser reconfigurados a cada abertura. A detecção de duplicados considera também o catálogo ainda não carregado.
-
+## [2.0.3] - 2026-10-31
 
 ### Adicionado
 
-- Diagnóstico local do streaming: marcos desde o clique, descoberta de fontes, preparo do arquivo e sinais do mpv; amostras de cache, frames descartados e desvio A/V. Relatório separa startup, busca, pausa manual e rebuffer, com escrita assíncrona limitada e procedimento de comparação fria/quente.
+- Player próprio do Online Anime Player sobre mpv, com Baki-Pi, registro de momentos com proteção contra spoilers e central de legendas.
+- Seleção de faixas, velocidade, preferências por perfil, importação de legendas locais e ajustes de aparência/sincronização.
+- Nova imagem padrão do Baki-Pi para perfis sem foto personalizada.
+- Diagnóstico local do streaming e procedimentos de validação com vídeo e torrent sintéticos.
 
+### Melhorado
+
+- Carregamento somente do torrent selecionado; prioridade das peças necessárias, buffer adaptativo e preparação de cues sem descartar o buffer de reprodução.
+- Importação de magnets com motor de metadados isolado, prazos de consulta, cancelamento e progresso de descoberta.
+- Visual dos controles, campo de anotações, temas claro/escuro e navegação com ícone de nuvem.
+
+### Corrigido
+
+- Duplo clique real no vídeo, clique simples para pausa e ocultação/restauração do cursor.
+- Cancelamento durante preparação do player e esperas por trackers na importação.
+- Solicitação de foco do instalador ao abrir.
 
 ## [2.0.2] - 2026-10-29
 

@@ -1,6 +1,6 @@
 # AniT na Microsoft Store (MSIX)
 
-O pacote Windows x64 é autossuficiente, inclui MPC-HC/mpv e licenças, e usa versão `2.0.2.0`. O quarto componente é reservado a zero. Nenhum instalador Inno Setup é executado pelo MSIX.
+O pacote Windows x64 é autossuficiente, inclui MPC-HC/mpv e licenças, e usa versão `2.0.3.0`. O quarto componente é reservado a zero. Nenhum instalador Inno Setup é executado pelo MSIX.
 
 ## Identidade obrigatória
 
@@ -27,7 +27,7 @@ Prepare os players conforme `Player/README.md` e `scripts/Get-Mpv.ps1`. Use o Ma
   -DotNetPath 'dotnet'
 ```
 
-A saída fica em `artifacts/msix-2.0.2/`: MSIX, SHA-256 e registro JSON de identidade/versão. O empacotador valida o manifesto e os recursos; não usa `/nv`. O executável deve ter exatamente a versão do pacote. Uma pasta publicada previamente pode ser fornecida com `-PublishDirectory`.
+A saída fica em `artifacts/msix-2.0.3/`: MSIX, SHA-256 e registro JSON de identidade/versão. O empacotador valida o manifesto e os recursos; não usa `/nv`. O executável deve ter exatamente a versão do pacote. Uma pasta publicada previamente pode ser fornecida com `-PublishDirectory`.
 
 O parâmetro `-ValidationOnly` identifica explicitamente um pacote de engenharia, sem identidade do cadastro; esse arquivo não está pronto para envio à Store.
 

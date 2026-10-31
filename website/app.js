@@ -5,7 +5,8 @@ motionQuery.addEventListener?.('change', event => { reduceMotion = event.matches
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
-const releaseFallback = 'https://github.com/PedroVitor-Dev/AniT/releases/tag/v2.0.2';
+const releaseVersion = '2.0.3';
+const releaseFallback = 'https://github.com/PedroVitor-Dev/AniT/releases/tag/v2.0.3';
 const canvas = $('#starfield');
 const starContext = canvas?.getContext('2d', { alpha: true });
 let stars = [];
@@ -16,7 +17,7 @@ async function resolveLatestRelease() {
   const metadata = $$('.release-meta');
   const navVersion = $('.nav-version');
   try {
-    const response = await fetch('https://api.github.com/repos/PedroVitor-Dev/AniT/releases/latest', {
+    const response = await fetch(`https://api.github.com/repos/PedroVitor-Dev/AniT/releases/tags/v${releaseVersion}`, {
       headers: { Accept: 'application/vnd.github+json' }
     });
     if (!response.ok) throw new Error('Release indisponível');
@@ -30,7 +31,7 @@ async function resolveLatestRelease() {
     if (navVersion) navVersion.textContent = `v${version}`;
   } catch {
     links.forEach(link => { link.href = releaseFallback; });
-    metadata.forEach(item => { item.textContent = 'Versão 2.0.2 · Windows x64'; });
+    metadata.forEach(item => { item.textContent = 'Versão 2.0.3 · Windows x64'; });
   }
 }
 
