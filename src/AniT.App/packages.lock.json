@@ -4,11 +4,12 @@
     "net10.0-windows7.0": {
       "NAudio.WinMM": {
         "type": "Direct",
-        "requested": "[2.2.1, 2.2.1]",
-        "resolved": "2.2.1",
-        "contentHash": "xFHRFwH4x6aq3IxRbewvO33ugJRvZFEOfO62i7uQJRUNW2cnu6BeBTHUS0JD5KBucZbHZaYqxQG8dwZ47ezQuQ==",
+        "requested": "[3.3.0, 3.3.0]",
+        "resolved": "3.3.0",
+        "contentHash": "8E5LCxXDftvBe3/O8fal8HbJt1LB3odYDGvWrRoyK7qTp2i0ELrOcr3ydDR0JIqhdi7AMXPosJFR1gssT5kcuw==",
         "dependencies": {
-          "NAudio.Core": "2.2.1"
+          "NAudio.Core": "3.3.0",
+          "NAudio.Midi": "3.3.0"
         }
       },
       "WPF-UI": {
@@ -187,8 +188,19 @@
       },
       "NAudio.Core": {
         "type": "Transitive",
-        "resolved": "2.2.1",
-        "contentHash": "GgkdP6K/7FqXFo7uHvoqGZTJvW4z8g2IffhOO4JHaLzKCdDOUEzVKtveoZkCuUX8eV2HAINqi7VFqlFndrnz/g=="
+        "resolved": "3.3.0",
+        "contentHash": "xU3f1/5jBTfdjauhcPbjo0O1Ow+PVTPnjMo0KbV7twkWRcoY3GnVmA3mbUXxAePtJ2eUbWgteHWfFjOAvGovLg==",
+        "dependencies": {
+          "System.Numerics.Tensors": "9.0.0"
+        }
+      },
+      "NAudio.Midi": {
+        "type": "Transitive",
+        "resolved": "3.3.0",
+        "contentHash": "ha7yD5Pf2YjBlk31T2ItNl/7rDHhksRjk3KVzxbT4NibVSO7C9IygO02U/pgbrE5CU3M48IvZArLYh7UPxR6QQ==",
+        "dependencies": {
+          "NAudio.Core": "3.3.0"
+        }
       },
       "ReusableTasks": {
         "type": "Transitive",
@@ -222,6 +234,11 @@
           "SQLitePCLRaw.core": "2.1.12"
         }
       },
+      "System.Numerics.Tensors": {
+        "type": "Transitive",
+        "resolved": "9.0.0",
+        "contentHash": "hyJB4UlpAi19Xr9AXzu2NuagKC4lPfHObNMEAA0HmqFz2rX7wKgzeYzO/jM/eBHDhnUGFFEjk5cOoJaxqg5J4A=="
+      },
       "WPF-UI.Abstractions": {
         "type": "Transitive",
         "resolved": "4.3.0",
@@ -233,7 +250,7 @@
       "anit.infrastructure": {
         "type": "Project",
         "dependencies": {
-          "AniT.Core": "[1.0.2, )",
+          "AniT.Core": "[2.0.3, )",
           "Microsoft.EntityFrameworkCore.Sqlite": "[10.0.12, )",
           "MonoTorrent": "[3.0.2, )"
         }
@@ -241,7 +258,7 @@
       "anit.player": {
         "type": "Project",
         "dependencies": {
-          "AniT.Core": "[1.0.2, )"
+          "AniT.Core": "[2.0.3, )"
         }
       },
       "anit.theater": {
